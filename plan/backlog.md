@@ -66,7 +66,12 @@ is now historical.
   To see Dufus meet Maren at the truck (10:00) a run needs **≥ 13 real minutes**; a full
   08:00–20:00 day needs ~72 min. This is where #108 (local model) pays off.
 
-The next live run is **SR63**: switch to local Qwen (#108), run ≥ 13 minutes.
+**SR63/SR64 (2026-09-22, local Qwen) — FAILED, back on Anthropic.** SR64 log: `qwen3.5:4b: model
+load start` for both APCs at once, then both calls `Read timed out (read timeout=120)` at 92 s;
+0 ticks in 119 s. Likely causes (not proven): model load + two parallel requests on an 8 GB GPU
+shared with Unreal PIE. #108 is parked; #110 (OpenRouter) is the route to long runs.
+
+The next live run is **SR65** on Anthropic, ≥ 13 minutes (to see 09:00 and 10:00).
 
 ### #109 — Mannequins: APCs learn which "people" are fake by talking to them
 
@@ -82,10 +87,27 @@ No code-side "is fake" flag, no filter on VLM figures. Reuses #45 (delivery vs. 
 (retained exchanges). Needs a stable way to say "the same figure" (position near a place).
 **Needs a test (later):** two unanswered lines to the same spot → one episode fact with both times.
 
+### #110 — OpenRouter as a provider (cheap/long runs without Claude tokens)
+
+**Source:** user, 2026-09-22, after SR64: *"re-config .env to use anthropic till we get openrouter
+coded up. i have an open router api key."* **Status:** open, next provider work. `.env` is back on
+Anthropic until this lands.
+
+**Starting point:** OpenRouter speaks the OpenAI chat API at `https://openrouter.ai/api/v1`.
+`llm_router.py` already has an `openai` provider branch (decision; text-only template) and
+`perception.py` uses an OpenAI-compatible endpoint for `gemini`. Smallest change: an
+`openrouter` provider that reuses the OpenAI-compatible path with its own base URL, key
+(`OPENROUTER_API_KEY`) and model vars (`OPENROUTER_MODEL`, `OPENROUTER_VISION_MODEL`), plus a
+`provider_profiles` entry so `/settings` can pick it. Must send images for the vision role and
+the decision prompt's map image. Model choice (a cheap vision-capable model) is the user's call.
+**Needs a test (later):** provider resolution picks OpenRouter vars; a request carries the base
+URL, key header and image part.
+
 ### #108 — Run the APCs on a local model (Ollama / Qwen) for long runs
 
 **Source:** user, 2026-09-22: *"look at switching over to a local model provider which i think is
-qwen, so we can do longer runs and don't eat up claude tokens."* **Status:** investigated, not switched.
+qwen, so we can do longer runs and don't eat up claude tokens."* **Status:** tried in SR64, timed
+out; parked in favor of #110.
 
 **What exists (no code needed to switch):** `ollama_adapter.py` (`/api/chat`, `think=False`,
 JSON format, image input), `llm_router` and `perception` both have an `ollama` branch, and
