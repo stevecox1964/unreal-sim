@@ -53,7 +53,20 @@ is now historical.
   meshes/characters placed near Don's in the level? If not, it is a VLM hallucination (a sign or
   mannequin). **Answered by user:** the level has mannequin 3D people on purpose; see #109.
 
-The next live run is **SR62** (after P1).
+**SR62 (2026-09-22, 46 ticks, 272 s, Claude) — P1 PASSED live.**
+- Zero "stuck" events and zero tick errors (SR61: 5 stuck, 15 crashes). Dufus rested at Don's
+  `(-4570,-850)` for ~4 minutes with no false alarm.
+- LLM calls fell: 12 in 46 ticks (SR61: ~16 in 30 ticks). Maren slept almost the whole run.
+  Dufus is not "settled" after `morning_donut` completed (he waits for 09:00, no active place
+  task), so the 4-tick stationary re-decide wakes him ~every 40 s. Acceptable for now.
+- Dufus greeted the mannequins 6 times with near-identical lines and no memory of no reply —
+  live evidence for #109.
+- **Runs are too short to see the day.** Clock is 10 sim-min per real minute (`world.json`).
+  272 s ≈ 45 sim-min, so SR62 ended near 08:45 and never reached the 09:00 square trip.
+  To see Dufus meet Maren at the truck (10:00) a run needs **≥ 13 real minutes**; a full
+  08:00–20:00 day needs ~72 min. This is where #108 (local model) pays off.
+
+The next live run is **SR63**: switch to local Qwen (#108), run ≥ 13 minutes.
 
 ### #109 — Mannequins: APCs learn which "people" are fake by talking to them
 
@@ -93,8 +106,8 @@ split (local vision, cheap cloud Haiku decisions).
 | Step | Item | Goal | Done when |
 |---|---|---|---|
 | P0 — done SR61 | Sept 9 slice | SR61: Dufus + Maren in Play, watch only | Dufus walks to Don's by place travel; arrival logged once |
-| **P1 — Now** | #27 A | Truthful move completion (stop reading `moving` from the `current_action` string) | Resting after arrival gives zero stuck events |
-| P2 | #45 | Unread speech wakes a settled APC | Maren at the truck hears and answers Dufus's new line |
+| P1 — done SR62 | #27 A | Truthful move completion (stop reading `moving` from the `current_action` string) | Resting after arrival gives zero stuck events |
+| **P2 — Now** | #45 | Unread speech wakes a settled APC | Maren at the truck hears and answers Dufus's new line |
 | P3 | #67 | Bounded APC↔APC talk; reuse #38 interruptions; summary into **both** `episodes.jsonl` | Both recall it next day; a later decision uses it |
 | P4 | #105 acceptance | A small live day, both APCs, cockpit chat "go to Don's Donuts" | MASTER_PLAN success criteria #1 + #2 shown in logs |
 | P5 | #68 → #106 → 3rd APC | Work that leaves a mark; add/activate APCs from the web; a third townsperson | Scoped when P4 passes |
