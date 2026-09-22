@@ -3,9 +3,57 @@
 Rolling list of outstanding work — add items as they come up, check off or
 delete them as they land. Not session-scoped; this is the durable home for
 approved scope and priority. Handoffs are chronological session state.
-Newest grooming: **2026-08-20** — see *THE EXIT CONDITION* below; Phase B is blocked.
+Newest grooming: **2026-09-04** — Play implementation queue from the code/log review below.
 
-## Active view — groomed 2026-08-19
+## Active view — groomed 2026-09-04: prove a small day in Play
+
+**Source and authority:** user, 2026-09-04: "We are moving from survy mode to play mode" and
+"Can you update the backlog with your findings so we can get claude to implement?" This follows
+#105 and [the September 1 handoff](handoffs/HANDOFF_2026-09-01_2043.md), which closed surveying for
+this world. **The August 20 overnight-survey gate no longer blocks Play work.** Its dated text below
+is retained as history, not a current instruction. This does not claim that VLM training or an
+overnight survey has passed; neither is a prerequisite for the current Play milestone.
+
+**Now:** **#27, September 4 slice A — truthful movement completion.** Fix the SR60 false-stuck
+reproduction before interpreting further stationary ticks as navigation failures.
+
+**Next (recommended implementation order):**
+1. **#45 — speech wakes settled APCs.** Repair delivery before the cognition gate; this is a transport
+   bug fix and does not require building the broader #66 reaction policy first.
+2. **#27, slices B/C — consistent movement validation, then a small set of usable routes.** Start with
+   home / vegetable truck / Don's Donuts / square. Coordinate shared route evidence with #97's
+   geometry proposal rather than creating a competing map store. Keep unresolved route-choice design
+   explicit; do not remove existing scheduled-travel protection as a shortcut.
+3. **#67 — a bounded APC exchange retained by both participants**, followed by #105's Play acceptance
+   run. #46 is the older description of this same feature, not another implementation package.
+
+**Then:** #68, one activity with an observable result. #71's place identity/resolution fixes belong
+with the selected daily destinations wherever ambiguity prevents truthful arrival. #69/#70 memory
+expansion/reflection, VLM training, more survey sophistication, additional APCs, and broad refactoring
+are deferred until the small Play day works. #106 remains open, outside this first behavioral slice.
+
+**Waiting / design and live work:** #27 needs C++ movement-status integration and PIE verification;
+its route-choice contract, #67's conversation bounds/storage, and #68's one activity need explicit
+design notes before their dependent code. Full navmesh independence remains a separate experiment
+under #87, not an implicit rewrite in this queue. No new LLM or engine migration is selected here.
+
+**Loop-safe candidates:** #45's delivery/gate regression; #27 controller tests using a fake bridge;
+Play/Survey normalization and gating tests in the Needs tests section. These are bounded offline
+portions, not a claim that the entire feature can be verified without Unreal. This entry requests
+implementation handoff, not an autonomous-loop run.
+
+**Review baseline:** source at `0d4437b`, inspected 2026-09-04; no code changed and no test suite or
+PIE session run during the review. Local `world_places.db` contained 63 cell rows, 60 marked swept;
+this is a snapshot, not proof that every cell contains a traversable route. Existing source contains
+the agenda, shared map, perception, speech transport, and episodic substrate; their integration is
+the immediate work. Existing test counts elsewhere are historical and must not be carried forward.
+
+**For Claude:** begin at #27's September 4 slice A, then #45. Read the acceptance cases and reproduce
+each defect before changing it. Keep fixes small and report offline versus live evidence separately.
+The entries below are backlog requirements, not newly created or pre-approved WP specs. Routine
+implementation choices can be resolved normally; do not silently choose the flagged product designs.
+
+## Historical priorities — August 2026 (superseded by the Active view above)
 
 ### Direction reset (#62–#72): get the town out of the corn field — see "Now" below for 2026-08-19 priority
 
@@ -49,6 +97,10 @@ listed it twice and the resolver named a cell she was not standing in. Maren's d
 past 09:17 sim time.
 
 ### THE EXIT CONDITION (user, 2026-08-20) — Phase B is BLOCKED until the survey is a product
+
+> **Historical gate, superseded for this world by #105 and the user's 2026-09-04 Play direction.**
+> References to "BLOCKED", "do not start", and survey-only grading in this dated section describe
+> the August decision. Follow the current Active view; keep the original evidence below intact.
 
 **Source:** user, 2026-08-20: *"I don't think we are out of the woods yet with regards to getting
 Dufus to survey correctly. He is getting better. This perception behavior will be used by other APCs
@@ -359,6 +411,40 @@ centre; the four captures for that cell show no wall closer than the logged min 
 sits at the logged point; a fully built-over cell logs `no open ground in the cell` and is not retried.
 
 ### #105 — Dufus is a townsperson now; the surveyor persona is a template folder
+
+**Play review update 2026-09-04 — SR60 exists; short baseline, not a full-day pass.**
+The local logs contradict the latest handoff's "SR60 pending":
+`Python/worlds/MCP_World/logs/sim_runner.log` records September 1, 20:38:33–20:41:47,
+`mode=play`, agents `['dufus', 'maren']`, 11 ticks, 193.3 seconds, zero footing recoveries.
+`agent_decisions.log` has SR60 decisions: Dufus travels toward Don's, speaks, completes the
+morning-donut task by bounded model evidence, then waits; Maren remains at the truck. Repeated
+stuck reports during Dufus's wait are the #27 A reproduction. Neither actual purchase/eating nor
+a remembered APC-to-APC exchange is established by these action labels. Preserve the dated handoff;
+use this correction when resuming. Runtime logs can be overwritten, so this baseline is recorded here.
+
+**Next Play milestone (after #27 A, #45, and the necessary #27/#67 slices):**
+- Both configured active APCs load and bind visibly. If an intended active APC cannot load, report
+  its identity/error in the run log and cockpit; do not present the reduced roster as the intended
+  complete run. SR59's UTF-8 load failure is the previous reproduction; `_load_agents` currently logs
+  and skips exceptions. Broader roster editing remains #106.
+- Dufus reaches Maren at the truck, they exchange several relevant lines, reach their lunch
+  destination, and resume their own routines. Author the opportunity through existing agendas;
+  do not script the dialogue or force an invented recollection just to pass.
+- Correct approach-region arrival; no manual rescue; no false stuck events while resting.
+  Repeat the travel scenario with a temporary blocked passage. Logs show a grounded alternate
+  passage, or an explicit bounded failure when none exists, rather than repeated identical orders.
+- Both participants retain the exchange across reload/day rollover; inspect each memory and a later
+  decision influenced by the actual exchange. This is distinct from generic acquaintance counts.
+- Record per-agent trips attempted/arrived/failed, true stalls versus intentional rest, recoveries,
+  speech delivered/responded, VLM/decision call counts and available usage/cost, and elapsed time.
+  Establish a baseline before claiming a numeric latency/cost budget has passed.
+- Play offers no survey mission/sweep or place-survey captures. Do not require the entire map DB to
+  be byte-identical: visits, observations and fresh traversal evidence may still update in Play.
+- Run the pending cockpit chat check: "go to Don's Donuts" resolves a place and follows a grounded
+  trip. Keep operator-chat acceptance separate from APC-to-APC conversation acceptance.
+
+**Classification:** live/PIE acceptance, with loop-safe regressions in the owning items. No new run
+was performed on September 4. Check a longer day before declaring Play complete.
 
 **Done 2026-09-01 (user + Fable).** The survey is finished for this world (SR58: every unsurveyed
 cell left is a map-edge hill). Play mode is the work now.
@@ -789,6 +875,19 @@ verification, which folds into the #36/#37 live session.
    cost, and most of the gap it would close is closed by #86 + #81 + #77 for free.
 
 ### Needs tests (speed mode — user, 2026-08-19)
+
+**2026-09-04 Play implementation handoff:** the review did not run the suite. Tests referencing the
+removed `explore` mode are stale (`test_explore_tick.py` still calls `_pulse_explore`); the September 1
+handoff also flags `test_frontier_blocking.py`, `test_runner_api.py`, `test_sim_controller.py`, and
+`test_spool_up.py`. Restore relevant coverage for Play/Survey rather than restoring the deleted mode
+or deleting assertions merely to obtain green. Verify default/unknown mode -> Play, explicit Survey,
+and the compatibility alias `live` -> Survey. Test Play's mission/sweep/place-visual gates and Survey's
+retained behavior, using isolated fixtures rather than the live world's files.
+
+Add the meaningful #27 A/B and #45 regressions with those fixes. Run appropriate focused tests and
+the offline aggregator (`python scripts/run_tests.py` from `Python/`); record actual results and
+separate pre-existing failures. This is requested test debt for the implementation session, not a
+claim that the old speed-mode policy has already been globally changed or that any checks passed.
 
 Features built WITHOUT tests to speed up code-done → live-testing. One line per
 feature as it lands; the suite catches up here later. (Everything built before
@@ -1586,6 +1685,95 @@ cognitive, not a navmesh patch:
 ---
 
 ## 27. Navigation executive + deterministic movement controller
+
+### Play implementation slices — code/log review 2026-09-04
+
+**Status:** open; slice A is the current Now item. **Source:** September 4 user-requested review and
+implementation backlog handoff. Canonical home for the movement findings; #17 remains the completed
+coarse-routing baseline. The older progress notes below do not close these newly identified gaps.
+
+**A. Complete movement requests truthfully; do not diagnose resting as stuck.**
+
+- **Observed SR60 reproduction:** Dufus's last position was approximately `(-4533.9,-850)` against
+  command target `(-4500,-850,90)`, about 34 cm away in XY. After the donut agenda task completed,
+  he intentionally waited. Unreal continued returning `current_action: moving_to [-4500,-850,90]`.
+  The runner reported stuck at 20:40:07, 20:40:55 and 20:41:44 on September 1. This is evidence of
+  stale movement status, not proof of three physical traps.
+- **Code:** `agent_manager._observe_agent` derives `moving` from the `current_action` string;
+  `_detect_stuck` counts stationary moving ticks. C++ `HandleCommandMoveTo` sets that string, while
+  the inspected C++ component/command code has no movement-completion update. Verify Blueprint
+  behavior during integration rather than assuming the C++ audit covers Blueprint event wiring.
+- **Desired behavior:** expose movement request identity and actual lifecycle (requested, moving,
+  arrived, blocked/failed, cancelled). Reconcile engine path-following completion with endpoint
+  tolerance; stop using the descriptive string as the authority. A late completion from an old
+  request must not finish a newer one. Intentional idle/speech/observation after arrival must not
+  keep a completed request alive or trigger a recovery.
+- A command's transport `success` is not arrival. Preserve `path: none|partial|full` and
+  `moved: false` as distinct execution facts. A full path is permission to attempt movement;
+  a partial path is not destination completion. Log one terminal outcome per request.
+- **Acceptance:** fake-bridge regression for movement followed by arrival and repeated stationary
+  ticks (zero stuck events); a genuinely active blocked request still reports no progress; test
+  cancellation, request replacement/late completion, `none`, and partial paths. In PIE, repeat
+  SR60's approach and wait beyond the former three stuck reports: arrival is recorded once, no
+  recovery is triggered while resting, and settled cognition can sleep unless another event wakes it.
+- **Classification:** loop-safe Python/controller tests + C++/editor integration + live/PIE.
+
+**B. Apply movement evidence consistently across action forms.**
+
+- **Code finding:** `_plan_move` uses body clearance, shared refusal stops and ground limits for
+  directional walks. `_execute_routed_walk` sends named-place cell waypoints directly to the bridge;
+  explicit locations and character approaches also do not pass through that planner. Scheduled
+  wandering may be converted into an explicit location by `_bound_at_place_movement`. The C++ path
+  check and per-tick footing reflex are shared, but the detailed movement guards are not.
+- Ground caps currently match named compass sectors; body-relative headings may have no measured
+  ground cap. Do not infer safe ground from an unrelated nearest sector or treat an unavailable
+  measurement as clearance.
+- **Desired behavior:** a common bounded execution seam validates the actual proposed segment,
+  regardless of whether it originated from a place name, coordinates, a direction, local roaming,
+  or an approach to another APC. Reuse the existing measurements/refusal logic; retain personal
+  space and the semantic destination. A safe endpoint alone does not validate the path to it.
+- **Acceptance:** parameterized action-form cases against the same obstruction/ground gap/refused
+  patch; no action form bypasses the applicable checks. Include a body-relative heading and a
+  failed measurement. A blocked segment produces a grounded result and preserves destination intent;
+  a subsequent permitted step can progress. Verify named travel and APC approach live.
+- **Classification:** loop-safe policy/adapter tests + C++/editor for missing measurements + live/PIE.
+
+**C. Use surveyed connections and usable approach points for the first daily routes.**
+
+- **Code finding:** `route_planner.line_cells` is Bresenham; `make_route` accepts no obstacle or
+  connection evidence. Stuck can discard the route and rebuild another straight cell line.
+  `next_waypoint` treats entry into a community destination's 30 m cell as arrival. Survey stand
+  points exist, but the named-place route endpoint does not consume them; a survey camera stand
+  point is not automatically a doorway or interaction point.
+- **Desired behavior:** retain the grid as an index; represent usable approach points and known
+  traversable connections for home, truck, Don's and square. Evidence must distinguish successful
+  traversal, observed-but-untried space, unknown space, temporary blockage and persistent geometry.
+  Record provenance/freshness; a cell's swept flag is not proof of its internal connectivity.
+  Other APCs can reuse this knowledge without starting a survey mission. Coordinate with #97's
+  persistent geometry proposal in `survey_mission_plan.md` (plan-local numbering differs).
+- **Control contract to settle before dependent implementation:** the thinking LLM chooses an
+  intention/passage/detour from grounded choices; the body measures and executes it. Current
+  `_execute_world_action` deliberately rewrites scheduled directional choices into named travel
+  (SR19 protection). Introduce an explicit bounded detour/route-choice representation that retains
+  the destination; do not simply delete that protection or silently substitute the same straight
+  route when the model chose a different valid passage. A separate graph planner may enumerate
+  candidates, but must not silently become the APC's goal selector.
+- **Acceptance:** a small offline world with a blocked direct connection and a valid alternate
+  passage; choice, executed route and evidence agree. Entering the destination cell on the wrong
+  side of a fence does not count as usable arrival. A second APC reuses the successful connection;
+  a temporary obstruction does not permanently poison it. Unknown routes are labeled unknown.
+  In PIE, both APCs reach the selected daily approach points and handle a temporary blockage.
+- **Dependencies / open choices:** A/B; canonical endpoint identity with #71; connection schema and
+  route-choice action shape; use existing authored endpoints where suitable, with explicit approach
+  regions rather than moving markers or changing the grid to disguise incorrect arrival.
+- **Classification:** design decision, then loop-safe routing/storage tests + live/PIE.
+
+**Boundary for all three slices:** retain the current engine adapter during Play stabilization.
+`ProjectToWalkableGround` uses `ProjectPointToNavigation`; `HandleCommandMoveTo` uses navigation
+pathfinding and `SimpleMoveToLocation`. The current implementation is navmesh-dependent even when
+the prompt says "walkable ground". Full independence belongs to #87's separate experiment below.
+
+### Prior scope and implementation history
 
 **Status:** **APPROVED / IN PROGRESS** — authoritative scheduled-travel slice **LIVE VERIFIED
 2026-07-15**; earlier robustness slices are also built. SR14 proved correct
@@ -2534,6 +2722,38 @@ for both APCs and that "People You Know" is non-empty on a second encounter.
 
 ## 45. Deliver speech to the APCs who can hear it
 
+### Play regression — wake on unread audible speech (2026-09-04)
+
+**Current status:** transport built; cognition-gate integration defect found by source review,
+not yet reproduced in a dedicated live run. **Priority:** after #27 A, before #67.
+
+`_observe_agent` can return early for a settled APC at a mapped place. Its `mapped_event` includes
+forced cognition, proximity changes, schedule changes and active interruptions, but not unread
+speech. `_attach_heard_speech` runs later in `_perceive_and_decide`. Therefore a new line from a
+speaker already nearby can fail to wake the recipient even though transport/prompt code exists.
+This finding does not establish why any particular SR60 greeting received no reply.
+
+**Implementation scope:** check eligible unread speech before the mapped-place/scene suppression
+gates; wake cognition without requiring a proximity change or a fresh VLM frame. Keep delivery
+pending until it reaches the intended cognition input; do not advance the consumed cursor merely
+because a cheap gate peek occurred. Use one consistent eligibility rule for hearing and delivery.
+Preserve self-exclusion, range, bounded storage and no historical replay after walking into range.
+Record dropped/expired messages if capacity or age limits prevent delivery. Publish a spoken event
+only after successful speech execution (the current action path records utterances even if the
+bridge action fails). A recipient may choose silence; delivery must be distinguishable from response.
+
+**Acceptance:** a settled mapped APC, unchanged position/proximity and unchanged view, receives one
+new audible line in its next eligible decision input; a second line from the same stationary speaker
+wakes it again. Each line is delivered once; self/out-of-range lines do not wake; an early skipped
+or failed cognition path does not silently consume undelivered input. A failed `speak_to` produces
+no heard event. Test the full gate-to-prompt path, not just `_attach_heard_speech` in isolation.
+Live: one APC already settled at the truck can receive and answer another APC's new line.
+
+**Classification:** loop-safe runtime tests, then live/PIE verification. Broader #66 reaction policy
+is separate and must not delay this delivery repair. Reuse the existing utterance transport.
+
+### Transport history
+
 **Status:** **DIAGNOSED 2026-07-24, NOT STARTED** · **Source:** Claude code/data audit ·
 **Blocks:** #10.5 reaction gate, #12.2 interaction memory, #46
 
@@ -2566,6 +2786,9 @@ actually fire. **Classification:** loop-safe runtime/prompt work plus live verif
 ---
 
 ## 46. Multi-turn APC-to-APC conversation with retained content
+
+**2026-09-04 reconciliation:** #67 is the canonical implementation item for this same feature.
+Retain the earlier rationale/design questions here; do not implement a second conversation system.
 
 **Status:** **PROPOSED 2026-07-24** · **Depends on:** #44, #45 · **Relates to:** #12.2
 
@@ -3273,7 +3496,9 @@ not become the session.
 
 ## 66. The reaction gate (`should_react`)
 
-**Status:** **OPEN 2026-08-12, design small** · **Phase B** · MASTER_PLAN §14, never built · **BLOCKED 2026-08-20** until the overnight-survey exit condition is met (see *THE EXIT CONDITION*)
+**Status:** **OPEN; survey gate lifted for this world 2026-09-04** · **Phase B** · MASTER_PLAN §14.
+The August 20 block is historical (see Active view). Broader reaction policy remains design work;
+#45's unread-speech gate repair is the immediate prerequisite and does not need a new LLM call.
 
 The piece that makes a routine interruptible, and the source of emergence. Cheap heuristic for tier
 2/3, LLM for tier 1. **Every input already exists:** `observation["heard"]`, `observation["recognized"]`,
@@ -3288,7 +3513,33 @@ carry it.
 
 ## 67. APC↔APC conversation, summarized into both streams
 
-**Status:** **OPEN 2026-08-12** · **Phase B** · MASTER_PLAN Milestone 4 + success criterion #2 · **BLOCKED 2026-08-20** until the overnight-survey exit condition is met (see *THE EXIT CONDITION*)
+**Status:** **OPEN; survey gate lifted for this world 2026-09-04** · **Phase B** · MASTER_PLAN
+Milestone 4 + success criterion #2. Canonical implementation item; supersedes duplicate scope in #46.
+
+**September 4 implementation findings:** `_record_episode` retains time/place/people seen/action
+type/outcome, but no spoken or heard text. `_episode_lines` also renders generic action/place recall.
+The transient utterance buffer and acquaintance counters cannot by themselves prove durable recall
+of an exchange. Do not interpret the existing memory substrate as a completed conversation feature.
+
+**Bounded first slice:** extend the existing speech/interrupt/memory machinery with participant and
+conversation identity, attributed delivered turns, a close condition, and a bounded summary/event in
+both participants' episodic streams. Preserve actual commitments and their source turn IDs. Retrieve
+that content in a later prompt and preserve it through the existing episodic consolidation path.
+Unsuccessful speech, imagined bystanders, and undelivered lines are not shared conversation facts.
+
+**Design choices to record before dependent code:** reuse #38 as a conversation interruption or a
+lighter state; explicit turn/time bounds and agenda-resume behavior; retention of source turns and
+summary generation. Prefer extending the existing episodic store over a parallel memory system.
+These choices were not selected by the review. Full #69 memory migration and #70 reflection are not
+required to prove one retained exchange.
+
+**Acceptance:** after #45 delivery works, two APCs exchange multiple attributed turns, close/yield
+within the chosen bound, and resume their suspended routines without losing destination intent.
+Both stores retain equivalent factual content across restart/day rollover and consolidation; later
+recall exposes it and a decision can respond to it. Include interruption, failed speech and partner
+departure cases. Do not require every audible line to receive a reply.
+
+**Classification:** design decision, then loop-safe lifecycle/memory tests and live/PIE verification.
 
 The **transport is done**: `_record_utterance` → earshot → `_attach_heard_speech`. What is missing is
 turn-taking, a close condition, and the exchange being summarized into **both** agents' memory. That
@@ -3303,7 +3554,22 @@ from **both** `episodes.jsonl` files the next day.
 
 ## 68. Work that leaves a mark
 
-**Status:** **OPEN 2026-08-12, needs one design call** · **Phase B** · **BLOCKED 2026-08-20** until the overnight-survey exit condition is met (see *THE EXIT CONDITION*)
+**Status:** **OPEN, needs one design call; survey gate lifted for this world 2026-09-04** · **Phase B**.
+Scheduled after the initial travel/conversation milestone, not behind another overnight survey.
+
+**September 4 review addition:** distinguish activity evidence from schedule bookkeeping.
+`agenda.advance` can complete an active time-based task when its window ends, and bounded model
+confirmation can also complete a task. Those are useful policies, but neither alone proves that
+stock changed, a stall opened, or an item was purchased. Preserve the completion reason; do not
+report a fulfilled world interaction merely because the block expired or the model narrated one.
+
+Choose one action and persistent outcome (for example stall-open state, stock change, or a placed
+crate), with its owner/store and observable representation, before dependent implementation.
+**Acceptance:** the action produces one verifiable state change; another APC can observe and recall
+it; a failed action leaves state unchanged; repeated processing does not duplicate the effect.
+An expired window is distinguishable from verified activity success. Avoid an economy or inventory
+rewrite. **Classification:** design decision, loop-safe state/agenda tests, C++/editor if needed for
+the chosen representation, then live/PIE.
 
 "Tend the vegetables and greet customers" is currently **pantomime**: nothing in the world changes, so
 no one can observe it, remember it, or react to it. Until an APC's work alters shared state, "virtual
@@ -3343,6 +3609,16 @@ reflecting on.
 ---
 
 ## 71. Place names that survive being used by someone else
+
+**2026-09-04 scope note:** coordinate this with #27 C's first daily destinations. Preserve an
+unambiguous place identity, owner, display label and approach region through resolution, agenda
+facts and recall. Inspect actual precedence before changing it: authored owned places already have
+priority in `_resolve_place_endpoint`, so the historical "home" collision below is not proof that
+all current authored-home queries still fail. SR60's Maren thoughts report a truck/community-label
+mismatch; that is evidence to reproduce, not a reason to move her actor or rename the world blindly.
+Acceptance: each APC's home resolves to its own intended endpoint, the truck has one consistent
+identity in schedule/context, and ambiguous names produce explicit ambiguity rather than an arbitrary
+substring match. Keep broader naming cleanup outside the first Play slice.
 
 **Status:** **OPEN 2026-08-12** · **Phase D** · Prerequisite for anyone navigating by Dufus's map
 
@@ -4206,6 +4482,25 @@ requested and actual length whenever they differ.
 
 ## 87. Should the lizard brain be an LLM? — analysis, parked behind the overnight run
 
+**2026-09-04 review extension — navmesh independence is a separate experiment.**
+The overnight gate is historical; this item remains analysis/design, outside the first Play fixes.
+The user wants the thinking and vision models to find good passages with reduced reliance on Unreal
+navmesh. Current C++ ground projection, path tests and movement execution depend on navigation data;
+renaming these facts in prompts does not remove that dependency.
+
+Recommended responsibility boundary: VLM interprets terrain/openings/people; thinking LLM selects
+intentions and grounded passages; the body measures capsule clearance, physical floor support,
+slope/step limits and actual progress; the shared map retains evidence. This recommendation does not
+select a third model or replace measured physical limits with model estimates.
+
+**Proposed acceptance experiment, not current implementation scope:** an isolated small course with
+navmesh disabled, containing open ground, a narrow gap, a step/slope and an unsupported edge. Use
+physical floor/collision measurements and bounded movement; record which segments succeed/refuse,
+why, progress and interventions. Prove actual movement without navigation projection/path queries;
+do not treat inability to project to a navmesh as evidence that physical floor is absent. Compare
+with the current adapter on the same course. Choose the experiment's movement primitive and limits
+before implementation. **Classification:** design decision + C++/editor + live/PIE.
+
 **Status:** ANALYSIS ONLY — deliberately not scheduled. **Source:** user, 2026-08-20: *"I'm starting to
 think lizard brain needs to be more than a bunch of functions, but an LLM itself. Not sure it needs to be
 integrated with a VLM, but maybe. This way the persona LLM living in the abstract world has a backstop
@@ -4509,6 +4804,9 @@ against a seeded world: 10 stated / 2 measured / 1 lapsed, tooltip reading *"NO-
 dufus's own body proved it (3 attempts)"*.
 
 ## Order of work, and what is explicitly NOT proposed
+
+> **Historical August direction.** This section is retained for rationale only; current order and
+> scope are in the September 4 Active view, including #27's bounded Play navigation work.
 
 **Do Phase A in order — #62, #63, #64, #65 — then run the sim with both APCs and grade the run on
 Maren's day, not on Dufus's footing.** Most of Phase A is configuration and deletion. The carried live
@@ -5479,8 +5777,8 @@ layer = #97, corpus completeness = #98, doctrine = #99, overnight harness = #100
   banners and old queues are evidence, not instructions.
 - **The historical #32 → #33 → #27 direction and #29 → #20 → #30 offline queue are complete or
   superseded.** #38 interruption architecture is now offline-complete. Current priority is only the
-  Active view at the top: #37 chat, then #36 ordered goals; #16 authoring and #35 expeditions wait on
-  their listed choices.
+  dated Active view at the top. As of September 4: #27 A, #45, #27 B/C, #67 and #105 acceptance;
+  historical chat/ordered-goal and survey-first queues do not override that view.
 - **#4's harness is built** (`run_tests.py`, `preflight.py`, `autonomous_loop.md`);
   running the live sim autonomously is still gated by Unreal/PIE reliability and inference cost.
 - **Verification uses `python scripts/run_tests.py`.** Never copy an old suite count forward;
