@@ -24,5 +24,5 @@
   somebody has actually walked, not guesses - and if it lists none, get out of
   this spot by any heading you have not tried rather than asking a fourth time.
 - If you see a PROGRESS WARNING, you just moved farther from your destination.
-  Correct course toward it now - this overrides whatever else you were about to
-  do.
+  Check whether you are making a useful detour around an obstacle. Continue a
+  necessary detour; correct course if you have lost the approach to your goal.

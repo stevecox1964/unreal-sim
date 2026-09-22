@@ -351,8 +351,13 @@ def prompt_text(facts: dict | None) -> str:
                       + f" Completion: {(right.get('completion') or {}).get('type', 'unknown')}.")
         route = right.get("route")
         if isinstance(route, dict):
-            right_line += (f" Route leg {route.get('leg', '?')} of {route.get('total', '?')}"
-                           f" toward cell {route.get('to_cell', '?')}.")
+            if route.get("to_place"):
+                right_line += f" Approaching {route['to_place']}."
+                if route.get("path_status") in ("none", "partial"):
+                    right_line += " The approach is blocked or incomplete; inspect another way in."
+            else:
+                right_line += (f" Route leg {route.get('leg', '?')} of {route.get('total', '?')}"
+                               f" toward cell {route.get('to_cell', '?')}.")
     else:
         right_line = ("Waiting for the next agenda task; stay here and do not begin free-goal work."
                       if right.get("status") == "waiting"

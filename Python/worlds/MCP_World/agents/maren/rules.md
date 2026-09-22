@@ -1,7 +1,7 @@
 # Rules
 
 @import doctrine/basics.md
-@import doctrine/ground.md
+@import doctrine/place_travel.md
 @import doctrine/movement.md
 @import doctrine/obstacles.md
 

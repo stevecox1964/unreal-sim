@@ -525,7 +525,7 @@ class AgentManager:
         self._footing_recoveries: dict[str, int] = {}  # agent_id -> lifetime count of footing reflex recoveries (#101)
         self._no_progress: dict[str, int] = {}      # agent_id -> consecutive "moving but didn't advance" ticks
         self._last_grid_place: dict[str, tuple] = {}  # agent_id -> (grid, place), reported even when LLM skipped
-        self._routes: dict[str, dict] = {}          # agent_id -> cached grid-first route (#17/WP8)
+        self._routes: dict[str, dict] = {}          # agent_id -> place target and path progress
         self._live_pos: dict[str, dict] = {}        # agent_id -> {x,y,yaw} last observed (#18 live map)
         self._utterances: list[dict] = []           # recent speech, deliverable to hearers (#45)
         self._heard_seq: dict[str, int] = {}        # agent_id -> last utterance id consumed (#45)
@@ -2705,9 +2705,9 @@ class AgentManager:
         return directive
 
     def _attach_route_progress(self, agent_id: str, observation: dict) -> None:
-        """Narrate the cached grid-first route on a travel tick (#17/WP8).
+        """Describe progress toward the remembered place on a travel tick.
 
-        Attaches ``schedule["route"] = {leg, total, to_cell, heading, delta_cm}``
+        Attaches place, heading, distance and engine path status to the schedule
         when the previous tick's cached route is for this directive's place —
         pure legibility for the prompt and the decision log; the LLM contract
         (walk_to target_location) is unchanged. ``delta_cm`` is the change in
@@ -2723,9 +2723,7 @@ class AgentManager:
         if (directive.get("status") != "travel" or not route
                 or route["destination"] != directive.get("place")):
             return
-        path, leg = route["path"], route["leg"]
-        cell = path[min(leg, len(path) - 1)]
-        center = self.world_grid.cell_center(*cell)
+        center = route["target_xy"]
         xyz = _loc_xyz(observation.get("location"))
         heading = None
         if center is not None and xyz is not None:
@@ -2741,9 +2739,9 @@ class AgentManager:
                 raw_delta = distance_cm - last_distance_cm
                 delta_cm = 0.0 if abs(raw_delta) < _PROGRESS_NOISE_CM else raw_delta
             route["last_distance_cm"] = distance_cm
-        directive["route"] = {"leg": min(leg, max(len(path) - 1, 1)),
-                              "total": max(len(path) - 1, 1),
-                              "to_cell": list(cell), "heading": heading,
+        directive["route"] = {"to_place": route["destination"], "heading": heading,
+                              "distance_m": round(distance_cm / 100.0, 1) if xyz else None,
+                              "path_status": route.get("path_status"),
                               "delta_cm": delta_cm}
         agenda_facts = observation.get("agenda") or {}
         right_now = agenda_facts.get("right_now") or {}
@@ -2942,10 +2940,8 @@ class AgentManager:
                             observation: dict, seed_if_unknown: bool = False) -> bool | None:
         """Is the agent physically at the active block's place? (None = unknown.)
 
-        Resolves the place through the same chain as walk_to: a community-named
-        cell means "there" = standing in that grid cell (a 30 m district); an
-        owned place cell means "there" = inside its extent box (9x9 m around
-        the anchor+offset point, #11.2).
+        Resolves the same place and square extent as walk_to. Crossing a survey
+        district boundary does not establish arrival at a destination.
 
         ``seed_if_unknown`` (the agent's first schedule step of a run — wake):
         if the place resolves to nothing at all, it is created as the agent's
@@ -2959,12 +2955,12 @@ class AgentManager:
             return None
         xyz = _loc_xyz(observation.get("location"))
         col, row = self._cell_col_row(observation.get("grid"))
-        if xyz is None or col is None:
+        if xyz is None:
             return None
 
         end = self._resolve_place_endpoint(agent_id, name)
         if end is None:
-            if not seed_if_unknown:
+            if not seed_if_unknown or col is None:
                 return None
             center = self.world_grid.cell_center(col, row)
             if center is None:
@@ -2983,11 +2979,7 @@ class AgentManager:
                        if self._manifest_present else ""))
                 return True
             return None
-        if float(end.get("extent_cm") or 0.0) <= 0:
-            return (col, row) == tuple(end["cell"])
-        half = float(end["extent_cm"]) / 2.0
-        return (abs(xyz[0] - end["xy"][0]) <= half
-                and abs(xyz[1] - end["xy"][1]) <= half)
+        return route_planner.at_place(end, (xyz[0], xyz[1]))
 
     def _act_agent(self, agent: Agent, decision, observation: dict | None) -> dict:
         """Phase 3: validate decision, execute in Unreal, persist memory."""
@@ -3236,10 +3228,9 @@ class AgentManager:
     def _resolve_place_endpoint(self, agent_id: str, name: str) -> dict | None:
         """Resolve a place name to a travel endpoint, or None if unknown.
 
-        The shared resolution chain (#11.2, grid-first): a community-named
-        cell wins — endpoint is the cell itself (``extent_cm`` 0.0: being in
-        the cell is arrival); otherwise an APC-owned place cell (this agent's
-        own entries preferred) — endpoint is its anchor + extent box. Returns
+        Prefer a specific authored or remembered place over a district label.
+        Community-only names approach the survey stand point (center for old
+        surveys) with a place-sized extent, never whole-district arrival. Returns
         ``{"cell": (c, r), "xy": (x, y), "extent_cm": float}``.
         """
         if self.place_db is None:
@@ -3247,10 +3238,9 @@ class AgentManager:
 
         owned = self.place_db.find_owned_place(name, preferred_owner=agent_id)
 
-        # Authored markers are world ground truth. They beat runtime community
-        # labels and wake seeds even when the authored name is a safe fuzzy
-        # match (SR11: "vegitable truck" vs "the vegetable truck").
-        if owned is not None and owned.get("source") == "authored":
+        # The owned store already ranks authored, learned and wake-seeded
+        # records. Use that concrete place before a broad community label.
+        if owned is not None:
             endpoint = self._owned_place_endpoint(owned)
             if endpoint is not None:
                 return endpoint
@@ -3259,11 +3249,11 @@ class AgentManager:
         if cell is not None:
             center = self.world_grid.cell_center(*cell)
             if center is not None:
-                logger.info(f"Resolved place '{name}' -> cell {cell} center {center}")
-                return {"cell": cell, "xy": center, "extent_cm": 0.0}
-
-        if owned is not None:
-            return self._owned_place_endpoint(owned)
+                place = self.place_db.get_place(*cell) or {}
+                if place.get("stand_x") is not None and place.get("stand_y") is not None:
+                    center = (float(place["stand_x"]), float(place["stand_y"]))
+                return {"cell": cell, "xy": center, "extent_cm": PLACE_EXTENT_CM,
+                        "kind": "community", "name": place.get("name") or name}
         return None
 
     def _owned_place_endpoint(self, owned: dict) -> dict | None:
@@ -3277,7 +3267,8 @@ class AgentManager:
         )
         return {"cell": (owned["col"], owned["row"]),
                 "xy": (center[0] + owned["dx"], center[1] + owned["dy"]),
-                "extent_cm": float(owned.get("extent_cm") or PLACE_EXTENT_CM)}
+                "extent_cm": float(owned.get("extent_cm") or PLACE_EXTENT_CM),
+                "kind": "owned", "name": owned["name"]}
 
     def _resolve_place_target(self, agent_id: str, name: str, observation: dict) -> list[float] | None:
         """Resolve a place name to a walk target ``[x, y, z]``, or None.
@@ -3356,17 +3347,21 @@ class AgentManager:
         end = self._resolve_place_endpoint(agent_id, destination_name)
         if end is None:
             return None
-        # Draw the planned legs (#17/WP8) when the cached route is for this
-        # same destination — the corridor image shows the plan, not just A/B.
-        cached = self._routes.get(agent_id)
-        path = (cached["path"] if cached and cached["destination"] == destination_name
-                and cached["path"][-1] == end["cell"] else None)
+        xyz = _loc_xyz(observation.get("location"))
+        if xyz is None:
+            return None
         route = route_map.build_route_map(
             self.place_db, self.world_grid, (col, row), end["cell"],
-            destination_name=destination_name, path=path,
+            destination_name=destination_name,
         )
         if route is None:
             return None
+        # Survey districts are background knowledge, not movement waypoints.
+        # Report the actual place bearing even when both positions share a cell.
+        dx, dy = end["xy"][0] - xyz[0], end["xy"][1] - xyz[1]
+        route["to"].update(name=destination_name,
+                           bearing=yaw_to_compass(math.degrees(math.atan2(dy, dx))),
+                           distance_m=round(math.hypot(dx, dy) / 100.0, 1))
         image = route_map.render_map_image(
             route, self._agents_dir / agent_id / "observations" / "route_map.png"
         )
@@ -5401,58 +5396,51 @@ class AgentManager:
         return float(result.get("clearance_cm", 0.0) or 0.0)
 
     def _execute_routed_walk(self, agent: Agent, action: dict, observation: dict) -> dict:
-        """Execute a walk_to-by-name as the current leg of a grid-first route
-        (#17/WP8).
+        """Send a remembered place to the existing engine pathfinder.
 
-        Plans a straight cell line to the destination once, caches it per
-        agent, and walks the current leg's cell center each tick — the leg
-        state machine (``route_planner.next_waypoint``) advances on cell
-        entry with skip-ahead. Stuck drops the route (replan from where the
-        agent really is). ``None`` from the state machine means arrived: the
-        route is dropped and no walk is issued (the directive flips to "act"
-        on the next decide). Unknown names pass through unchanged (bridge's
-        graceful idle); no position/cell/bounds falls back to today's direct
-        walk to the endpoint.
+        Grid coordinates index the place store; they never become waypoints.
+        Physical arrival uses the same place extent as the agenda. Engine path
+        failures remain facts for cognition and permit local recovery next tick.
         """
         agent_id = agent.agent_id
         name = action["target_location"]
         end = self._resolve_place_endpoint(agent_id, name)
         if end is None:
+            self._routes.pop(agent_id, None)
             return self.bridge.execute_action(agent.bound_unreal_actor_name, action)
 
         xyz = _loc_xyz(observation.get("location"))
-        col, row = self._cell_col_row(observation.get("grid"))
-        z = xyz[2] if xyz else 0.0
-        if xyz is None or col is None or not self.world_grid.has_bounds:
-            return self.bridge.execute_action(
-                agent.bound_unreal_actor_name,
-                {**action, "location": [end["xy"][0], end["xy"][1], z]})
-
-        if observation.get("stuck"):
-            # Wedged mid-route: drop the plan, re-line from where we really are.
+        if xyz is None:
+            return {"status": "error", "error": f"cannot approach {name}: position unavailable"}
+        if route_planner.at_place(end, (xyz[0], xyz[1])):
             self._routes.pop(agent_id, None)
+            return {"status": "accepted", "action": "idle", "note": f"arrived at {name}"}
 
         route = self._routes.get(agent_id)
         if (route is None or route["destination"] != name
-                or route["path"][-1] != end["cell"]):
-            route = route_planner.make_route((col, row), end["cell"], end["xy"],
-                                             end["extent_cm"], name)
+                or route["target_xy"] != end["xy"]
+                or route["extent_cm"] != end["extent_cm"] or observation.get("stuck")):
+            route = {"destination": name, "target_xy": end["xy"],
+                     "extent_cm": end["extent_cm"]}
             self._routes[agent_id] = route
-            logger.info(f"[{agent_id}] route planned: {len(route['path']) - 1} leg(s) "
-                        f"from ({col},{row}) to {end['cell']} for '{name}'")
+            logger.info("[%s] approaching place '%s' at %s", agent_id, name, end["xy"])
 
-        wp = route_planner.next_waypoint(route, (col, row), (xyz[0], xyz[1]),
-                                         self.world_grid)
-        if wp is None:
-            self._routes.pop(agent_id, None)
-            return {"status": "accepted", "action": "idle",
-                    "note": f"arrived at {name}"}
-
-        result = self.bridge.execute_action(
-            agent.bound_unreal_actor_name,
-            {**action, "location": [wp["x"], wp["y"], z]})
-        if isinstance(result, dict) and not result.get("error"):
-            result["note"] = f"leg {wp['leg']}/{wp['total']} -> cell {wp['cell']}"
+        # Target the anchor, not a point backed off from it: the latter can sit
+        # across a wall and also stops short by the engine's acceptance radius.
+        target = [end["xy"][0], end["xy"][1], xyz[2]]
+        observation["_resolved_target"] = target
+        result = self.bridge.execute_action(agent.bound_unreal_actor_name,
+                                            {**action, "location": target})
+        if isinstance(result, dict):
+            path = result.get("path")
+            route["path_status"] = path
+            if result.get("error") or path == "none" or result.get("moved") is False:
+                route["path_status"] = "none"
+                result["note"] = f"cannot reach {name} from here; inspect another approach"
+            elif path == "partial":
+                result["note"] = f"incomplete path to {name}; destination not yet reached"
+            else:
+                result.setdefault("note", f"approaching {name}")
         return result
 
     def _execute_world_action(self, agent: Agent, action: dict, observation: dict) -> dict:
@@ -5473,15 +5461,15 @@ class AgentManager:
         if t == "observe_heading":
             return self._execute_sweep_observe(agent, action, observation)
 
-        # A named schedule trip owns ordinary locomotion.  The LLM may still
-        # describe a facing-relative step (the SR19 failure was "forward"
-        # while Dufus faced west), but execution must keep following the
-        # deterministic cell route to the scheduled place.  Keep blocker/
-        # recovery policy separate; routed walks already replan from the
-        # observed cell when the observation reports ``stuck``.
+        # Keep ordinary travel focused on the named goal. A blocked/incomplete
+        # engine path or a stuck body permits the model's local recovery step.
         schedule = observation.get("schedule") or {}
         scheduled_place = str(schedule.get("place") or "").strip()
+        travel_route = self._routes.get(agent.agent_id) or {}
+        travel_blocked = (travel_route.get("destination") == scheduled_place
+                          and travel_route.get("path_status") in ("none", "partial"))
         if (schedule.get("status") == "travel" and scheduled_place
+                and not travel_blocked and not observation.get("stuck")
                 and not isinstance(getattr(agent, "active_interrupt", None), dict)
                 and (t == "wander" or (t == "walk_to" and action.get("direction")))):
             action = {"type": "walk_to", "target_location": scheduled_place}
@@ -5562,11 +5550,7 @@ class AgentManager:
                         "note": f"walk {direction} blocked: {result.get('error')}"}
             return result
 
-        # walk_to a named place ("village square") — grid-first routing
-        # (#17/WP8): resolve the name to an endpoint, then walk the current
-        # LEG of a cell-by-cell plan instead of beelining the final position
-        # (greedy-by-vision travel orbits when the destination isn't in
-        # frame). The LLM contract is unchanged; only execution is legged.
+        # Resolve the named place and let the engine find the physical path.
         if (t == "walk_to" and isinstance(action.get("target_location"), str)
                 and not action.get("location") and not action.get("target_actor")):
             return self._execute_routed_walk(agent, action, observation)

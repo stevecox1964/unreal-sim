@@ -132,13 +132,13 @@ def test_resolver_order():
         obs = {"location": {"x": 1000.0, "y": -500.0, "z": 90.0}}
         # cell (5,5) is grid index (0,0) -> center (200, 200) for this bounds set.
         mgr.place_db.set_name("dufus", 5, 5, "village square", "T0")
-        # An owned place sharing the community name, elsewhere — must NOT win.
+        # A specific place sharing the community name takes precedence.
         mgr.place_db.add_owned_place("maren", 6, 5, "village square", dx=50.0, dy=50.0)
         # An owned-only name in the community-named cell.
         mgr.place_db.add_owned_place("maren", 5, 5, "My Home", dx=120.0, dy=-80.0)
 
         target = mgr._resolve_place_target("maren", "village square", obs)
-        check("community name beats owned shadow", target == [200.0, 200.0, 90.0])
+        check("specific place beats community label", target == [650.0, 250.0, 90.0])
 
         target = mgr._resolve_place_target("maren", "my home", obs)
         check("owned place -> anchor + offset", target == [320.0, 120.0, 90.0])

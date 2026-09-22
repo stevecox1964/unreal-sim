@@ -1743,23 +1743,34 @@ def _schedule_note(directive: dict | None) -> str:
                 "your rules.")
     intent = directive.get("intent", "")
     if directive.get("status") == "travel" and directive.get("place"):
-        # Grid-first route narration (#17/WP8): legibility only — the walk_to
-        # contract below is unchanged; the manager executes it leg by leg.
+        # Place progress and engine reachability; retain old narration for
+        # previously recorded route payloads.
         r = directive.get("route")
         en_route = ""
         if r:
             heading = f", heading {r['heading']}" if r.get("heading") else ""
-            en_route = (f"You are en route: leg {r['leg']} of {r['total']}{heading} "
-                        f"toward cell ({r['to_cell'][0]}, {r['to_cell'][1]}).\n")
+            if r.get("to_place"):
+                en_route = f"You are en route to {r['to_place']}{heading}.\n"
+                if r.get("distance_m") is not None:
+                    en_route += f"The remembered place is {r['distance_m']}m away.\n"
+                if r.get("path_status") in ("none", "partial"):
+                    en_route += ("You cannot reach the destination by this approach yet. "
+                                 "Look for an entrance or another accessible approach; "
+                                 "you may observe or take a local directional step. "
+                                 "Do not repeat the blocked order or claim arrival.\n")
+            else:
+                en_route = (f"You are en route: leg {r['leg']} of {r['total']}{heading} "
+                            f"toward cell ({r['to_cell'][0]}, {r['to_cell'][1]}).\n")
             delta_cm = r.get("delta_cm")
             if delta_cm is not None and delta_cm > 0:
                 en_route += (
                     f"PROGRESS WARNING: your last move took you {round(delta_cm / 100)}m "
-                    f"FARTHER from your destination, not closer. Correct course toward it "
-                    f"now — this overrides any other movement urge.\n")
+                    f"FARTHER from your destination. Check your approach; a necessary "
+                    f"detour around an obstacle can temporarily increase this distance.\n")
         return (f"{en_route}{intent}\nThis is your priority right now: use walk_to with "
                 f"target_location \"{directive['place']}\" and keep going until you "
-                f"arrive. Do NOT start the scheduled activity on the way — even if "
+                f"arrive, using local observation and recovery if the approach is blocked. "
+                f"Do NOT start the scheduled activity on the way — even if "
                 f"it involves people, it happens at the destination. What is worth "
                 f"a brief pause on the way is set by your rules.")
     if directive.get("place"):

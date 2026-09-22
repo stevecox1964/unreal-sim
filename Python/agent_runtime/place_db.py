@@ -382,7 +382,7 @@ class PlaceDB:
         """
         with self._connect() as conn:
             cell = conn.execute(
-                "SELECT name, place_image_id FROM place_cells "
+                "SELECT name, place_image_id, stand_x, stand_y FROM place_cells "
                 "WHERE col=? AND row=? AND name IS NOT NULL",
                 (col, row),
             ).fetchone()
@@ -409,6 +409,8 @@ class PlaceDB:
         compass = {d: labels[:_MAX_LABELS_PER_DIRECTION] for d, labels in compass.items()}
         return {
             "name": cell["name"],
+            "stand_x": cell["stand_x"],
+            "stand_y": cell["stand_y"],
             "compass": compass,
             "place_image_id": cell["place_image_id"],
             "place_image_path": visual["image_path"] if visual else None,

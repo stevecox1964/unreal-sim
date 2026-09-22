@@ -131,18 +131,17 @@ def test_the_real_world_agents_share_movement_doctrine():
     check("maren can now name the action she reached for in SR46",
           "refuse_cell" in maren)
 
-    # Character stays character — this is not a merge of the two agents.
-    check("dufus keeps the surveyor's suppression",
-          "Do NOT stop for strangers" in dufus)
-    check("maren does NOT inherit the surveyor's suppression",
-          "Do NOT stop for strangers" not in maren)
+    surveyor = rules("surveyor")
+    check("townspeople can enter unfamiliar ground",
+          "Unsurveyed means unknown, not forbidden" in dufus
+          and "Unsurveyed means unknown, not forbidden" in maren)
+    check("townspeople do not inherit the indoor prohibition",
+          "indoors is never ground" not in dufus and "indoors is never ground" not in maren)
+    check("surveyor keeps the outdoor survey policy", "indoors is never ground" in surveyor)
     check("maren keeps her own posture", "stay at the truck" in maren)
-    check("dufus alone gets the survey doctrine", "survey_here" in dufus)
-    check("maren is not told how to survey", "survey_here" not in maren)
-
-    # The point of the split: doctrine is one file, not two copies that drift.
-    check("maren is no longer a stub compared to dufus",
-          len(maren.splitlines()) > 80)
+    check("dufus is social", "Stopping to talk" in dufus)
+    check("survey instructions belong to the surveyor",
+          "survey_here" in surveyor and "survey_here" not in dufus and "survey_here" not in maren)
 
 
 def test_agent_load_resolves_imports():

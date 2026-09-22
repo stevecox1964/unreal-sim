@@ -156,22 +156,22 @@ def test_executor_walks_legs():
 
         result = mgr._execute_world_action(maren, dict(WALK), _obs(200.0, 200.0))
         sent = bridge.calls[-1][1]
-        check("bridge got the LEG waypoint, not the final anchor",
-              sent["location"] == [600.0, 200.0, 90.0])
-        check("result note narrates the leg", result.get("note") == "leg 1/3 -> cell (6, 5)")
+        check("bridge targets the remembered place directly",
+              sent["location"] == [1520.0, 120.0, 90.0])
+        check("result names the place", result.get("note") == "approaching the vegetable truck")
         check("route cached for the agent", "maren" in mgr._routes)
 
         # Two cells later (skip-ahead), the walk targets the destination cell.
         mgr._execute_world_action(maren, dict(WALK), _obs(1000.0, 200.0))
         sent = bridge.calls[-1][1]
-        check("mid-path tick walks the following leg",
-              sent["location"] == [1400.0, 200.0, 90.0])
+        check("mid-trip tick retains the place target",
+              sent["location"] == [1520.0, 120.0, 90.0])
 
         # In the destination cell but outside the box: box-edge fine-approach.
         mgr._execute_world_action(maren, dict(WALK), _obs(1200.0, 120.0))
         sent = bridge.calls[-1][1]
-        check("final approach stops at the box edge",
-              sent["location"] == [1520.0 - 100.0, 120.0, 90.0])
+        check("final approach targets the anchor",
+              sent["location"] == [1520.0, 120.0, 90.0])
 
         # Inside the box: no walk issued, route popped, honest arrival note.
         n_calls = len(bridge.calls)
@@ -197,7 +197,7 @@ def test_scheduled_named_travel_overrides_relative_steering():
 
         sent = bridge.calls[-1][1]
         check("scheduled destination replaces relative westward steering",
-              sent["location"] == [600.0, 200.0, 90.0])
+              sent["location"] == [1400.0, 200.0, 90.0])
         check("scheduled destination owns the cached route",
               mgr._routes["dufus"]["destination"] == "village square")
 
@@ -217,7 +217,7 @@ def test_executor_replans():
         mgr._execute_world_action(maren, dict(WALK), _obs(600.0, 200.0, stuck=True))
         second = mgr._routes["maren"]
         check("stuck replans from where the agent really is",
-              second is not first and second["path"][0] == (6, 5))
+              second is not first and second["target_xy"] == (1520.0, 120.0))
 
         # A different destination re-plans too.
         mgr._execute_world_action(
@@ -225,7 +225,7 @@ def test_executor_replans():
             _obs(600.0, 200.0))
         check("destination change re-plans",
               mgr._routes["maren"]["destination"] == "village square"
-              and mgr._routes["maren"]["path"][-1] == (5, 8))
+              and mgr._routes["maren"]["target_xy"] == (200.0, 1400.0))
 
 
 def test_executor_fallbacks():
@@ -265,11 +265,9 @@ def test_at_place_wander_stays_inside_place():
 
         bounded = mgr._bound_at_place_movement(dufus, {"type": "wander"}, obs)
         target = bounded.get("location")
-        target_cell = GRID.locate(target[0], target[1])
         check("wander becomes a deterministic bounded walk", bounded["type"] == "walk_to")
-        check("bounded wander remains in scheduled cell",
-              (target_cell["col"], target_cell["row"]) == (5, 5))
-        check("boundary wander turns back into the place", target[0] < 390.0)
+        check("bounded wander remains in the place extent",
+              abs(target[0] - 200.0) <= 450 and abs(target[1] - 200.0) <= 450)
 
 
 def test_nearby_apcs_and_perception_evidence():
@@ -315,15 +313,15 @@ def test_schedule_route_narration():
         mgr._attach_route_progress("maren", obs)
         r = obs["schedule"].get("route")
         check("travel directive carries the route narration",
-              r == {"leg": 1, "total": 3, "to_cell": [6, 5], "heading": "E",
-                    "delta_cm": None})
+              r == {"to_place": "the vegetable truck", "heading": "E",
+                    "distance_m": 13.2, "path_status": None, "delta_cm": None})
         check("no progress warning on the first travel tick (nothing to compare)",
               "PROGRESS WARNING" not in llm_router._schedule_note(obs["schedule"]))
 
         note = llm_router._schedule_note(obs["schedule"])
-        check("prompt narrates the leg",
-              "en route: leg 1 of 3" in note and "heading E" in note
-              and "cell (6, 5)" in note)
+        check("prompt narrates the place",
+              "en route to the vegetable truck" in note and "heading E" in note
+              and "toward cell" not in note)
         check("walk_to contract unchanged",
               'target_location "the vegetable truck"' in note)
 

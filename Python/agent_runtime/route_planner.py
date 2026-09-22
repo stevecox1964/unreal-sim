@@ -17,6 +17,16 @@ from __future__ import annotations
 import math
 
 
+def at_place(endpoint: dict, xy: tuple[float, float]) -> bool:
+    """Place arrival is spatial containment, independent of survey districts.
+
+    Use the same square extent for agenda completion and movement completion.
+    """
+    half = float(endpoint["extent_cm"]) / 2.0
+    return (abs(xy[0] - endpoint["xy"][0]) <= half
+            and abs(xy[1] - endpoint["xy"][1]) <= half)
+
+
 def line_cells(a: tuple[int, int], b: tuple[int, int]) -> list[tuple[int, int]]:
     """Grid cells from ``a`` to ``b`` inclusive — classic integer Bresenham.
 
