@@ -967,7 +967,7 @@ class AgentManager:
         if agent.is_busy:
             return "busy"
         if not agent.cooldown_expired():
-            return f"cooling down ({agent.tick_interval_seconds}s)"
+            return f"cooling down ({agent.tick_interval}s)"
         if self._has_open_chat(agent):
             return "chat open"
         return "unbound or filtered"

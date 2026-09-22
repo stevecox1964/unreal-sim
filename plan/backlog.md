@@ -22,14 +22,31 @@ ground are allowed with a purpose). Offline-tested only. This covers **part of #
 still open. The #27 C text below that describes `make_route`/`next_waypoint` as the named-travel path
 is now historical.
 
-**Runs:** SR60 ran 2026-09-01 (11 ticks). The next live run is **SR61**.
+**Runs:** SR60 ran 2026-09-01 (11 ticks). **SR61 ran 2026-09-22** (30 ticks, 255 s, Dufus + Maren).
+
+**SR61 findings (P0 — PASSED for travel; three defects):**
+- **Travel works.** Dufus walked Four Ways Crossing → Don's Donuts by place travel (`path: full`,
+  target `(-4534,-850)`). He stopped at `(-4572,-850)`, 38 cm from the target, in about 3 ticks.
+  Maren stayed at the truck; her VLM slept as designed.
+- **Crash on every even tick — FIXED 2026-09-22.** `Tick error: 'Agent' object has no attribute
+  'tick_interval_seconds'` (15 times). `_not_ready_reason` used a wrong name; the property is
+  `tick_interval`. Half the ticks did nothing. One-word fix in `agent_manager.py`.
+- **#27 A reproduced.** While Dufus rested at Don's, "stuck on an obstacle" fired 5 times (his
+  position did not change at all). The stale `moving_to` string also makes the settled gate see
+  `status=act and moving` → "schedule or place state changed" → an LLM call **every** tick
+  (~14 wasted Sonnet calls of "observe, waiting for 09:00"). P1 fixes both.
+- **"Two unknown folks" at Don's.** Dufus saw two unrecognized people and twice said "Mornin'!"
+  to "unknown person". Nobody answered. Not yet known who they are (level NPCs?). Check before P2.
+- Dufus and Maren recognized each other at 13.8 m on tick 1; both chose not to re-greet.
+
+The next live run is **SR62** (after P1).
 
 **The ladder (do in order; each step = code → user runs PIE → Claude reads logs → fix → next):**
 
 | Step | Item | Goal | Done when |
 |---|---|---|---|
-| **P0 — Now** | Sept 9 slice | SR61: Dufus + Maren in Play, watch only | Dufus walks to Don's by place travel; arrival logged once |
-| P1 | #27 A | Truthful move completion (stop reading `moving` from the `current_action` string) | Resting after arrival gives zero stuck events |
+| P0 — done SR61 | Sept 9 slice | SR61: Dufus + Maren in Play, watch only | Dufus walks to Don's by place travel; arrival logged once |
+| **P1 — Now** | #27 A | Truthful move completion (stop reading `moving` from the `current_action` string) | Resting after arrival gives zero stuck events |
 | P2 | #45 | Unread speech wakes a settled APC | Maren at the truck hears and answers Dufus's new line |
 | P3 | #67 | Bounded APC↔APC talk; reuse #38 interruptions; summary into **both** `episodes.jsonl` | Both recall it next day; a later decision uses it |
 | P4 | #105 acceptance | A small live day, both APCs, cockpit chat "go to Don's Donuts" | MASTER_PLAN success criteria #1 + #2 shown in logs |
