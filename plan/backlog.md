@@ -3,9 +3,64 @@
 Rolling list of outstanding work — add items as they come up, check off or
 delete them as they land. Not session-scoped; this is the durable home for
 approved scope and priority. Handoffs are chronological session state.
-Newest grooming: **2026-09-04** — Play implementation queue from the code/log review below.
+Newest grooming: **2026-09-22** — Play phase ladder: APCs live in town, walk, and talk.
 
-## Active view — groomed 2026-09-04: prove a small day in Play
+## Active view — groomed 2026-09-22: APCs live in town, walk their day, talk to each other
+
+**Source:** user, 2026-09-22: *"we are finished with first pass of being a world explorer and now we
+want to place APC in the world and have them move around and talk with each other."* The same ladder
+is in `MASTER_PLAN.md` Part IV ("Play phase ladder"). The 2026-09-04 view below stays as the detailed
+requirement text; this view sets the order.
+
+**What changed since 2026-09-04 (committed `b7b5dd3`, 2026-09-22):** the Sept 9 place-travel slice —
+see [HANDOFF_2026-09-09_1646](handoffs/HANDOFF_2026-09-09_1646.md). Named travel sends the remembered
+place anchor straight to the engine pathfinder. **Grid-leg routing is gone from named travel**; the
+grid is a storage/map index only. Owned places outrank broad community labels. Arrival for schedule
+and movement is one check, `route_planner.at_place` (9 m place box). Blocked/partial paths are
+narrated, not called arrival. Townspeople import `doctrine/place_travel.md` (indoors and unsurveyed
+ground are allowed with a purpose). Offline-tested only. This covers **part of #27 B/C**; #27 A is
+still open. The #27 C text below that describes `make_route`/`next_waypoint` as the named-travel path
+is now historical.
+
+**Runs:** SR60 ran 2026-09-01 (11 ticks). The next live run is **SR61**.
+
+**The ladder (do in order; each step = code → user runs PIE → Claude reads logs → fix → next):**
+
+| Step | Item | Goal | Done when |
+|---|---|---|---|
+| **P0 — Now** | Sept 9 slice | SR61: Dufus + Maren in Play, watch only | Dufus walks to Don's by place travel; arrival logged once |
+| P1 | #27 A | Truthful move completion (stop reading `moving` from the `current_action` string) | Resting after arrival gives zero stuck events |
+| P2 | #45 | Unread speech wakes a settled APC | Maren at the truck hears and answers Dufus's new line |
+| P3 | #67 | Bounded APC↔APC talk; reuse #38 interruptions; summary into **both** `episodes.jsonl` | Both recall it next day; a later decision uses it |
+| P4 | #105 acceptance | A small live day, both APCs, cockpit chat "go to Don's Donuts" | MASTER_PLAN success criteria #1 + #2 shown in logs |
+| P5 | #68 → #106 → 3rd APC | Work that leaves a mark; add/activate APCs from the web; a third townsperson | Scoped when P4 passes |
+
+After P5: #69 memory stream and #70 reflection (MASTER_PLAN Milestones 2–3).
+
+**Deferred:** full #27 C connection graph, #87 navmesh independence, VLM training, more survey work.
+
+**Tests:** one small offline test per P-step, following the 2026-09-04 acceptance cases. The live
+run decides. (This supersedes the 2026-08-19 "speed mode: no tests" note for Play work.)
+
+### #107 — Test suite rot: 9 scripts fail on untouched HEAD
+
+**Status:** parked, not scheduled. **Source:** Sept 9 handoff, rerun against `0d4437b`.
+These fail from stale stubs or survey-era asserts, not from Play code. Fix them when a P-step
+touches the same code, or in one cleanup pass.
+
+| Script | Failure |
+|---|---|
+| `test_blocker_sense` | StubAgent missing `mission` |
+| `test_event_driven_cognition` | StubAgent missing `mission` |
+| `test_facing_and_compass` | StubBridge missing `radar` |
+| `test_frontier_blocking` | Removed `_pulse_explore` method |
+| `test_pacing_and_reset` | Loop did not tick; missing stub `mission` |
+| `test_prompt_context` | Still expects Dufus not to stop for strangers |
+| `test_runner_api` | Old default-mode assertion |
+| `test_spool_up` | Expects four survey views at wake |
+| `test_world_grid` | StubAgent missing `mission` |
+
+## Active view — groomed 2026-09-04: prove a small day in Play (order superseded 2026-09-22)
 
 **Source and authority:** user, 2026-09-04: "We are moving from survy mode to play mode" and
 "Can you update the backlog with your findings so we can get claude to implement?" This follows

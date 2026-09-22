@@ -89,6 +89,10 @@ little more alive over the grand refactor. Show them a character doing something
 real, early and often. And when you get to lean in through the CLI and ask an
 agent what it's thinking — savor that, because that moment *is* the project.
 
+**Where we are (2026-09-22).** The survey phase is closed for `MCP_World` (SR58). The work now is
+the **Play phase**: APCs live in the town, walk their daily agendas, and talk to each other. Start at
+the Play ladder in Part IV, then the Active view in `plan/backlog.md`. Do not restart survey work.
+
 ---
 
 ## Part 0 — North Star & Success Criteria
@@ -506,6 +510,9 @@ into a move command — is future work (see Roadmap).
 
 #### Current State of This Layer
 
+*(Historical list — named-place navigation, community/owned places and home/work places are
+built now. See Part IV "Current state" for the up-to-date picture.)*
+
 **Built:**
 - `WorldGrid` — static, bounded, per-level, one JSON at world-init
 - `SpatialMap` — per-agent egocentric map; `ingest`, `where_is`, `nearest_frontier`,
@@ -557,12 +564,37 @@ Stated as deliberate design, not gaps to "fix back" to Smallville:
 
 ## Part IV — Roadmap
 
-### Current state (built)
+### Current state (built) — updated 2026-09-22
 
-Substrate + sim loop, tiers, adaptive pacing, reproducible resets, world grid;
-`SpatialMap`, `place_db`, `world_clock`, `perception`/`explorer` (explore mode
-verified live in PIE); flat `memory_store` with recency+importance retrieval;
-`llm_router`, `action_validator`, `unreal_bridge`.
+- **Substrate:** standalone runner (`runner_app.py`, `start_sim.bat`), `UnrealBridge` to the user's
+  one Unreal instance, cockpit + web app (agents, settings, `/map`), world clock, tiers, pacing.
+- **Modes:** **Play** (default) and **Survey**. Survey is finished for `MCP_World` (SR58, 2026-09-01).
+  The surveyor persona is an inactive template (`agents/surveyor`). Dufus and Maren are townspeople.
+- **Spatial:** `WorldGrid` + shared `PlaceDB` (community + owned places, stand points), Landmark_BP
+  ground truth, place-name resolver. Named travel goes straight to a remembered place; arrival is
+  place-box containment (`route_planner.at_place`, 2026-09-09 — offline-tested, **not yet live**).
+- **Body sense:** radar (8 headings), footing reflex, engine path test (`path: none|partial|full`).
+- **Routines:** per-APC JSON agenda + `agenda.py`; schedule drives where/when (Milestone 1 substrate).
+- **Speech:** `speak_to` → utterance buffer → `_attach_heard_speech` within 12 m (transport only).
+- **Memory:** `EpisodicLog` (`episodes.jsonl`), social/acquaintance counts, flat `memory_store`.
+  No spoken content in episodes yet; no reflection yet.
+- **Interruptions:** generic interrupt/resume lifecycle (#38); direct operator chat (#37).
+
+### Play phase ladder (2026-09-22) — Milestone 1 + Milestone 4
+
+Milestone 1 is **in progress**: routines are built, a full live day is not yet proven. Each step is
+code → user runs PIE → Claude reads the logs → fix → next. The live run is the test.
+
+| Step | Backlog | Goal | Done when |
+|---|---|---|---|
+| P0 | Sept 9 slice | SR61: Dufus + Maren in Play, watch only | Dufus walks to Don's by place travel; arrival logged once |
+| P1 | #27 A | Truthful move completion | Resting after arrival gives zero stuck events |
+| P2 | #45 | Unread speech wakes a settled APC | Maren at the truck hears and answers Dufus's new line |
+| P3 | #67 | Bounded APC↔APC talk, summarized into **both** episode logs | Both recall the talk next day; a later decision uses it |
+| P4 | #105 | A small live day with both APCs | Success criteria #1 + #2 shown in logs |
+| P5 | #68, #106, 3rd APC | Work that leaves a mark; add/activate APCs from the web; a third townsperson | Scoped when P4 passes |
+
+After P5: Milestone 2 (#69 memory stream) and Milestone 3 (#70 reflection).
 
 ### Milestone 1 — Daily-Schedule Planner *(first slice)*
 
