@@ -17,6 +17,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("AgentRuntime")
 _ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
+_OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
+_OPENROUTER_DEFAULT_MODEL = "google/gemini-3.1-flash-lite"
 
 # Compass abbreviation → the word the walk_to direction field accepts.
 _COMPASS_WORD = {
@@ -328,6 +330,8 @@ class LLMRouter:
             return self.api_key
         if provider == "openai":
             return os.environ.get("OPENAI_API_KEY", "")
+        if provider == "openrouter":
+            return os.environ.get("OPENROUTER_API_KEY", "")
         return os.environ.get("ANTHROPIC_API_KEY", "")
 
     def _resolve_model(self, agent: "Agent", provider: str) -> Optional[str]:
@@ -357,12 +361,16 @@ class LLMRouter:
             "openai": "OPENAI_MODEL",
             "anthropic": "ANTHROPIC_MODEL",
             "ollama": "OLLAMA_MODEL",
+            "openrouter": "OPENROUTER_MODEL",
         }.get(provider)
         if provider_env and os.environ.get(provider_env):
             return os.environ[provider_env]
 
         if provider == "ollama":
             return "qwen3.5:4b"
+
+        if provider == "openrouter":
+            return _OPENROUTER_DEFAULT_MODEL
 
         if provider == "openai":
             return {
@@ -496,6 +504,8 @@ class LLMRouter:
                 raw = self._decide_ollama(model, self._system_text(agent), user_text)
             elif provider == "openai":
                 raw = self._decide_openai(model, self._system_text(agent), user_text)
+            elif provider == "openrouter":
+                raw = self._decide_openrouter(model, self._system_text(agent), user_text)
             else:
                 raw = self._decide_anthropic(model, self._system_text(agent), user_text)
             orientation = _load_decision_json(raw)
@@ -599,6 +609,8 @@ class LLMRouter:
                 raw = self._decide_ollama(model, system_text, user_text, image_path=map_image)
             elif provider == "openai":
                 raw = self._decide_openai(model, system_text, user_text)
+            elif provider == "openrouter":
+                raw = self._decide_openrouter(model, system_text, user_text, image_path=map_image)
             elif provider == "anthropic":
                 raw = self._decide_anthropic(model, system_text, user_text, image_path=map_image)
             else:
@@ -649,6 +661,8 @@ class LLMRouter:
                 return self._decide_ollama(model, system, prompt)
             if provider == "openai":
                 return self._decide_openai(model, system, prompt)
+            if provider == "openrouter":
+                return self._decide_openrouter(model, system, prompt, json_mode=False)
             return self._decide_anthropic(model, system, prompt)
         except Exception as e:
             logger.error("[%s] ask() failed: %s", agent.agent_id, e)
@@ -705,6 +719,8 @@ performed an action. Do not output JSON or markdown."""
                 return self._decide_ollama(model, system, prompt)
             if provider == "openai":
                 return self._openai_text(model, system, prompt)
+            if provider == "openrouter":
+                return self._decide_openrouter(model, system, prompt, json_mode=False)
             return self._decide_anthropic(model, system, prompt)
         except Exception as e:
             logger.error("[%s] chat() failed: %s", agent.agent_id, e)
@@ -761,6 +777,46 @@ performed an action. Do not output JSON or markdown."""
             raise ValueError(f"No text block in response (blocks: {blocks}, "
                              f"stop_reason: {response.stop_reason})")
         return _strip_markdown_fences(text.strip())
+
+    def _decide_openrouter(self, model: str, system_text: str, user_text: str,
+                           image_path: str | None = None, json_mode: bool = True) -> str:
+        """OpenRouter (#110): OpenAI-compatible chat completions, any vendor's model."""
+        import base64
+        import requests
+
+        content: list[dict] | str = user_text
+        if image_path and Path(image_path).exists():
+            raw = Path(image_path).read_bytes()
+            media = "image/png" if raw[:4] == b"\x89PNG" else "image/jpeg"
+            b64 = base64.standard_b64encode(raw).decode()
+            content = [{"type": "text", "text": user_text},
+                       {"type": "image_url", "image_url": {"url": f"data:{media};base64,{b64}"}}]
+        body = {
+            "model": model,
+            "messages": [{"role": "system", "content": system_text},
+                         {"role": "user", "content": content}],
+            "max_tokens": 1024,
+            # Thinking models (qwen3.7-flash) otherwise spend the budget and
+            # seconds on hidden reasoning before the JSON.
+            "reasoning": {"enabled": False},
+        }
+        if json_mode:
+            body["response_format"] = {"type": "json_object"}
+        response = requests.post(
+            _OPENROUTER_ENDPOINT,
+            headers={"Authorization": f"Bearer {self._resolve_api_key('openrouter')}",
+                     "Content-Type": "application/json",
+                     "X-Title": "unreal-sim"},
+            json=body,
+            timeout=60,
+        )
+        if response.status_code >= 400:
+            logger.error("OpenRouter API error %s: %s", response.status_code, response.text[:500])
+            response.raise_for_status()
+        text = (response.json()["choices"][0]["message"].get("content") or "").strip()
+        if not text:
+            raise ValueError("OpenRouter response had no message content")
+        return _strip_markdown_fences(text)
 
     def _decide_openai(self, model: str, system_text: str, user_text: str) -> str:
         import requests

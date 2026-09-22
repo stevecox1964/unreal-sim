@@ -16,6 +16,8 @@ _ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
 # endpoint, so no google SDK is needed — and a future local VLM that exposes the
 # same OpenAI-compatible API drops in by changing only the endpoint + model.
 _GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+_OPENROUTER_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"  # #110, same wire format
+_DEFAULT_OPENROUTER_MODEL = "google/gemini-2.5-flash-lite"
 _DEFAULT_MODEL = "gemini-2.5-flash-lite"  # fast, cheap, non-thinking; thinking models truncate short JSON
 _DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5-20251001"  # Haiku 4.5 is multimodal — does vision too
 
@@ -97,6 +99,11 @@ class VisionPerceiver:
             model = (self._model or os.environ.get("ANTHROPIC_VISION_MODEL")
                      or _DEFAULT_ANTHROPIC_MODEL)
             return provider, key, model
+        if provider == "openrouter":
+            key = os.environ.get("OPENROUTER_API_KEY", "")
+            model = (self._model or os.environ.get("OPENROUTER_VISION_MODEL")
+                     or _DEFAULT_OPENROUTER_MODEL)
+            return provider, key, model
         key = os.environ.get("GEMINI_API_KEY", "")
         model = self._model or os.environ.get("GEMINI_MODEL") or _DEFAULT_MODEL
         return provider, key, model
@@ -119,7 +126,8 @@ class VisionPerceiver:
 
         provider, key, model = self._resolve()
         if provider != "ollama" and not key:
-            env_key = "ANTHROPIC_API_KEY" if provider == "anthropic" else "GEMINI_API_KEY"
+            env_key = {"anthropic": "ANTHROPIC_API_KEY",
+                       "openrouter": "OPENROUTER_API_KEY"}.get(provider, "GEMINI_API_KEY")
             return _empty(f"{env_key} not set")
         if not image_path or not Path(image_path).exists():
             return _empty(f"image not found: {image_path}")
@@ -145,7 +153,7 @@ class VisionPerceiver:
                 raw = Path(image_path).read_bytes()
                 b64 = base64.standard_b64encode(raw).decode()
                 response = requests.post(
-                    _GEMINI_ENDPOINT,
+                    _OPENROUTER_ENDPOINT if provider == "openrouter" else _GEMINI_ENDPOINT,
                     headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
                     json={
                         "model": model,
@@ -158,11 +166,12 @@ class VisionPerceiver:
                         }],
                         "max_tokens": 800,
                         "response_format": {"type": "json_object"},
+                        **({"reasoning": {"enabled": False}} if provider == "openrouter" else {}),
                     },
                     timeout=self._timeout,
                 )
                 if response.status_code >= 400:
-                    return _empty(f"Gemini {response.status_code}: {response.text[:300]}")
+                    return _empty(f"{provider} {response.status_code}: {response.text[:300]}")
                 content = response.json()["choices"][0]["message"]["content"]
 
             data = json.loads(_strip_fences(content))

@@ -71,7 +71,7 @@ load start` for both APCs at once, then both calls `Read timed out (read timeout
 0 ticks in 119 s. Likely causes (not proven): model load + two parallel requests on an 8 GB GPU
 shared with Unreal PIE. #108 is parked; #110 (OpenRouter) is the route to long runs.
 
-The next live run is **SR65** on Anthropic, ≥ 13 minutes (to see 09:00 and 10:00).
+The next live run is **SR65** on OpenRouter `qwen/qwen3.7-flash` (#110), ≥ 13 minutes (to see 09:00 and 10:00).
 
 ### #109 — Mannequins: APCs learn which "people" are fake by talking to them
 
@@ -90,8 +90,22 @@ No code-side "is fake" flag, no filter on VLM figures. Reuses #45 (delivery vs. 
 ### #110 — OpenRouter as a provider (cheap/long runs without Claude tokens)
 
 **Source:** user, 2026-09-22, after SR64: *"re-config .env to use anthropic till we get openrouter
-coded up. i have an open router api key."* **Status:** open, next provider work. `.env` is back on
-Anthropic until this lands.
+coded up. i have an open router api key."* **Status:** **BUILT 2026-09-22, not yet run live.**
+User picked `qwen/qwen3.7-flash` ($0.03 in / $0.13 out per M tokens, images OK) for both roles.
+
+**What landed:** `openrouter` provider in `llm_router` (`_decide_openrouter`: wake, decide with the
+map image, ask, chat) and `perception` (same OpenAI wire format as Gemini, `OPENROUTER_ENDPOINT`).
+Both send `reasoning: {enabled: false}` — without it qwen3.7-flash spent ~245 hidden reasoning
+tokens per call. `.env`: `LLM_PROVIDER=openrouter`, `VISION_PROVIDER=openrouter`,
+`LLM_MODEL` / `OPENROUTER_MODEL` / `OPENROUTER_VISION_MODEL` = `qwen/qwen3.7-flash`. Providers
+page: `openrouter` / `openrouter-vision` seed profiles, a `qwen-flash` profile, and local
+`Python/config.json` now assigns `qwen-flash` to both roles (before this it showed Haiku while
+`.env` said otherwise — pressing a button would have silently switched back to Claude).
+**Smoke calls (real API, one image):** decision 7.3 s, vision 9.3 s, valid JSON. Earlier calls
+ranged 5–23 s. Two `ConnectionResetError` from OpenRouter in ~10 calls — no retry exists; a
+dropped call becomes an idle tick. Watch the rate in SR65.
+**Back to Claude:** on `/providers` assign `haiku` to both roles (or set both providers to
+`anthropic` in `Python/.env` and delete `LLM_MODEL`).
 
 **Starting point:** OpenRouter speaks the OpenAI chat API at `https://openrouter.ai/api/v1`.
 `llm_router.py` already has an `openai` provider branch (decision; text-only template) and
@@ -100,8 +114,6 @@ Anthropic until this lands.
 (`OPENROUTER_API_KEY`) and model vars (`OPENROUTER_MODEL`, `OPENROUTER_VISION_MODEL`), plus a
 `provider_profiles` entry so `/settings` can pick it. Must send images for the vision role and
 the decision prompt's map image. Model choice (a cheap vision-capable model) is the user's call.
-**Needs a test (later):** provider resolution picks OpenRouter vars; a request carries the base
-URL, key header and image part.
 
 ### #108 — Run the APCs on a local model (Ollama / Qwen) for long runs
 
@@ -1040,6 +1052,10 @@ suggestions in the backlog"). Code landed untested; each line is the test to wri
   state changed"). Counter-case: same string, position 5 m away and not advancing → `stuck` after 3.
 - [ ] **#27 A late-arrival edge:** position 99 cm vs 101 cm from target flips moving off/on (the
   100 cm radius is the contract; a test must fail if someone widens it silently).
+- [ ] **#110 OpenRouter:** `_resolve_api_key/_resolve_model("openrouter")` read `OPENROUTER_*`;
+  `_decide_openrouter` body carries the endpoint, Bearer key, `reasoning.enabled=false`, and an
+  `image_url` part only when an image exists; `perception._resolve()` for `openrouter` picks
+  `OPENROUTER_VISION_MODEL`; `apply_to_env` for an openrouter vision profile writes that var.
 - [ ] **Sim time on /sim** (`get_status()["world_time"]`): status carries `Day N, HH:MM` from
   `world_clock.now_text()`; `/api/sim/status` passes it through; page shows "—" when offline.
 

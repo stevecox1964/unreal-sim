@@ -32,6 +32,7 @@ _VISION_MODEL_VAR = {
     "anthropic": "ANTHROPIC_VISION_MODEL",
     "gemini": "GEMINI_MODEL",
     "ollama": "VISION_MODEL",
+    "openrouter": "OPENROUTER_VISION_MODEL",
 }
 
 # Seeded the first time config.json is read and absent — sensible cloud + local
@@ -40,6 +41,8 @@ _DEFAULT_PROFILES = {
     "haiku": {"provider": "anthropic", "model": "claude-haiku-4-5-20251001"},
     "gemini-vision": {"provider": "gemini", "model": "gemini-2.5-flash-lite"},
     "local": {"provider": "ollama", "model": "qwen3.5:4b"},
+    "openrouter": {"provider": "openrouter", "model": "google/gemini-3.1-flash-lite"},
+    "openrouter-vision": {"provider": "openrouter", "model": "google/gemini-2.5-flash-lite"},
 }
 _DEFAULT_ROLES = {"decision": "haiku", "vision": "haiku"}
 

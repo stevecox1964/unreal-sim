@@ -6,7 +6,7 @@
 <p><small>A <strong>profile</strong> is a named provider + model. Assign one to each
 <strong>role</strong> below. Changes compile to <code>Python/.env</code> and the sim picks them up
 on its next tick — no restart. API keys live on the <a href="/settings">Settings</a> page, one per
-provider (Anthropic / Gemini / OpenAI).</small></p>
+provider (Anthropic / Gemini / OpenAI / OpenRouter).</small></p>
 
 <h3>Active roles</h3>
 {% for role in roles %}
@@ -47,7 +47,7 @@ provider (Anthropic / Gemini / OpenAI).</small></p>
 
 <h3>Add / edit a profile</h3>
 <p><small>Re-using an existing name overwrites it. Providers: <code>anthropic</code>,
-<code>gemini</code>, <code>openai</code>, <code>ollama</code>.</small></p>
+<code>gemini</code>, <code>openai</code>, <code>ollama</code>, <code>openrouter</code>.</small></p>
 <form method="post" action="/providers/save">
   <label>Name <input type="text" name="name" placeholder="e.g. haiku" required></label>
   <label>Provider <input type="text" name="provider" placeholder="anthropic" required></label>
