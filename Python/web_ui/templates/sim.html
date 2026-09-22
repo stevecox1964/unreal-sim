@@ -16,7 +16,8 @@ with <code>python sim_runner.py</code> (Unreal in PIE). <strong>Step</strong> ad
 debugging.</small></p>
 
 <article id="status-card">
-  <header><strong>Status:</strong> <span id="status-line">checking…</span></header>
+  <header><strong>Status:</strong> <span id="status-line">checking…</span>
+    <span style="float:right;"><strong>Sim time:</strong> <span id="sim-time" style="font-size:1.3rem; font-family:monospace;">—</span></span></header>
   <div id="agents"></div>
 </article>
 
@@ -52,6 +53,7 @@ async function postJSON(u, body){ const r = await fetch(u, {method:'POST', heade
 async function refreshStatus(){
   const s = await getJSON('/api/sim/status');
   const line = document.getElementById('status-line');
+  document.getElementById('sim-time').textContent = (s.online && s.world_time) ? s.world_time : '—';
   if(!s.online){ line.textContent = 'no sim runner running'; document.getElementById('agents').textContent = ''; return; }
   line.textContent = `${s.running ? 'running' : 'idle'} · tick ${s.tick_count ?? 0} · ${s.agent_count ?? 0} agents · ${s.mode ?? ''}`;
   // Inactive APCs (template folders like `surveyor`) are loaded but never run — keep them off the cockpit.

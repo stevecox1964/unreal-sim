@@ -39,7 +39,40 @@ is now historical.
   to "unknown person". Nobody answered. Not yet known who they are (level NPCs?). Check before P2.
 - Dufus and Maren recognized each other at 13.8 m on tick 1; both chose not to re-greet.
 
+**2026-09-22 after SR61 (Python only, untested, not pushed):**
+- **P1 / #27 A — first fix landed.** `_observe_agent` now treats `moving_to [x, y, z]` as finished
+  when the body is within 100 cm (`_ARRIVED_CM`) of that target, and rewrites the field to
+  `arrived [...]`. This kills both the false "stuck" and the every-tick LLM wake while resting.
+  Not done: request ids, cancel/replace, a C++ lifecycle. A body stopped short by a partial path
+  still reads as moving and can be called stuck — that is a true "did not arrive" and stays.
+  If SR62 still shows stale moves, the real fix is C++: report path-following status in
+  `HandleGetCharacterStatus` (`UnrealMCPCharacterCommands.cpp`).
+- **Sim time on the /sim page.** `get_status()` returns `world_time`; the page shows it top-right.
+- **The "two unknown folks" at Don's** are from the vision model, not APCs: the VLM labels human
+  figures in the camera frame as `unknown person`. Open question for the user: are there person
+  meshes/characters placed near Don's in the level? If not, it is a VLM hallucination (a sign or
+  mannequin). Either way Dufus greeting nobody is harmless for now; recheck on the local VLM.
+
 The next live run is **SR62** (after P1).
+
+### #108 — Run the APCs on a local model (Ollama / Qwen) for long runs
+
+**Source:** user, 2026-09-22: *"look at switching over to a local model provider which i think is
+qwen, so we can do longer runs and don't eat up claude tokens."* **Status:** investigated, not switched.
+
+**What exists (no code needed to switch):** `ollama_adapter.py` (`/api/chat`, `think=False`,
+JSON format, image input), `llm_router` and `perception` both have an `ollama` branch, and
+`provider_profiles.py` has a seeded `local` profile. Ollama is running at `localhost:11434` with
+`qwen3.5:4b` (4.7 B, Q4, vision + tools, 3.4 GB) and `gemma4:e4b` (8 B, 9.6 GB). Switch = in
+`Python/.env` set `LLM_PROVIDER=ollama` and `VISION_PROVIDER=ollama` (models already set to
+`qwen3.5:4b`), or assign the `local` profile to both roles on `/settings`. Restart the runner.
+
+**Limits to watch:** GPU is an RTX 4060 with 8 GB; Unreal PIE already used 4.3 GB. Only
+`qwen3.5:4b` fits beside Unreal; `gemma4:e4b` does not. A 4 B model is much weaker than Sonnet at
+following the long decision prompt (JSON errors, ignoring rules, weak place/goal reasoning).
+Measure in SR62: JSON/parse failures, decision latency per tick, and whether Dufus still reaches
+Don's and rests. If decisions are poor, the next options are a bigger local model on more VRAM, or a
+split (local vision, cheap cloud Haiku decisions).
 
 **The ladder (do in order; each step = code → user runs PIE → Claude reads logs → fix → next):**
 
@@ -947,6 +980,19 @@ verification, which folds into the #36/#37 live session.
    cost, and most of the gap it would close is closed by #86 + #81 + #77 for free.
 
 ### Needs tests (speed mode — user, 2026-08-19)
+
+**2026-09-22 ledger (speed mode ON again — user: "don't write and run tests, but put those test
+suggestions in the backlog"). Code landed untested; each line is the test to write later:**
+- [ ] **Tick crash fix** (`_not_ready_reason`): an agent inside its cooldown makes the tick log
+  `cooling down (Ns)` and the tick still runs the other agents — no `AttributeError`.
+- [ ] **#27 A arrival** (`_MOVING_TO_RE` / `_ARRIVED_CM` in `_observe_agent`): fake observation
+  `current_action="moving_to [-4500, -850, 90]"`, position 38 cm away, same for 6 ticks →
+  zero `stuck`, `current_action` starts with `arrived`, settled gate sleeps (no "schedule or place
+  state changed"). Counter-case: same string, position 5 m away and not advancing → `stuck` after 3.
+- [ ] **#27 A late-arrival edge:** position 99 cm vs 101 cm from target flips moving off/on (the
+  100 cm radius is the contract; a test must fail if someone widens it silently).
+- [ ] **Sim time on /sim** (`get_status()["world_time"]`): status carries `Day N, HH:MM` from
+  `world_clock.now_text()`; `/api/sim/status` passes it through; page shows "—" when offline.
 
 **2026-09-04 Play implementation handoff:** the review did not run the suite. Tests referencing the
 removed `explore` mode are stale (`test_explore_tick.py` still calls `_pulse_explore`); the September 1

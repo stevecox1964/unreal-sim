@@ -5,6 +5,7 @@ import copy
 import json
 import logging
 import math
+import re
 import time
 import uuid
 from datetime import datetime, timezone
@@ -241,6 +242,11 @@ _STATIONARY_REDECIDE_TICKS = 4
 _STUCK_PROGRESS_CM = 100.0   # min cm advanced per tick to count as real progress
 _STUCK_TICKS = 3             # consecutive no-progress moving ticks → stuck
 _STUCK_TRACE_CM = 300.0      # forward raycast distance when stuck (cm)
+# #27 A: the engine sets current_action "moving_to [x, y, z]" and never clears it.
+# SimpleMoveToLocation stops ~35 cm short (SR60 34 cm, SR61 38 cm). Inside this
+# radius the move is finished, whatever the stale string says.
+_ARRIVED_CM = 100.0
+_MOVING_TO_RE = re.compile(r"moving_to \[\s*(-?[\d.]+),\s*(-?[\d.]+)")
 _MOVEMENT_START_CM = 10.0    # ignore tiny pose jitter when timing first displacement
 _PROGRESS_NOISE_CM = 200.0   # route distance-to-goal jitter below this reads as "no change"
 
@@ -822,6 +828,7 @@ class AgentManager:
             "running": self.running,
             "paused": self.paused,
             "mode": self.mode,
+            "world_time": self.world_clock.now_text(),
             "tick_seconds": self.tick_seconds,
             "tick_count": self._tick_count,
             "last_tick_duration_seconds": round(self._last_tick_duration, 2),
@@ -1791,6 +1798,16 @@ class AgentManager:
         # Stuck detection: "moving" but not actually advancing (wedged on an
         # obstacle the navmesh doesn't route around). Attach to the observation so
         # the decision prompt can tell the agent to pick another direction.
+        action_str = str(observation.get("current_action") or "")
+        target_m = _MOVING_TO_RE.match(action_str)
+        here = _loc_xyz(observation.get("location"))
+        if (target_m and here is not None
+                and math.hypot(here[0] - float(target_m[1]),
+                               here[1] - float(target_m[2])) <= _ARRIVED_CM):
+            # #27 A: stale engine string after arrival. Resting here is not
+            # moving, so it is neither "stuck" nor a schedule event, and the
+            # prompt must not tell the APC it is still mid-move.
+            observation["current_action"] = "arrived " + action_str[len("moving_to "):]
         moving = "moving" in str(observation.get("current_action") or "").lower()
         stuck = self._detect_stuck(agent_id, _loc_xyz(observation.get("location")), moving)
         observation["stuck"] = stuck
