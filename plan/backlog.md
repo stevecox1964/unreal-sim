@@ -51,9 +51,23 @@ is now historical.
 - **The "two unknown folks" at Don's** are from the vision model, not APCs: the VLM labels human
   figures in the camera frame as `unknown person`. Open question for the user: are there person
   meshes/characters placed near Don's in the level? If not, it is a VLM hallucination (a sign or
-  mannequin). Either way Dufus greeting nobody is harmless for now; recheck on the local VLM.
+  mannequin). **Answered by user:** the level has mannequin 3D people on purpose; see #109.
 
 The next live run is **SR62** (after P1).
+
+### #109 — Mannequins: APCs learn which "people" are fake by talking to them
+
+**Source:** user, 2026-09-22: *"The world is full of 3d models and some of them are NPC/AP looking
+people... Dufus and Maren get to 'remember' who is fake or not by noticing and speaking with
+'manican' 3d people. Eventually this will be fixed and only APCs will be in the world."*
+**Status:** idea, parked (after P3). Not a bug: SR61's two "unknown folks" at Don's are mannequins.
+
+**Direction:** keep the lizard-brain contract — facts only. The body records what happened: "you
+spoke to a figure near Don's Donuts at 08:03 and 08:05; no reply". That fact lands in the
+episode log so a later decision can see it. The LLM decides "that one is a statue" and may name it.
+No code-side "is fake" flag, no filter on VLM figures. Reuses #45 (delivery vs. response) and #67
+(retained exchanges). Needs a stable way to say "the same figure" (position near a place).
+**Needs a test (later):** two unanswered lines to the same spot → one episode fact with both times.
 
 ### #108 — Run the APCs on a local model (Ollama / Qwen) for long runs
 
