@@ -71,7 +71,29 @@ load start` for both APCs at once, then both calls `Read timed out (read timeout
 0 ticks in 119 s. Likely causes (not proven): model load + two parallel requests on an 8 GB GPU
 shared with Unreal PIE. #108 is parked; #110 (OpenRouter) is the route to long runs.
 
-The next live run is **SR65** on OpenRouter `qwen/qwen3.7-flash` (#110), ≥ 13 minutes (to see 09:00 and 10:00).
+**SR65 (2026-09-22, OpenRouter `qwen/qwen3.7-flash`, 227 ticks, 17.4 min ≈ 08:00→10:55) —
+user: "somewhat satisfied".**
+- **The day moved.** 08:00 Dufus → Don's (arrived in ~1 min); rested 5 min with cognition asleep;
+  09:00 → village square; 10:00 → the vegetable truck (via Don's, which is on the way west).
+  Maren held the truck all run. **Only 13 LLM decisions in 17 minutes**; zero parse errors; one
+  vision `ConnectionAbortedError` (09:00 tick, decision still went through).
+- **#45 reproduced live (P2).** 19:13:27 Maren said a greeting to Dufus from 6.8 m. Dufus was
+  settled at the truck ("cognition sleeping", 67 ticks) and **never heard it**: no `heard:` line,
+  no decision by either APC for the last 4.3 minutes, side by side. Exactly the gate defect below.
+- **Inactive template leaked into recognition.** 08:01 Dufus said "Hiya!" to **`Surveyor`** — the
+  inactive `agents/surveyor` APC was in `known_characters`, so the VLM named a mannequin after it.
+- Dufus's truck approach ended 6.8 m from the anchor with the truck body as `blocker`
+  (`veh_VegetableTruck2`, fits=False); he was still counted as at the place (9 m box). Fine for now.
+
+**Fixed after SR65 (untested, local commit):**
+- **#45 / P2:** `_has_unheard_speech` peeks for an unconsumed line within `_HEARING_CM`; both the
+  mapped-place gate and the scene gate now treat it as an event (`why = "someone spoke within
+  earshot"`). The consumed cursor still moves only in `_attach_heard_speech`, i.e. when the line
+  reaches the prompt. A `speak_to` whose result is not success is no longer published as heard.
+- `known_characters` (per tick and at wake) lists **active** APCs only.
+
+The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
+answer, and does she answer back?
 
 ### #109 — Mannequins: APCs learn which "people" are fake by talking to them
 
@@ -141,7 +163,7 @@ split (local vision, cheap cloud Haiku decisions).
 |---|---|---|---|
 | P0 — done SR61 | Sept 9 slice | SR61: Dufus + Maren in Play, watch only | Dufus walks to Don's by place travel; arrival logged once |
 | P1 — done SR62 | #27 A | Truthful move completion (stop reading `moving` from the `current_action` string) | Resting after arrival gives zero stuck events |
-| **P2 — Now** | #45 | Unread speech wakes a settled APC | Maren at the truck hears and answers Dufus's new line |
+| **P2 — fix in, verify SR66** | #45 | Unread speech wakes a settled APC | Maren at the truck hears and answers Dufus's new line |
 | P3 | #67 | Bounded APC↔APC talk; reuse #38 interruptions; summary into **both** `episodes.jsonl` | Both recall it next day; a later decision uses it |
 | P4 | #105 acceptance | A small live day, both APCs, cockpit chat "go to Don's Donuts" | MASTER_PLAN success criteria #1 + #2 shown in logs |
 | P5 | #68 → #106 → 3rd APC | Work that leaves a mark; add/activate APCs from the web; a third townsperson | Scoped when P4 passes |
@@ -1056,6 +1078,12 @@ suggestions in the backlog"). Code landed untested; each line is the test to wri
   `_decide_openrouter` body carries the endpoint, Bearer key, `reasoning.enabled=false`, and an
   `image_url` part only when an image exists; `perception._resolve()` for `openrouter` picks
   `OPENROUTER_VISION_MODEL`; `apply_to_env` for an openrouter vision profile writes that var.
+- [ ] **#45 wake on speech:** settled mapped APC, unchanged position/view, one new line from a
+  speaker 6 m away → next tick decides with "someone spoke within earshot" and `heard` in the
+  prompt; a second line wakes it again; each line delivered once; 13 m away → no wake; own line →
+  no wake; a failed `speak_to` (status error) → no utterance recorded.
+- [ ] **Inactive APCs are not known characters:** an `is_active: false` bound agent never appears
+  in `known_characters` (tick path and wake path).
 - [ ] **Sim time on /sim** (`get_status()["world_time"]`): status carries `Day N, HH:MM` from
   `world_clock.now_text()`; `/api/sim/status` passes it through; page shows "—" when offline.
 

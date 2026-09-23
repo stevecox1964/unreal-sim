@@ -1180,7 +1180,7 @@ class AgentManager:
                 known_chars = [
                     a.display_name
                     for a in self.agents.values()
-                    if a.agent_id != agent.agent_id and a.has_unreal_binding
+                    if a.agent_id != agent.agent_id and a.has_unreal_binding and a.is_active
                 ]
                 if self.mode == "survey":
                     views = self._wake_sweep(agent, loc, rot, known_chars)
@@ -1726,7 +1726,7 @@ class AgentManager:
         observation["known_characters"] = [
             a.display_name
             for a in self.agents.values()
-            if a.agent_id != agent_id and a.has_unreal_binding
+            if a.agent_id != agent_id and a.has_unreal_binding and a.is_active
         ]
         grid, place = self._grid_and_place(agent_id, observation.get("location"))
         observation["grid"] = grid
@@ -1968,7 +1968,9 @@ class AgentManager:
         active_non_survey = bool(
             isinstance(active_interrupt, dict) and active_interrupt.get("kind") != "survey"
         )
-        mapped_event = force_cognition or nearby_changed or mapped_schedule_event or active_non_survey
+        spoken_to = self._has_unheard_speech(agent_id, observation)
+        mapped_event = (force_cognition or nearby_changed or mapped_schedule_event
+                        or active_non_survey or spoken_to)
         urgent_blocker = bool((observation.get("blocker") or {}).get("urgent"))
         if (mapped_visual and mapped_settled and not stuck
                 and not urgent_blocker and not mapped_event):
@@ -2024,7 +2026,8 @@ class AgentManager:
                      or schedule.get("status") == "travel"
                      or (schedule.get("status") == "act" and moving))
             )
-            event = force_cognition or nearby_changed or schedule_event or active_non_survey
+            event = (force_cognition or nearby_changed or schedule_event
+                     or active_non_survey or spoken_to)
             if (settled and not stuck and not blocked and not event):
                 agent.mark_ticked(self._agents_dir)
                 logger.info(
@@ -2051,6 +2054,8 @@ class AgentManager:
                 why = f"{observation['blocker']['category']} directly ahead"
             elif force_cognition:
                 why = "manual pulse"
+            elif spoken_to:
+                why = "someone spoke within earshot"
             elif nearby_changed:
                 why = "nearby characters changed"
             elif schedule_event:
@@ -3078,7 +3083,8 @@ class AgentManager:
         # Name the place if the LLM provided one.
         self._record_place(agent_id, observation.get("location"), decision.get("place"))
 
-        if action.get("type") == "speak_to":
+        # #45: a line the engine did not deliver was never said — nobody hears it.
+        if action.get("type") == "speak_to" and str(status).lower() in ("success", "true"):
             agent.mark_spoke(self._agents_dir)
             self._record_interactions(agent_id, observation)
             self._record_utterance(agent, action, observation)
@@ -3440,6 +3446,19 @@ class AgentManager:
             "y": here[1],
         })
         del self._utterances[:-_MAX_UTTERANCES]
+
+    def _has_unheard_speech(self, agent_id: str, observation: dict) -> bool:
+        """#45: is there a new line in earshot? Peek only — the cursor moves in
+        _attach_heard_speech, when the line actually reaches the prompt."""
+        here = _loc_xyz(observation.get("location"))
+        if here is None:
+            return False
+        since = self._heard_seq.get(agent_id, 0)
+        return any(
+            u["id"] > since and u["speaker_id"] != agent_id
+            and math.hypot(u["x"] - here[0], u["y"] - here[1]) <= _HEARING_CM
+            for u in self._utterances
+        )
 
     def _attach_heard_speech(self, agent: Agent, observation: dict) -> None:
         """Deliver unheard speech from APCs within earshot, then mark it consumed."""
