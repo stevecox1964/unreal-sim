@@ -109,6 +109,24 @@ No code-side "is fake" flag, no filter on VLM figures. Reuses #45 (delivery vs. 
 (retained exchanges). Needs a stable way to say "the same figure" (position near a place).
 **Needs a test (later):** two unanswered lines to the same spot → one episode fact with both times.
 
+### #111 — Chance meeting → plan a meetup ("let me check my schedule, meet at X o'clock")
+
+**Source:** user, 2026-09-22: *"What would really be cool is if Dufus noticed Maren just as it took
+off to the donut shop. Then walk over and say hi, I'm going to the donut shop and have Maren say
+let me check my schedule and we can meet at X o'clock. but I am getting ahead of myself."*
+**Status:** vision / parked until P3 (#67) works. This is MASTER_PLAN success criteria #2 + #3 in
+one scene: an unplanned meeting that changes both APCs' later plans.
+
+**Pieces it needs (in order):** (1) #45 hearing — fix in, verify SR66; (2) a detour to greet a
+recognized APC while traveling, then resume the trip (#38 interruption, destination kept);
+(3) #67 multi-turn talk; (4) the APC can read its own agenda in the talk ("let me check my
+schedule") — agenda text is already in the prompt; (5) **a spoken agreement becomes an agenda
+entry for both** (new: an `agree_to_meet` action or a post-talk extraction that writes a task
+{place, time, with} into each `agenda.json`), then both show up at X o'clock. Behavior stays in
+authored `.md`s; code only supplies the action and the agenda write.
+**Needs a test (later):** an agreed meeting writes one matching task into both agendas; a later
+tick at that time routes both APCs to the place.
+
 ### #110 — OpenRouter as a provider (cheap/long runs without Claude tokens)
 
 **Source:** user, 2026-09-22, after SR64: *"re-config .env to use anthropic till we get openrouter
