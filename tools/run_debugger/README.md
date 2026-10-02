@@ -6,20 +6,28 @@ calls that were wasted.
 
 ## Quick start
 
+To run a new analysis, open PowerShell and paste both lines. Change `SR45` to your run.
+
 ```powershell
-cd "C:\Users\user\Documents\Unreal Projects\AAAAAA_Unreal_SIM\unreal-sim\tools\run_debugger"
+cd "unreal-sim\tools\run_debugger"
 uv run python render.py SR45
 ```
 
 Then open the file it prints, for example:
 
 ```
-tools\run_debugger\run_analysis\SR45_20261002_113404.html
+unreal-sim\tools\run_debugger\run_analysis\SR45_20261002_113404.html
 ```
 
 Double-click it. It opens in your browser. It needs no server and no internet.
 
 ## Commands
+
+Run every command from this folder:
+
+```powershell
+cd "unreal-sim\tools\run_debugger"
+```
 
 | Command | Output |
 |---|---|
@@ -29,12 +37,21 @@ Double-click it. It opens in your browser. It needs no server and no internet.
 | `uv run python analyze.py SR45` | JSON data only, in `out\SR45.json` |
 
 The output file name is `SR<n>_<YYYYMMDD_HHMMSS>.html` (or `.mp4`). The date and time are when
-you made the file, not when the run happened. All outputs go to `run_analysis\`.
+you made the file, not when the run happened. All outputs go to:
+
+```
+unreal-sim\tools\run_debugger\run_analysis\
+```
 
 ### Which run names exist?
 
-Runs are named `SR<n>`. The current number is in
-`Python\worlds\MCP_World\sim_run.json`. Every run in `agent_decisions.log` can be replayed.
+Runs are named `SR<n>`. The current number is in:
+
+```
+unreal-sim\Python\worlds\MCP_World\sim_run.json
+```
+
+Every run in `agent_decisions.log` can be replayed.
 
 ## Using the HTML page
 
@@ -101,7 +118,11 @@ closer, not as a verdict. To change them, edit `LOOP_WINDOW`, `SIMILAR`, and `_f
 
 ## Where the data comes from
 
-All logs are in `Python\worlds\MCP_World\logs\`.
+All logs are in:
+
+```
+unreal-sim\Python\worlds\MCP_World\logs\
+```
 
 | File | What it gives | Notes |
 |---|---|---|
@@ -131,7 +152,7 @@ not proven. The first call of a run often has no timing, so it shows as zero wid
 This folder is its own uv project on Python 3.14, with Manim Community v0.21.0.
 
 ```powershell
-cd "C:\Users\user\Documents\Unreal Projects\AAAAAA_Unreal_SIM\unreal-sim\tools\run_debugger"
+cd "unreal-sim\tools\run_debugger"
 uv sync
 ```
 
