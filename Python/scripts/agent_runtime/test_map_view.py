@@ -221,6 +221,42 @@ def test_api_map_carries_image_bounds_calibration():
         _with_worlds(tmp, body)
 
 
+def test_api_map_carries_place_tiles():
+    """#113: /api/map returns every place tile in world space with its facts,
+    and the page draws them (stood / seed / inside, glow when new)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        world = _world(tmp)
+        db = PlaceDB(world / "world_places.db")
+        db.seed_place_tiles("Don's Donuts", [(1, 2), (2, 2)])
+        db.stand_on_tile("dufus", "don's donuts", 2, 2)
+        db.set_tile_footing(2, 2, "building_interior")
+
+        def body(client):
+            data = client.get("/api/map?level=TestWorld").json()
+            tiles = {(t["tx"], t["ty"]): t for t in data["tiles"]}
+            check("both tiles of the place are returned", set(tiles) == {(1, 2), (2, 2)})
+            stood = tiles[(2, 2)]
+            check("tile is placed at its world min corner (logical origin 0,0)",
+                  (stood["x"], stood["y"]) == (600.0, 600.0) and data["tile_cm"] == 300.0)
+            check("tile carries who stood there first and the footing",
+                  stood["source"] == "stood" and stood["first_by"] == "dufus"
+                  and stood["footing"] == "building_interior" and stood["visits"] == 1)
+            check("a just-stood tile has a small age (the page glows it)",
+                  stood["age_s"] is not None and stood["age_s"] < 60)
+            check("a seed tile nobody stood on has no age",
+                  tiles[(1, 2)]["source"] == "seed" and tiles[(1, 2)]["age_s"] is None)
+            check("one place name for both tiles", {t["name"] for t in data["tiles"]} == {"Don's Donuts"})
+            check("counts: 2 tiles, 1 stood",
+                  data["counts"]["tiles"] == 2 and data["counts"]["tiles_stood"] == 1)
+            text = client.get("/map?level=TestWorld").text
+            check("map page draws tiles with a stood/seed legend",
+                  "tile-mark" in text and 'id="n-tiles-stood"' in text
+                  and 'id="n-tiles-seed"' in text)
+            check("map page glows fresh tiles and marks inside tiles",
+                  "tile-glow" in text and ".tile-mark.inside" in text)
+        _with_worlds(tmp, body)
+
+
 def test_api_map_missing_db_is_empty_not_error():
     with tempfile.TemporaryDirectory() as tmp:
         level = "Barren"
@@ -377,6 +413,7 @@ def main():
     test_api_map_returns_grid_and_cells()
     test_api_map_carries_refused_ground()
     test_api_map_carries_image_bounds_calibration()
+    test_api_map_carries_place_tiles()
     test_api_map_missing_db_is_empty_not_error()
     test_map_page_renders_with_legend_and_polls_api()
     test_map_page_shows_grid_gen_callout_when_ungridded()

@@ -12,7 +12,9 @@ Covers:
   - planner.step(at_place=...): geometric ground truth overrides the name
     match in both directions; None falls back to the legacy name match.
   - AgentManager._at_scheduled_place: community cell = same grid cell;
-    owned place = inside its extent box (9x9 m); unresolvable = None.
+    owned place = standing on one of its 3 m tiles (#113); unresolvable = None.
+  - Place growth (#113): touching tiles join, far/stuck/full do not; one tile
+    set per place name across owners.
   - Wake seeding: the agent's FIRST schedule step of a run seeds an unknown
     scheduled place as the agent's own place cell centered where it stands
     (first-time place-cell initialization); later steps never seed.
@@ -31,7 +33,7 @@ sys.path.insert(0, str(ROOT))
 from agent_runtime import planner                        # noqa: E402
 from agent_runtime.agent_manager import AgentManager     # noqa: E402
 from agent_runtime.place_db import PLACE_EXTENT_CM, PlaceDB  # noqa: E402
-from agent_runtime.world_grid import WorldGrid           # noqa: E402
+from agent_runtime.world_grid import TILE_CM, WorldGrid  # noqa: E402
 
 
 def check(label, cond):
@@ -102,21 +104,91 @@ def test_at_scheduled_place_geometry():
               mgr._at_scheduled_place("maren", BLOCK, _obs(mgr, 1500.0, 1500.0)) is False)
 
 
-def test_at_scheduled_place_owned_box():
+def _tile_center(mgr, tx, ty):
+    g = mgr.world_grid
+    return g.origin_x + (tx + 0.5) * TILE_CM, g.origin_y + (ty + 0.5) * TILE_CM
+
+
+def _tiles(mgr, name):
+    return {(t["tx"], t["ty"]): t for t in mgr.place_db.place_tiles(name)}
+
+
+def test_at_scheduled_place_owned_tiles():
+    """#113: arrival = standing on one of the place's 3 m tiles. The first
+    resolve seeds every tile the old 9 m box touches, so no spot that used to
+    count as arrival stops counting."""
     with tempfile.TemporaryDirectory() as tmp:
         mgr = _manager(tmp)
         # Owned place anchored at cell (5,5) center (200,200) + (120,-80) = (320,120).
         mgr.place_db.add_owned_place("maren", 5, 5, "the vegetable truck",
                                      dx=120.0, dy=-80.0)
+        ax, ay = mgr.world_grid.tile_of(320.0, 120.0)
+        at = lambda x, y: mgr._at_scheduled_place("maren", BLOCK, _obs(mgr, x, y))
+        check("at the anchor point -> True", at(320.0, 120.0) is True)
         half = PLACE_EXTENT_CM / 2.0
-        check("at the anchor point -> True",
-              mgr._at_scheduled_place("maren", BLOCK, _obs(mgr, 320.0, 120.0)) is True)
-        check("just inside the 9m box -> True",
-              mgr._at_scheduled_place("maren", BLOCK,
-                                      _obs(mgr, 320.0 + half - 1, 120.0)) is True)
-        check("just outside the 9m box -> False",
-              mgr._at_scheduled_place("maren", BLOCK,
-                                      _obs(mgr, 320.0 + half + 1, 120.0)) is False)
+        x0, y0 = mgr.world_grid.tile_of(320.0 - half, 120.0 - half)
+        x1, y1 = mgr.world_grid.tile_of(320.0 + half, 120.0 + half)
+        check("seeded every tile the old 9 m box touches",
+              set(_tiles(mgr, "the vegetable truck"))
+              == {(i, j) for i in range(x0, x1 + 1) for j in range(y0, y1 + 1)})
+        check("old box edge (just inside) still counts", at(320.0 + half - 1, 120.0) is True)
+        check("seed tiles are marked seed, not stood",
+              all(t["source"] == "seed" for t in _tiles(mgr, "the vegetable truck").values()))
+        check("corner seed tile -> True", at(*_tile_center(mgr, x1, y1)) is True)
+        check("one tile past the edge -> False", at(*_tile_center(mgr, x1 + 1, ay)) is False)
+
+
+def test_place_grows_from_the_body():
+    """#113: a tile the APC stands on joins its bound place when it touches
+    the place (8-neighbour); farther tiles, stuck ticks and a full place do not."""
+    with tempfile.TemporaryDirectory() as tmp:
+        mgr = _manager(tmp)
+        name = "the vegetable truck"
+        mgr.place_db.add_owned_place("maren", 5, 5, name, dx=120.0, dy=-80.0)
+        ax, ay = mgr.world_grid.tile_of(320.0, 120.0)
+        at = lambda x, y: mgr._at_scheduled_place("maren", BLOCK, _obs(mgr, x, y))
+        at(320.0, 120.0)   # first resolve lays the seed tiles
+        east = max(tx for tx, _ in _tiles(mgr, name))   # the seeded east edge column
+        grow = lambda tx, ty, stuck=False: mgr._grow_place(
+            "maren", _obs(mgr, *_tile_center(mgr, tx, ty)), name, stuck)
+
+        grow(ax, ay)
+        anchor = _tiles(mgr, name)[(ax, ay)]
+        check("standing on a seed tile promotes it to stood",
+              anchor["source"] == "stood" and anchor["visits"] == 1
+              and anchor["first_by"] == "maren")
+        grow(ax, ay)
+        check("standing there again counts the tick",
+              _tiles(mgr, name)[(ax, ay)]["visits"] == 2)
+
+        check("before growth the edge+1 tile is not the place",
+              at(*_tile_center(mgr, east + 1, ay)) is False)
+        grow(east + 1, ay)
+        check("a touching tile is added as stood",
+              _tiles(mgr, name).get((east + 1, ay), {}).get("source") == "stood")
+        check("arrival counts the grown tile",
+              at(*_tile_center(mgr, east + 1, ay)) is True)
+
+        grow(east + 3, ay)
+        check("a tile two away is not added", (east + 3, ay) not in _tiles(mgr, name))
+        grow(east + 2, ay, stuck=True)
+        check("a stuck tick adds nothing", (east + 2, ay) not in _tiles(mgr, name))
+
+        mgr.place_db.add_owned_place("dufus", 5, 5, "The Vegetable Truck",
+                                     dx=-150.0, dy=60.0)
+        check("another owner's same-name place shares the tile set",
+              set(_tiles(mgr, "The Vegetable Truck")) == set(_tiles(mgr, name)))
+
+        import agent_runtime.agent_manager as am
+        saved = am._PLACE_MAX_TILES
+        am._PLACE_MAX_TILES = len(_tiles(mgr, name))
+        try:
+            grow(east + 2, ay)
+            check("a full place does not grow", (east + 2, ay) not in _tiles(mgr, name))
+        finally:
+            am._PLACE_MAX_TILES = saved
+        grow(east + 2, ay)
+        check("below the cap it grows again", (east + 2, ay) in _tiles(mgr, name))
 
 
 def test_wake_seeds_unknown_place():
@@ -273,7 +345,8 @@ def test_wake_schedule_line_rendering():
 def main():
     test_planner_at_place_override()
     test_at_scheduled_place_geometry()
-    test_at_scheduled_place_owned_box()
+    test_at_scheduled_place_owned_tiles()
+    test_place_grows_from_the_body()
     test_wake_seeds_unknown_place()
     test_attach_schedule_wake_flow()
     test_wake_directive_at_spawn()

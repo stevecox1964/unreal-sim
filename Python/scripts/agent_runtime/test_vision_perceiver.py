@@ -134,8 +134,27 @@ def test_perceive_via_anthropic_parses_and_passes_image():
         blocks = kw["messages"][0]["content"]
         check("an image block was sent", any(b.get("type") == "image" for b in blocks))
         check("a text prompt was sent", any(b.get("type") == "text" for b in blocks))
-        check("known character reached the prompt",
-              "Dufus" in next(b["text"] for b in blocks if b.get("type") == "text"))
+        text = next(b["text"] for b in blocks if b.get("type") == "text")
+        # SR66_P: handed names, the model called a mannequin 72 m away "Maren".
+        check("no character name reaches the vision prompt", "Dufus" not in text)
+        check("the prompt tells the eyes to label every person 'unknown person'",
+              "Label every person 'unknown person'" in text)
+
+
+def test_perceive_never_returns_a_name():
+    """Even if the model names someone, perception reports 'unknown person' —
+    identity comes only from engine recognition (#113, SR66_P)."""
+    @_with_env("VISION_PROVIDER=anthropic\nANTHROPIC_API_KEY=sk-test-123\n")
+    def body(img):
+        p = VisionPerceiver()
+        p._make_anthropic_client = lambda key: _FakeAnthropic(REPLY.replace(
+            '"label": "unknown person"', '"label": "Maren"'))
+        seen = p.perceive(str(img), known_characters=["Maren"])
+        check("a named figure comes back as 'unknown person'",
+              [c["label"] for c in seen["characters"]] == ["unknown person"])
+        check("its bearing and distance are kept",
+              seen["characters"][0]["bearing"] == "left"
+              and seen["characters"][0]["distance"] == "near")
 
 
 def test_missing_anthropic_key_degrades():
@@ -199,15 +218,12 @@ def test_gemini_sends_sniffed_media_type_for_jpeg():
         img.write_bytes(_JPEG + b" rest of a jpeg")
         saved_env = os.environ.pop("VISION_PROVIDER", None)   # default branch -> gemini
         fake = _FakeRequestsModule({"choices": [{"message": {"content": REPLY}}]})
-        saved_mod = sys.modules.get("requests")
-        sys.modules["requests"] = fake                        # the lazy `import requests` picks this up
+        saved_mod = perception.http_retry.requests
+        perception.http_retry.requests = fake                 # the HTTP call goes through http_retry
         try:
             seen = VisionPerceiver().perceive(str(img))
         finally:
-            if saved_mod is not None:
-                sys.modules["requests"] = saved_mod
-            else:
-                sys.modules.pop("requests", None)
+            perception.http_retry.requests = saved_mod
             if saved_env is not None:
                 os.environ["VISION_PROVIDER"] = saved_env
         check("gemini perceive parsed ok", seen["landmarks"][0]["label"] == "Don's Donuts")
@@ -233,6 +249,7 @@ def test_gemini_still_default():
 def main():
     test_resolves_anthropic_haiku_default()
     test_perceive_via_anthropic_parses_and_passes_image()
+    test_perceive_never_returns_a_name()
     test_perceive_parses_footing()
     test_media_type_sniffs_real_bytes()
     test_perceive_sends_sniffed_media_type_for_jpeg()

@@ -17,6 +17,7 @@ unchanged; the manager executes it leg by leg. Covers:
 """
 from __future__ import annotations
 
+import math
 import sys
 import tempfile
 import json
@@ -254,7 +255,9 @@ def test_executor_fallbacks():
 
 
 def test_at_place_wander_stays_inside_place():
-    """SR11 regression: Dufus may roam the square, but not leave its cell."""
+    """SR11 regression: Dufus may roam the square, but not leave it. Since #113
+    a tiled place may be roamed one tile past its edge (that frontier tile is
+    how a place grows into a building) — never further."""
     with tempfile.TemporaryDirectory() as tmp:
         mgr, _ = _manager(tmp)
         dufus = StubAgent("dufus")
@@ -266,8 +269,15 @@ def test_at_place_wander_stays_inside_place():
         bounded = mgr._bound_at_place_movement(dufus, {"type": "wander"}, obs)
         target = bounded.get("location")
         check("wander becomes a deterministic bounded walk", bounded["type"] == "walk_to")
-        check("bounded wander remains in the place extent",
-              abs(target[0] - 200.0) <= 450 and abs(target[1] - 200.0) <= 450)
+        tiles = {(t["tx"], t["ty"]) for t in mgr.place_db.place_tiles("village square")}
+        reach = {(tx + i, ty + j) for tx, ty in tiles for i in (-1, 0, 1) for j in (-1, 0, 1)}
+        check("bounded wander ends in the place or its one-tile frontier",
+              mgr.world_grid.tile_of(target[0], target[1]) in reach)
+        check("bounded wander is shorter than a raw 15 m step",
+              math.hypot(target[0] - 390.0, target[1] - 200.0) < 1500.0)
+        far = {(tx + i, ty) for tx, ty in reach for i in (1, 2)} - reach
+        check("the frontier is the limit, not two tiles out",
+              mgr.world_grid.tile_of(target[0], target[1]) not in far)
 
 
 def test_nearby_apcs_and_perception_evidence():

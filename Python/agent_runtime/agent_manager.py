@@ -3364,17 +3364,20 @@ class AgentManager:
     def _with_tiles(self, endpoint: dict) -> dict:
         """Attach the place's 3 m tiles (#113) to a resolved endpoint.
 
-        The first time a place resolves with no tiles, seed tiles are laid over
-        its old extent box around the anchor (900 cm -> 3x3), so arrival keeps
-        its old size until bodies stand on the place and grow it.
+        The first time a place resolves with no tiles, seed tiles are laid on
+        every tile the old extent box touches, so every spot that counted as
+        arrival before still does (a 2 m box straddling a tile edge must not
+        shrink to the one tile the anchor happens to sit on). Bodies standing on
+        the place then grow it.
         """
         name = endpoint["name"]
         rows = self.place_db.place_tiles(name)
         if not rows:
-            ax, ay = self.world_grid.tile_of(*endpoint["xy"])
-            r = max(0, round((float(endpoint["extent_cm"]) / TILE_CM - 1) / 2))
+            (x, y), half = endpoint["xy"], float(endpoint["extent_cm"]) / 2.0
+            x0, y0 = self.world_grid.tile_of(x - half, y - half)
+            x1, y1 = self.world_grid.tile_of(x + half, y + half)
             seeded = self.place_db.seed_place_tiles(
-                name, [(ax + i, ay + j) for i in range(-r, r + 1) for j in range(-r, r + 1)])
+                name, [(tx, ty) for tx in range(x0, x1 + 1) for ty in range(y0, y1 + 1)])
             if seeded:
                 logger.info("place '%s': seeded %d tiles around its anchor", name, seeded)
             rows = self.place_db.place_tiles(name)
