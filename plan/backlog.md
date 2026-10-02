@@ -123,6 +123,13 @@ saves its full prompt + answer (`logs\api_calls\prompts\SR<n>\`, newest 5 runs) 
   away) Dufus greets Maren **10/10**; with the new eyes ("unknown person") **0/10** (8 greet the figure —
   mannequin learning per #109 — 2 observe).
 
+- **Name list can go** (`roster_removal`, n=10): without "Characters You May Encounter" and its "a
+  matching figure IS that person" rule, Dufus still greets the engine-recognised Maren 2 m away 10/10;
+  with strangers only, choices unchanged (9/10 greet the figure either way). Saves only ~25 tokens —
+  the point is removing a false-identity path, not size.
+- **Raw x,y,z can go** (`no_coordinates`, n=20): travelling to Don's Donuts, `walk_to Don's Donuts`
+  18/20 with and 18/20 without the coordinates line.
+
 **Proposed build (not started):** code picks the prompt by the wake reason the lizard brain already
 knows — *talk* (someone spoke / came close: persona + rules, who is close, what was said, people known),
 *move* (schedule travel, stuck, blocked: places, path facts, movement doctrine), *plan* (wake, schedule

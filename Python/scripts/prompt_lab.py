@@ -206,8 +206,53 @@ def exp_talk_split():
     return out
 
 
+def _no_roster(system: str, user: str) -> tuple[str, str]:
+    """Drop the always-on name list and the rule that a matching figure IS that person."""
+    user = _drop_section(user, "Characters You May Encounter")
+    user = user.replace("; one matching\n\"Characters You May Encounter\" is that person.", ".")
+    return system, user
+
+
+def _no_coordinates(system: str, user: str) -> tuple[str, str]:
+    """Drop the raw engine position line ("x=…, y=…, z=…")."""
+    return system, re.sub(r"\nx=-?\d+, y=-?\d+, z=-?\d+", "", user)
+
+
+def exp_roster_removal():
+    """H: without the always-on name list (and its "a matching figure IS that
+    person" rule) Dufus still greets the real Maren when the engine recognises
+    her 2 m away, and no longer treats a stranger as someone he knows."""
+    out = {}
+    close = _scene_village_square(
+        [{"label": "Maren", "bearing": "center", "distance": "near", "distance_cm": 200.0,
+          "confidence": 1.0, "source": "engine"}] + _FIGURES,
+        "A person stands right in front of the NPC on the square.",
+        nearby=[{"name": "Maren", "distance_cm": 200.0}])
+    stranger = _scene_village_square(
+        _FIGURES, "A quiet square with a bank and a flag; two people stand to the left.")
+    for label, scene in (("engine sees Maren 2 m", close), ("strangers only", stranger)):
+        full = build_prompt("dufus", scene, _MEMORIES)
+        out[f"{label} / with roster"] = full
+        out[f"{label} / no roster"] = _no_roster(*full)
+    return out
+
+
+def exp_no_coordinates():
+    """H: removing the raw engine coordinates ("x=…, y=…, z=…") does not change
+    choices — the APC navigates by places, compass and sight, not numbers."""
+    scene = _scene_village_square(
+        _FIGURES, "A quiet square with a bank and a flag; two people stand to the left.")
+    scene["schedule"] = {"status": "travel", "place": "Don's Donuts",
+                         "intent": "walk to Don's Donuts for a coffee and a donut",
+                         "block": {"start": "10:00", "end": "11:00", "place": "Don's Donuts",
+                                   "activity": "coffee and a donut"}}
+    full = build_prompt("dufus", scene, _MEMORIES)
+    return {"travel / with x,y,z": full, "travel / no x,y,z": _no_coordinates(*full)}
+
+
 EXPERIMENTS = {"phantom_maren": exp_phantom_maren, "survey_trim": exp_survey_trim,
-               "close_maren": exp_close_maren, "talk_split": exp_talk_split}
+               "close_maren": exp_close_maren, "talk_split": exp_talk_split,
+               "roster_removal": exp_roster_removal, "no_coordinates": exp_no_coordinates}
 
 
 # ── Sampling ──────────────────────────────────────────────────────────────────
