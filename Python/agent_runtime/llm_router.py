@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 from . import agenda
 from . import api_call_log
+from . import http_retry
 from . import prompt_payload
 from .place_db import yaw_to_compass
 
@@ -35,8 +36,8 @@ _ACTION_SCHEMAS: dict[str, str] = {
     "survey_here":      '{"type": "survey_here"} to survey the cell you are standing in — captures all four compass headings over the next few ticks and adds the cell to the shared map. Only works on a cell that has no current survey, and only for the cell underfoot',
     "refuse_cell":      '{"type": "refuse_cell", "direction": "north|south|east|west|northeast|northwest|southeast|southwest", "reason": "<what you can see that makes it not worth walking into>"} to record that the cell one step that way is not ground you will walk into. It stops being offered as somewhere to survey, for you and for every other APC, until someone withdraws it. Use it when you can SEE the reason — standing crops, water, a fence, someone\'s private yard. Omit "direction" to refuse the cell you are standing in. Add "scope": "spot" to refuse only the ~9m patch of ground one step that way instead of the whole 30m cell — use the patch for one bad yard, alley or doorway inside a cell that is otherwise worth surveying; use the whole cell for corn fields, water, and ground that is bad wall to wall',
     "allow_cell":       '{"type": "allow_cell", "direction": "<compass word, or omit for here>"} to withdraw a refusal you made earlier — the cell goes back to being ordinary ground. Add "scope": "spot" to withdraw a patch refusal instead',
-    "speak_to":         '{"type": "speak_to", "target": "<character name>", "message": "<text>"} -- say something out loud to someone. This is the ONLY action that produces speech: greeting, answering, asking, thanking, saying goodbye. If you intend to say anything at all this tick, the action is speak_to. "idle" and "observe" are silent. You talk from within 3 m, facing them: if they are farther, your body walks up to them first and then says it',
-    "inspect_object":   '{"type": "inspect_object", "target": "<character name>"} -- look closely at someone or something. Works from within 3 m: if it is farther, your body walks up to it first',
+    "speak_to":         '{"type": "speak_to", "target": "<character name>", "message": "<text>"} -- say something out loud to someone. This is the ONLY action that produces speech: greeting, answering, asking, thanking, saying goodbye. If you intend to say anything at all this tick, the action is speak_to. "idle" and "observe" are silent. You talk from within 3 m, facing them: if they are farther, nothing is said and you are told how far they are. Do not go looking for people to talk to; answer them when they are close',
+    "inspect_object":   '{"type": "inspect_object", "target": "<character name>"} -- look closely at someone or something. Works from within 3 m: if it is farther, nothing happens',
     "follow_character": '{"type": "follow_character", "target": "<character name>"}',
     "attack":           '{"type": "attack", "target": "<character name>"}',
     "flee":             '{"type": "flee"}',
@@ -789,7 +790,6 @@ performed an action. Do not output JSON or markdown."""
                            image_path: str | None = None, json_mode: bool = True) -> str:
         """OpenRouter (#110): OpenAI-compatible chat completions, any vendor's model."""
         import base64
-        import requests
 
         content: list[dict] | str = user_text
         if image_path and Path(image_path).exists():
@@ -809,7 +809,7 @@ performed an action. Do not output JSON or markdown."""
         }
         if json_mode:
             body["response_format"] = {"type": "json_object"}
-        response = requests.post(
+        response = http_retry.post(
             _OPENROUTER_ENDPOINT,
             headers={"Authorization": f"Bearer {self._resolve_api_key('openrouter')}",
                      "Content-Type": "application/json",
@@ -829,9 +829,8 @@ performed an action. Do not output JSON or markdown."""
         return _strip_markdown_fences(text)
 
     def _decide_openai(self, model: str, system_text: str, user_text: str) -> str:
-        import requests
 
-        response = requests.post(
+        response = http_retry.post(
             "https://api.openai.com/v1/responses",
             headers={
                 "Authorization": f"Bearer {self._resolve_api_key('openai')}",
@@ -867,9 +866,8 @@ performed an action. Do not output JSON or markdown."""
 
     def _openai_text(self, model: str, system_text: str, user_text: str) -> str:
         """OpenAI Responses call for plain conversational text, not action JSON."""
-        import requests
 
-        response = requests.post(
+        response = http_retry.post(
             "https://api.openai.com/v1/responses",
             headers={
                 "Authorization": f"Bearer {self._resolve_api_key('openai')}",
@@ -1463,7 +1461,9 @@ def _nearby_character_lines(characters: list | None) -> str:
     for character in characters or []:
         name = str(character.get("name") or "").strip()
         if name:
-            lines.append(f"- {name} — about {round((character.get('distance_cm') or 0) / 100)} m away")
+            distance_cm = character.get("distance_cm") or 0
+            close = " — close enough to talk" if distance_cm <= 350 else ""
+            lines.append(f"- {name} — about {round(distance_cm / 100)} m away{close}")
     return "\n".join(lines) or "No other APC is nearby."
 
 

@@ -9,6 +9,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from . import api_call_log
+from . import http_retry
 
 logger = logging.getLogger("AgentRuntime")
 
@@ -46,7 +47,7 @@ stands immediately in front.
 Schema:
 {{
   "landmarks":  [{{"label": "<place>", "bearing": "left|center|right", "distance": "near|mid|far", "confidence": 0.0}}],
-  "characters": [{{"label": "<who, or 'unknown person'>", "bearing": "left|center|right", "distance": "near|mid|far", "confidence": 0.0}}],
+  "characters": [{{"label": "unknown person", "bearing": "left|center|right", "distance": "near|mid|far", "confidence": 0.0}}],
   "footing": "pavement|road|dirt_path|grass|cultivated_field|water|other",
   "ground_ahead": "pavement|road|dirt_path|grass|cultivated_field|water|building_interior|other",
   "path_ahead": "open|dead_end|blocked",
@@ -124,7 +125,6 @@ class VisionPerceiver:
         an empty result carrying an ``"error"`` key, so a perception failure
         degrades the tick instead of crashing the simulation loop.
         """
-        import requests
 
         provider, key, model = self._resolve()
         if provider != "ollama" and not key:
@@ -134,13 +134,14 @@ class VisionPerceiver:
         if not image_path or not Path(image_path).exists():
             return _empty(f"image not found: {image_path}")
 
-        known = known_characters or []
-        known_line = (
-            f"Known characters you may see: {', '.join(known)}. "
-            "If a figure matches one, use that name; otherwise 'unknown person'.\n"
-            if known else ""
-        )
-        prompt = _PROMPT.format(known_line=known_line)
+        # The eyes never name people (SR66_P): handed a list of names, the
+        # model called a mannequin 72 m from Maren "Maren, near", and Dufus
+        # went to greet her. Who someone is comes from the body — engine
+        # recognition, in view and within 25 m (_identify_visible_apcs).
+        # ``known_characters`` is accepted for callers but no longer used.
+        prompt = _PROMPT.format(
+            known_line="Label every person 'unknown person': you cannot tell who "
+                       "someone is from a picture.\n")
 
         try:
             with api_call_log.track("vision", None, provider, model):
@@ -155,7 +156,7 @@ class VisionPerceiver:
                 else:
                     raw = Path(image_path).read_bytes()
                     b64 = base64.standard_b64encode(raw).decode()
-                    response = requests.post(
+                    response = http_retry.post(
                         _OPENROUTER_ENDPOINT if provider == "openrouter" else _GEMINI_ENDPOINT,
                         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
                         json={
@@ -187,7 +188,8 @@ class VisionPerceiver:
 
         return {
             "landmarks": _clean(data.get("landmarks")),
-            "characters": _clean(data.get("characters")),
+            "characters": [{**c, "label": "unknown person"}
+                           for c in _clean(data.get("characters"))],
             "footing": str(data.get("footing", "")),
             "ground_ahead": str(data.get("ground_ahead", "")),
             "path_ahead": str(data.get("path_ahead", "")),
