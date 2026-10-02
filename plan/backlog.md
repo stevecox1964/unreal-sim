@@ -271,6 +271,17 @@ tile the old box touches (a 2 m place had shrunk to one tile).
 "Someone came close" end-to-end: `test_event_driven_cognition.py` (15 m stays asleep, 2 m wakes once,
 staying close does not re-wake, stepping out and back in is a new event; mutation-checked).
 
+**Why nobody went inside (prompt lab `go_inside`, 2026-10-02, n=20, Dufus at Don's open door for
+coffee):** today he steps in **4/20** and "observes the interior" from the sidewalk 16/20. The cause:
+the at-place routine line listed only `(idle, observe, speak to someone nearby)`. The doctrine line
+"you may walk inside" did nothing (4→8/20 without it — noise); a tile fact ("nobody has stood inside
+yet") 7/20; clarifying `observe` 7/20. **New routine wording (BUILT):** "do the activity here. Here
+includes the inside: stepping in through a door or up to a counter with short local moves … is part of
+the place" → **8/20**; guard `maren_stays_put`: Maren at her truck still stays put **20/20**.
+**The big lever is the goal text:** activity "order a coffee and a donut **at the counter inside**"
+→ **18/20 go in**. Dufus's agenda says "get coffee and a donut" — the user's call whether to reword it
+(authored content).
+
 **Not in scope (parked):** survey treats interiors as off-limits (`doctrine/survey.md`) — Dufus is a
 townsperson now, so left alone. Route the travel target to the nearest *stood* tile instead of the
 anchor — only if the live run shows APCs stuck outside.

@@ -1,0 +1,339 @@
+{
+ "experiment": "maren_stays_put",
+ "doc": "Guard for the routine-menu change: Maren settled at her truck with no\ncustomers must still stay at her post when the menu allows local moves.",
+ "n": 20,
+ "variants": {
+  "Maren at truck / today's menu": {
+   "approx_tokens": 4257,
+   "summary": "observe: 14, idle: 6",
+   "samples": [
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, but the road is empty and no one is speaking to me; I will observe to see if anyone approaches.",
+     "ms": 1594.4247000006726
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe for any potential customers.",
+     "ms": 1632.4434999987716
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1558.929699996952
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1627.2576999908779
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, but the road is empty and no one has spoken to me yet; I will observe the surroundings to see if anyone approaches.",
+     "ms": 1564.4526999967638
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and it is mid-morning; the road is empty so I will stay here and tend the wares.",
+     "ms": 1875.555799997528
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is currently empty; I will observe to see if anyone approaches.",
+     "ms": 1620.271200008574
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, facing the road. It is 09:20, well within my morning hours (08:00\u201312:00). The road is empty and no one is speaking to me. My routine is to tend the vegetables and greet customers; since there are none, I will idle and observe.",
+     "ms": 1886.0545000061393
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, on a quiet morning with no customers to greet yet.",
+     "ms": 1526.5587000030791
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, on the road. The road is empty and no one is speaking to me, so I will stay here and observe.",
+     "ms": 1711.4516000001458
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1557.469500010484
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, but no one is here to talk to or buy anything. I will observe the empty street to see if anyone approaches.",
+     "ms": 1929.0450000116834
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, on a quiet morning with no customers to greet yet.",
+     "ms": 1387.594599989825
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1542.0482999907108
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will stay here and observe for customers as per my routine.",
+     "ms": 1662.639100002707
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1488.14560000028
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and it is time to tend the wares and wait for customers as per my schedule.",
+     "ms": 1450.3761000087252
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, with no customers currently present to greet or serve.",
+     "ms": 1563.5672999924282
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will stay here and observe for any customers.",
+     "ms": 1466.3548000098672
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe the surroundings to stay ready for customers.",
+     "ms": 1470.0875999988057
+    }
+   ]
+  },
+  "Maren at truck / new menu": {
+   "approx_tokens": 4297,
+   "summary": "observe: 17, idle: 3",
+   "samples": [
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is clear; I will observe to see if anyone approaches.",
+     "ms": 1603.4462999959942
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and it is morning. The road is empty, so I will observe my surroundings to see if anyone approaches or if anything has changed overnight.",
+     "ms": 1665.9838000050513
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, but the road is empty and no one has spoken to me; I will observe the scene to stay alert for customers.",
+     "ms": 1682.0046000066213
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, on time. The road is empty so I will observe to see if anyone approaches or if anything has changed.",
+     "ms": 2928.538300009677
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, but the road is empty and no one is speaking to me. I will observe the surroundings to see if anyone is approaching or if there is anything else of note.",
+     "ms": 1633.5304000094766
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at the vegetable truck as scheduled, but the road is empty and no one is speaking to me. I will observe the surroundings to see if anyone approaches or if anything has changed.",
+     "ms": 2280.339200005983
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1637.3246000002837
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, on the main street. The road is empty and no one is speaking to me yet. I will observe the surroundings to see if any customers are approaching.",
+     "ms": 2113.5306999931345
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, on the main street. The road is empty and no one is speaking to me, so I will observe the surroundings to maintain awareness of any passersby.",
+     "ms": 2004.0852000092855
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is currently empty of customers.",
+     "ms": 1723.4399000008125
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, but no one is here to talk to or buy anything right now. I will observe the surroundings to see if anyone approaches.",
+     "ms": 1579.2189999920083
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, on the road. The road is empty and no one is speaking to me, so I will stay here and tend my wares.",
+     "ms": 1655.4119999927934
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, with no customers or interruptions to attend to right now.",
+     "ms": 1387.7928000001702
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, on time for the morning shift. The road is empty right now, so I will observe the surroundings to see if anyone is approaching or if anything has changed overnight.",
+     "ms": 1687.3419000039576
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1440.8617000008235
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1547.3244999884628
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1552.3455999937141
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, facing the road. The road is empty and no one has spoken to me, so I will observe the surroundings to see if anyone approaches.",
+     "ms": 1555.4049999918789
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and it is time to tend to my wares as per my schedule.",
+     "ms": 1638.5379999992438
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at my post, the vegetable truck, and the road is empty; I will observe to see if anyone approaches.",
+     "ms": 1573.1664999912027
+    }
+   ]
+  }
+ }
+}

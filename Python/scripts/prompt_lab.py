@@ -371,10 +371,102 @@ def exp_too_far_fact():
     return out
 
 
+def exp_go_inside():
+    """H (#113, SR66_P: nobody went inside): standing at Don's Donuts for coffee
+    with the open door straight ahead, Qwen mostly stays on the sidewalk; the
+    doctrine line "you may walk inside" has little effect; a tile FACT ("this
+    place covers only street so far; nobody has stood inside") gets him in."""
+    grid = WorldGrid.load(WORLD / "world_grid.json")
+    x, y = -4570.0, -850.0
+    scene = {
+        "location": {"x": x, "y": y, "z": 90.0}, "rotation": {"x": 0.0, "y": 270.0, "z": 0.0},
+        "grid": grid.locate(x, y),
+        "place_context": _place_context("Don's Donuts building with large donut sign"),
+        "world_time": "Day 1, 08:20", "current_action": "idle",
+        "known_characters": ["Maren"], "nearby_characters": [],
+        "seen": {"caption": "The open front door of Don's Donuts is straight ahead; through it "
+                            "a counter, stools and a coffee machine.",
+                 "characters": [],
+                 "landmarks": [{"label": "Don's Donuts front door", "bearing": "center",
+                                "distance": "near", "confidence": 0.9},
+                               {"label": "Don's Donuts sign", "bearing": "center",
+                                "distance": "near", "confidence": 0.95}],
+                 "footing": "pavement", "ground_ahead": "building_interior",
+                 "path_ahead": "open"},
+        "schedule": {"status": "act", "place": "Don's Donuts",
+                     "intent": "get coffee and a donut at Don's Donuts",
+                     "block": {"start": "08:00", "end": "09:00", "place": "Don's Donuts",
+                               "activity": "get coffee and a donut"}},
+    }
+    system, user = build_prompt("dufus", scene, _MEMORIES)
+    doctrine_line = ("- When you arrive at a building, you may walk inside it with short local moves.\n"
+                     "  Every 3 m of floor you stand on there becomes part of that place for\n"
+                     "  everyone, so the place grows to cover where people can really go.\n")
+    assert doctrine_line in system, "doctrine line not found in the rendered rules"
+    fact = ("Sense: the place \"Don's Donuts\" covers only street and sidewalk so far — "
+            "nobody has stood inside it yet.\n")
+    marker = "## Your Current State\n"
+    old_menu = ("stay here and do the activity (idle, observe, speak to someone nearby).")
+    new_menu = ("do the activity here. Here includes the inside: stepping in through a "
+                "door or up to a counter with short local moves (forward, left, right) is "
+                "part of the place, not leaving it. Idle, observe or speak to someone "
+                "nearby are fine too.")
+    assert old_menu in user, "routine menu text not found"
+    return {"doctrine line (today)": (system, user),
+            "no doctrine line": (system.replace(doctrine_line, ""), user),
+            "doctrine + tile fact": (system, user.replace(marker, marker + fact, 1)),
+            "routine allows stepping inside": (system, user.replace(old_menu, new_menu)),
+            "agenda says: order at the counter inside": build_prompt("dufus", {
+                **scene, "schedule": {
+                    "status": "act", "place": "Don's Donuts",
+                    "intent": "go in and order a coffee and a donut at the counter inside "
+                              "Don's Donuts",
+                    "block": {"start": "08:00", "end": "09:00", "place": "Don's Donuts",
+                              "activity": "order a coffee and a donut at the counter inside"}}},
+                _MEMORIES),
+            "routine + observe means you stay put": (
+                system.replace('{"type": "observe"}',
+                               '{"type": "observe"} -- take one more look from exactly where '
+                               'you stand; you do not move', 1),
+                user.replace(old_menu, new_menu))}
+
+
+def exp_maren_stays_put():
+    """Guard for the routine-menu change: Maren settled at her truck with no
+    customers must still stay at her post when the menu allows local moves."""
+    grid = WorldGrid.load(WORLD / "world_grid.json")
+    x, y = -8700.0, 80.0
+    scene = {
+        "location": {"x": x, "y": y, "z": 90.0}, "rotation": {"x": 0.0, "y": 0.0, "z": 0.0},
+        "grid": grid.locate(x, y), "place_context": None,
+        "world_time": "Day 1, 09:20", "current_action": "idle",
+        "known_characters": ["Dufus"], "nearby_characters": [],
+        "seen": {"caption": "The vegetable truck's open side with crates of produce; the road "
+                            "is empty.", "characters": [],
+                 "landmarks": [{"label": "vegetable truck", "bearing": "center",
+                                "distance": "near", "confidence": 0.95}],
+                 "footing": "road", "ground_ahead": "road", "path_ahead": "blocked"},
+        "schedule": {"status": "act", "place": "vegetable truck",
+                     "intent": "sell vegetables from the truck",
+                     "block": {"start": "08:00", "end": "12:00", "place": "vegetable truck",
+                               "activity": "sell vegetables from the truck"}},
+    }
+    system, user = build_prompt("maren", scene, [])
+    old_menu = "stay here and do the activity (idle, observe, speak to someone nearby)."
+    new_menu = ("do the activity here. Here includes the inside: stepping in through a "
+                "door or up to a counter with short local moves (forward, left, right) is "
+                "part of the place, not leaving it. Idle, observe or speak to someone "
+                "nearby are fine too.")
+    assert old_menu in user
+    return {"Maren at truck / today's menu": (system, user),
+            "Maren at truck / new menu": (system, user.replace(old_menu, new_menu))}
+
+
 EXPERIMENTS = {"phantom_maren": exp_phantom_maren, "survey_trim": exp_survey_trim,
                "close_maren": exp_close_maren, "talk_split": exp_talk_split,
                "roster_removal": exp_roster_removal, "no_coordinates": exp_no_coordinates,
-               "context_stress": exp_context_stress, "too_far_fact": exp_too_far_fact}
+               "context_stress": exp_context_stress, "too_far_fact": exp_too_far_fact,
+               "go_inside": exp_go_inside, "maren_stays_put": exp_maren_stays_put}
 
 
 # ── Sampling ──────────────────────────────────────────────────────────────────

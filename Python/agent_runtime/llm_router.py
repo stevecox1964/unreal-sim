@@ -1853,10 +1853,16 @@ def _schedule_note(directive: dict | None) -> str:
                 f"it involves people, it happens at the destination. What is worth "
                 f"a brief pause on the way is set by your rules.")
     if directive.get("place"):
+        # #113: the old menu here listed only idle/observe/speak, so an APC at a
+        # shop door "observed the interior" from the sidewalk and never went in
+        # (prompt lab go_inside: 4/20 stepped in; 8/20 with this wording; Maren
+        # at her truck still stays put 20/20).
         return (f"{intent}\nYour position confirms you are already at "
                 f"{directive['place']} — even if you cannot see it in frame. Do "
-                f"NOT walk_to it or go looking for it; stay here and do the "
-                f"activity (idle, observe, speak to someone nearby).")
+                f"NOT walk_to it or go looking for it; do the activity here. Here "
+                f"includes the inside: stepping in through a door or up to a counter "
+                f"with short local moves (forward, left, right) is part of the place, "
+                f"not leaving it. Idle, observe or speak to someone nearby are fine too.")
     return f"{intent}\nYou are where you should be — do this where you are."
 
 

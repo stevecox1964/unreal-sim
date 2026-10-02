@@ -278,6 +278,10 @@ def test_schedule_note_weighting():
                           "intent": "You're at stall where you should be — sell."})
     check("act-at-place forbids walking to it (anti-orbit, 2026-07-05)",
           "position confirms" in act and "Do NOT walk_to" in act)
+    check("act-at-place lets the APC step inside with local moves (#113, go_inside lab)",
+          "Here includes the inside" in act and "short local moves" in act)
+    check("act-at-place no longer offers only stationary actions",
+          "(idle, observe, speak to someone nearby)" not in act)
     act_placeless = _schedule_note({"status": "act", "place": "",
                                     "intent": "Time to sell."})
     check("placeless act keeps the generic line",

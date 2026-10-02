@@ -1,0 +1,173 @@
+{
+ "experiment": "go_inside",
+ "doc": "H (#113, SR66_P: nobody went inside): standing at Don's Donuts for coffee\nwith the open door straight ahead, Qwen mostly stays on the sidewalk; the\ndoctrine line \"you may walk inside\" has little effect; a tile FACT (\"this\nplace covers only street so far; nobody has stood inside\") gets him in.",
+ "n": 20,
+ "variants": {
+  "agenda says: order at the counter inside": {
+   "approx_tokens": 4885,
+   "summary": "walk_to -> forward: 17, observe: 2, walk_to -> Don's Donuts counter: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and it is time for my coffee and donut, so I will go inside to find the counter.",
+     "ms": 1829.981200004113
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right in front of Don's Donuts with the door open, so I should go inside to get my coffee and donut as planned.",
+     "ms": 1911.6544999997132
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts counter",
+     "message": null,
+     "thought": "I am at Don's Donuts and it is time for my morning coffee and donut, so I will go inside to the counter.",
+     "ms": 3416.8662000010954
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and it is time for my morning coffee and donut, so I will go inside to the counter.",
+     "ms": 1829.429200006416
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and it is time for my morning coffee and donut, so I will go inside to see who is there.",
+     "ms": 1824.7742999956245
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and need to go inside to order coffee and a donut as per my routine.",
+     "ms": 1650.2238999964902
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and it is time for my morning coffee and donut, so I will go inside to order.",
+     "ms": 1708.2059999956982
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the open door of Don's Donuts, which is exactly where my routine says I should be to order coffee and a donut. I see the counter inside, so I will step forward to get closer to it.",
+     "ms": 1826.137900003232
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the entrance of Don's Donuts and my routine is to go inside, order coffee and a donut, and talk to people. I will enter the shop.",
+     "ms": 1760.7710000011139
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, so I will go inside to order my coffee and donut while keeping an eye out for anyone to chat with.",
+     "ms": 1621.9940000009956
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the front door of Don's Donuts with my coffee and donut goal waiting, so I will go inside to find a stool and enjoy my breakfast treat.",
+     "ms": 1818.9507000060985
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the open door of Don's Donuts, which is where I need to be for my morning coffee and donut routine; since I have no one else to talk to yet, I will step inside to get closer to the counter.",
+     "ms": 2020.7125000015367
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the open door of Don's Donuts, which is where I need to be for my morning routine. The ground ahead is clear pavement leading into the shop interior, so I will step forward to get inside and find someone to talk to.",
+     "ms": 2185.3005000011763
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and it is time for coffee, so I will go inside to the counter.",
+     "ms": 1520.7909000018844
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the entrance of Don's Donuts as scheduled, so I will go inside to order my coffee and donut.",
+     "ms": 1788.6553999996977
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts and the routine says to order a coffee and donut, but I see no one behind the counter to speak to right now, so I will observe the interior to see if someone appears or if I need to move.",
+     "ms": 1654.736700002104
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the entrance of Don's Donuts, which is where I need to be for my morning routine. The door is open and inviting, so I should go inside to get my coffee and donut as planned.",
+     "ms": 2018.2403000071645
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and need to go inside to order coffee and a donut as per my routine.",
+     "ms": 1491.8688000034308
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, and since I need to order a coffee and donut but see no one yet to talk to, I will observe the interior to find the counter and any staff.",
+     "ms": 1853.2594999996945
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right in front of Don's Donuts with the door open, so I will go inside to get my coffee and donut as planned.",
+     "ms": 1653.4507000033045
+    }
+   ]
+  }
+ }
+}

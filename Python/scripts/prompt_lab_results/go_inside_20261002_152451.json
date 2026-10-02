@@ -1,0 +1,505 @@
+{
+ "experiment": "go_inside",
+ "doc": "H (#113, SR66_P: nobody went inside): standing at Don's Donuts for coffee\nwith the open door straight ahead, Qwen mostly stays on the sidewalk; the\ndoctrine line \"you may walk inside\" has little effect; a tile FACT (\"this\nplace covers only street so far; nobody has stood inside\") gets him in.",
+ "n": 20,
+ "variants": {
+  "doctrine line (today)": {
+   "approx_tokens": 4877,
+   "summary": "observe: 16, walk_to -> forward: 4",
+   "samples": [
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am standing at the entrance of Don's Donuts, which is where my schedule says I should be for coffee and a donut. Since there is no one else visible right now to talk to, I will observe the interior to see if anyone is inside.",
+     "ms": 2041.9313999882434
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the entrance of Don's Donuts, which is where my schedule says I should be for coffee and donuts. The door is open and inviting, so I will go inside to start my routine.",
+     "ms": 2267.6465999975335
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will look around the shop interior to see if anyone is behind the counter or on the stools.",
+     "ms": 1868.1865999969887
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts for my scheduled coffee and donut, but I see no one to talk to yet, so I will look around the interior.",
+     "ms": 1850.0659999990603
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the interior while waiting for customers.",
+     "ms": 1567.9726999951527
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am standing at the open door of Don's Donuts, which is where I need to be for my morning routine of coffee and donuts. Since no one is speaking to me yet, I will observe the interior to see if Don or anyone else is there.",
+     "ms": 1907.5011999957496
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to right now, so I will observe the shop interior while waiting for customers or my next schedule change.",
+     "ms": 1977.0312999899033
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the shop interior and wait for customers or staff to appear.",
+     "ms": 1722.3266000073636
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right in front of the open door to Don's Donuts, which is exactly where I need to be for my coffee and donut routine. I will step inside to join the activity.",
+     "ms": 1793.7311999994563
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but nobody is here to talk to yet, so I will just look around and wait for someone to walk in.",
+     "ms": 1820.6864999956451
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts for my morning coffee and donut routine, but I see no one to talk to right now so I will just stand here and look around cheerfully.",
+     "ms": 3372.837000002619
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and it is time for my morning coffee and donut, so I will go inside to the counter.",
+     "ms": 1715.989800009993
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to right now, so I will observe the shop interior and wait for someone to arrive or for my schedule to move me along.",
+     "ms": 1928.3946000068681
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to right now, so I will observe the shop interior and wait for a customer or friend.",
+     "ms": 1847.3578999983147
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts and it is time for coffee and a donut, but I see no one to talk to right now, so I will look around the shop interior.",
+     "ms": 1732.6782000018284
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to right now, so I will look around the shop interior for potential customers or just enjoy the vibe.",
+     "ms": 1618.9360999997007
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to right now, so I will observe the interior and wait for a customer or the owner to appear.",
+     "ms": 1727.4417000007816
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the shop interior and wait for customers or staff.",
+     "ms": 1645.0610000028973
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the front door of Don's Donuts, which is where I need to be for my morning routine. The schedule says to get coffee and a donut and talk to anyone there, so I will go inside to find someone.",
+     "ms": 1939.6074999967823
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the interior to find someone or just enjoy the donut spot.",
+     "ms": 1585.5976000020746
+    }
+   ]
+  },
+  "no doctrine line": {
+   "approx_tokens": 4822,
+   "summary": "observe: 12, walk_to -> forward: 8",
+   "samples": [
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts for my scheduled coffee and donut time, but I see no one to talk to right now, so I will observe the shop interior.",
+     "ms": 1715.0474000081886
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the entrance of Don's Donuts, which is where I need to be for my morning routine. The door is open and I can see inside, but no one is immediately visible in the doorway or just outside to talk to yet.",
+     "ms": 2057.2244000068167
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the interior and wait for someone to arrive.",
+     "ms": 1709.9226999998791
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the front door of Don's Donuts, which is where I need to be for my coffee and donut routine! Since no one is here to talk to yet, I will just go inside and look around.",
+     "ms": 2264.1886999917915
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet; I will observe the interior to see if anyone arrives or if there is anything interesting to notice.",
+     "ms": 1643.2586000009906
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the shop interior while waiting for customers or friends.",
+     "ms": 1723.2941999973264
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, looking at the counter and stools, so I will observe to see if anyone is there to talk to.",
+     "ms": 2255.880900003831
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to right now, so I will observe the interior to see if anyone arrives.",
+     "ms": 1757.9823000123724
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the open door of Don's Donuts, which is where my schedule says I should be for coffee and a donut. Since no one is inside yet to talk to, I will enter the shop to find someone or just look around.",
+     "ms": 1853.2393999921624
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the open door of Don's Donuts, which matches my current routine to get coffee and a donut; I should go inside to complete this task.",
+     "ms": 1809.1483999887714
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am standing right at the open door of Don's Donuts, which is where my schedule says to be for coffee and a donut. Since I have no one to talk to yet and need to complete this routine step before heading to the square, I will observe the interior to see if anyone is there or if I can proceed inside.",
+     "ms": 2144.93159999256
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the interior to see if anyone walks in.",
+     "ms": 1642.0051000022795
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the open door of Don's Donuts, which is exactly where my schedule says I should be for coffee and a donut. I will go inside to start my routine.",
+     "ms": 1776.0707999987062
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts for my scheduled coffee and donut time, so I will observe the shop interior to see if anyone is there to chat with.",
+     "ms": 1814.5203000021866
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the interior and wait for a customer or Don.",
+     "ms": 1417.3774999944726
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, and the door is open so I will go inside to get my coffee and donut.",
+     "ms": 1755.8090999955311
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right in front of the open door to Don's Donuts, which is where my schedule says I should be for coffee and donuts. I see the interior clearly.",
+     "ms": 1779.482600002666
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, looking at the counter and stools inside, so I will observe the scene while waiting for my coffee.",
+     "ms": 1555.7618000020739
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the entrance of Don's Donuts with my schedule telling me to be here for coffee and a donut, so I will go inside and look around.",
+     "ms": 1611.6607000003569
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to right now, so I will observe the shop interior and wait for a customer or friend.",
+     "ms": 1548.1563000066672
+    }
+   ]
+  },
+  "doctrine + tile fact": {
+   "approx_tokens": 4903,
+   "summary": "observe: 13, walk_to -> forward: 7",
+   "samples": [
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled for coffee and a donut, but nobody is here to talk to yet, so I will observe the cozy interior.",
+     "ms": 1744.7243000060553
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing right at the front door of Don's Donuts, looking in at the counter and stools. My schedule says to get coffee and a donut here, so I should go inside to find someone to talk to.",
+     "ms": 1985.802800001693
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet; I will observe the interior to find Maren or anyone else.",
+     "ms": 1681.2826999957906
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, facing the open door, so I will go inside to get my coffee and donut.",
+     "ms": 1839.697499992326
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the entrance of Don's Donuts, which is where I am supposed to be for my morning routine. I see the interior with a counter and stools, so I should go inside to get my coffee and donut as scheduled.",
+     "ms": 1926.5866999921855
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I don't see anyone to talk to yet, so I will look around the shop interior.",
+     "ms": 1639.0284999943106
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but nobody is here to talk to yet, so I will observe the shop interior and wait for customers.",
+     "ms": 1630.0630000041565
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am standing at the open door of Don's Donuts, which is my scheduled stop for coffee and donuts; since no one is here to talk to yet, I will observe the interior.",
+     "ms": 2176.706099999137
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts for my scheduled coffee and donut time, but I see no one to talk to yet, so I will observe the interior.",
+     "ms": 1781.3951999996789
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will observe the interior and wait for customers or staff.",
+     "ms": 1505.0095999904443
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the entrance of Don's Donuts, which is my scheduled stop for coffee and donuts; I will go inside to enjoy the treats and look around.",
+     "ms": 1727.272999996785
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts for my scheduled coffee and donut, so I will stay here and observe the shop interior.",
+     "ms": 2375.847599992994
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, so I should go inside to get my coffee and donut and look for people to talk to.",
+     "ms": 2363.9036000095075
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts for my scheduled coffee and donut time, but I see no one to talk to right now, so I will observe the interior while waiting.",
+     "ms": 1750.3024999896297
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am standing at the entrance of Don's Donuts, which is where my schedule says I should be for coffee and a donut. I see the interior clearly, so I will step inside to find someone to talk to.",
+     "ms": 1849.6409999934258
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, looking inside at the counter and stools, so I will observe the interior to see if anyone is there to talk to.",
+     "ms": 1937.5362999999197
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am standing right at the open door of Don's Donuts, which is where I need to be for my 08:00 routine. Since no one is inside yet and I have nothing else to do but wait for customers or Maren, I will stay here and observe.",
+     "ms": 1960.8480999886524
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to right now, so I will observe the interior and wait for someone to arrive.",
+     "ms": 1846.27239999827
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at Don's Donuts as scheduled, but I see no one to talk to yet, so I will look around the shop interior.",
+     "ms": 1662.5522999966051
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward",
+     "message": null,
+     "thought": "I am at Don's Donuts and need to get coffee and a donut, so I will walk inside to the counter.",
+     "ms": 1496.0051999951247
+    }
+   ]
+  }
+ }
+}
