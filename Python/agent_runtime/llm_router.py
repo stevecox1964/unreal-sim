@@ -791,6 +791,8 @@ performed an action. Do not output JSON or markdown."""
         """OpenRouter (#110): OpenAI-compatible chat completions, any vendor's model."""
         import base64
 
+        api_call_log.note_prompt(system_text, user_text, image_path)
+
         content: list[dict] | str = user_text
         if image_path and Path(image_path).exists():
             raw = Path(image_path).read_bytes()
@@ -824,6 +826,7 @@ performed an action. Do not output JSON or markdown."""
         usage = payload.get("usage") or {}
         api_call_log.note_usage(usage.get("prompt_tokens"), usage.get("completion_tokens"))
         text = (payload["choices"][0]["message"].get("content") or "").strip()
+        api_call_log.note_response(text)
         if not text:
             raise ValueError("OpenRouter response had no message content")
         return _strip_markdown_fences(text)

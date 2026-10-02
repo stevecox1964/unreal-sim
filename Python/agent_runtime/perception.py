@@ -145,6 +145,7 @@ class VisionPerceiver:
 
         try:
             with api_call_log.track("vision", None, provider, model):
+                api_call_log.note_prompt("", prompt, image_path)
                 if provider == "ollama":
                     # Local multimodal model (e.g. qwen3.5:4b) reads the screenshot.
                     # Vision on a small local model is slower than Gemini — give it room.
@@ -182,6 +183,7 @@ class VisionPerceiver:
                     api_call_log.note_usage(usage.get("prompt_tokens"), usage.get("completion_tokens"))
                     content = payload["choices"][0]["message"]["content"]
 
+                api_call_log.note_response(content)
                 data = json.loads(_strip_fences(content))
         except Exception as e:
             return _empty(f"{type(e).__name__}: {e}")
