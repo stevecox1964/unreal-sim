@@ -95,6 +95,25 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #112 — Run debugger: Manim replay videos + per-call API log
+
+**Source:** user, 2026-10-02: *"analyze sim runs as manim explainer videos... a visual debugger...
+emphasizing redundant model calls, loops, retries"*, then *"I would also like to know model api
+calls being made"*.
+**Status:** BUILT 2026-10-02, uncommitted — needs a test, needs a live run.
+- `tools/run_debugger/` (own uv project, Python 3.14, Manim 0.21): `uv run python render.py SR45`
+  → `run_analysis/SR45_<YYYYMMDD_HHMMSS>.html`, a self-contained scrubbable page (`page.html`
+  template): real-time lanes per APC (look / think / act icons, API lane), flags redundant / retry /
+  loop, play at 1–60×, stop at flags, ←/→ jump flags, click for details, feed. `--video` = Manim MP4.
+- `agent_runtime/api_call_log.py`: one line per model call (wake / decide / ask / chat / vision)
+  → `worlds/<level>/logs/api_calls/SR<n>.jsonl` (one file per run, newest 50 kept) with ms, tokens, ok/error. Hooked in `llm_router`,
+  `perception`, `ollama_adapter`; path set in `AgentManager._attach_run_log`.
+- Side effect: a vision HTTP ≥ 400 is now raised and caught, so its `error` reads
+  `"RuntimeError: openrouter 429: ..."` instead of `"openrouter 429: ..."`.
+**Next:** confirm on a live run that `api_calls/SR<n>.jsonl` fills and the page API lane draws.
+**Needs a test (later):** a failed `decide` writes `ok: false` + error and still returns None;
+tokens land on the right line when two agents call at once (threads).
+
 ### #109 — Mannequins: APCs learn which "people" are fake by talking to them
 
 **Source:** user, 2026-09-22: *"The world is full of 3d models and some of them are NPC/AP looking

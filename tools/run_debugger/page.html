@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run Replay</title>
+<style>
+  :root {
+    --bg: #111418; --panel: #1a1f26; --line: #2c333d; --text: #e6e9ee; --dim: #8b95a3;
+    --look: #5aa9e6; --think: #e0b050; --walk: #4caf50; --wait: #4a525d;
+    --redundant: #ff9800; --retry: #f44336; --loop: #b56bd6;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 system-ui, Segoe UI, sans-serif; }
+  header { padding: 10px 16px 6px; display: flex; gap: 24px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 20px; }
+  header .stat { color: var(--dim); }
+  header .stat b { color: var(--text); }
+  #mini { margin: 0 16px; height: 46px; background: var(--panel); border-radius: 6px; cursor: pointer; }
+  #mini svg { width: 100%; height: 100%; display: block; }
+  #controls { display: flex; gap: 8px; align-items: center; padding: 8px 16px; flex-wrap: wrap; }
+  button, select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 5px;
+                   padding: 4px 10px; font: inherit; cursor: pointer; }
+  button:hover { border-color: var(--dim); }
+  #scrub { flex: 1; min-width: 200px; }
+  #clock { font: 600 16px ui-monospace, Consolas, monospace; min-width: 110px; text-align: right; }
+  label.chk { color: var(--dim); user-select: none; }
+  #main { display: flex; margin: 0 16px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+  #labels { width: 90px; flex: none; background: var(--panel); position: relative; }
+  #labels div { position: absolute; left: 10px; font-weight: 600; }
+  #scroller { flex: 1; overflow-x: auto; overflow-y: hidden; position: relative; cursor: grab; }
+  #scroller.drag { cursor: grabbing; }
+  #tl { display: block; }
+  #tl .hit { cursor: pointer; }
+  #tl .sel { stroke: #fff !important; stroke-width: 3 !important; }
+  #bottom { display: grid; grid-template-columns: 1fr 1.3fr 1.2fr; gap: 12px; padding: 12px 16px 16px; }
+  .box { background: var(--panel); border-radius: 6px; padding: 10px 12px; min-height: 120px; }
+  .box h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); }
+  #now .agent { margin-bottom: 10px; }
+  #now .state { font-weight: 600; }
+  #detail .k { color: var(--dim); }
+  #detail .thought { margin: 6px 0; padding: 6px 8px; border-left: 3px solid var(--line); background: #151a20; }
+  #feed { max-height: 340px; overflow-y: auto; position: relative; }
+  #feed .row { padding: 3px 6px; border-radius: 4px; cursor: pointer; color: var(--dim); display: flex; gap: 8px; }
+  #feed .row.past { color: var(--text); }
+  #feed .row.cur { background: #26303b; }
+  #feed .row:hover { background: #222a33; }
+  #feed .t { font-family: ui-monospace, Consolas, monospace; flex: none; }
+  .tag { font-size: 11px; font-weight: 700; padding: 0 5px; border-radius: 3px; color: #111; }
+  .tag.redundant { background: var(--redundant); } .tag.retry { background: var(--retry); } .tag.loop { background: var(--loop); }
+  .legend { color: var(--dim); font-size: 12px; padding: 4px 16px 0; }
+  .legend span { margin-right: 14px; white-space: nowrap; }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+  @media (max-width: 900px) { #bottom { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <span class="stat" id="stats"></span>
+</header>
+<div class="legend">
+  <span>👁 <span class="sw" style="background:var(--look)"></span>looking</span>
+  <span>💭 <span class="sw" style="background:var(--think)"></span>thinking (decide API call)</span>
+  <span><span class="sw" style="background:var(--walk)"></span>walking</span>
+  <span>👣 walk · 💬 talk · 🔭 observe · ⚑ interrupt · 📷 survey look · ★ wake-up call</span>
+  <span><span class="sw" style="background:var(--redundant)"></span>redundant</span>
+  <span><span class="sw" style="background:var(--retry)"></span>retry</span>
+  <span><span class="sw" style="background:var(--loop)"></span>loop</span>
+  <span id="apilegend"></span>
+</div>
+<div id="mini"></div>
+<div id="controls">
+  <button id="play" title="Space">▶ Play</button>
+  <select id="speed" title="Playback speed">
+    <option value="1">1×</option><option value="5">5×</option><option value="10" selected>10×</option>
+    <option value="30">30×</option><option value="60">60×</option>
+  </select>
+  <button id="prev" title="← previous flagged call">◀ flag</button>
+  <button id="next" title="→ next flagged call">flag ▶</button>
+  <input id="scrub" type="range" min="0" step="0.1" value="0">
+  <span id="clock">0:00</span>
+  <label class="chk"><input type="checkbox" id="stopflags" checked> stop at flagged calls</label>
+  <button id="zin" title="Zoom in (mouse wheel)">＋</button>
+  <button id="zout" title="Zoom out (mouse wheel)">－</button>
+</div>
+<div id="main">
+  <div id="labels"></div>
+  <div id="scroller"><svg id="tl"></svg></div>
+</div>
+<div id="bottom">
+  <div class="box" id="now"><h2>At the playhead</h2><div id="nowbody"></div></div>
+  <div class="box" id="detail"><h2>Selected</h2><div id="detailbody">Click any block, icon or feed line.</div></div>
+  <div class="box"><h2>Feed</h2><div id="feed"></div></div>
+</div>
+<script>
+const DATA = /*DATA*/;
+const C = { look: "#5aa9e6", think: "#e0b050", walk: "#4caf50", wait: "#4a525d",
+            redundant: "#ff9800", retry: "#f44336", loop: "#b56bd6" };
+const API_C = { decide: "#e0b050", vision: "#4dd0e1", wake: "#ffeb3b", chat: "#26a69a", ask: "#f06292" };
+const ACTION_ICON = { walk_to: "👣", speak_to: "💬", observe: "🔭" };
+const LABEL = { redundant: "REDUNDANT", retry: "RETRY", loop: "LOOP" };
+const names = Object.keys(DATA.agents);
+const dur = DATA.duration_s;
+const hasApi = names.some(n => DATA.agents[n].api.length);
+const LANE_H = hasApi ? 132 : 108, AXIS_H = 26;
+let pps = 6, t = 0, playing = false, selected = null, lastFrame = 0;
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const mmss = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+const fmt = s => s.toFixed(1) + "s";
+
+// ---------- items: everything clickable, one array ----------
+const ITEMS = [];
+for (const n of names) {
+  const a = DATA.agents[n];
+  a.calls.forEach((c, i) => ITEMS.push({ kind: "call", agent: n, t: c.look[0], t1: c.act[1], c, prev: a.calls[i - 1] }));
+  a.events.forEach(e => ITEMS.push({ kind: "event", agent: n, t: e.t, t1: e.t, e }));
+  a.wakes.forEach(w => ITEMS.push({ kind: "wake", agent: n, t: w.t, t1: w.t, w }));
+  a.api.forEach(x => ITEMS.push({ kind: "api", agent: n, t: x.t, t1: x.t + x.dur, x }));
+}
+ITEMS.sort((p, q) => p.t - q.t);
+ITEMS.forEach((it, i) => it.id = i);
+const FLAGGED = ITEMS.filter(it => it.kind === "call" && it.c.flag);
+
+// ---------- header ----------
+document.getElementById("title").textContent = `${DATA.run} replay`;
+const tot = names.reduce((s, n) => s + DATA.agents[n].total_s, 0);
+const wst = names.reduce((s, n) => s + DATA.agents[n].wasted_s, 0);
+const ncalls = names.reduce((s, n) => s + DATA.agents[n].calls.length, 0);
+document.getElementById("stats").innerHTML =
+  `<b>${mmss(dur)}</b> sim time · <b>${ncalls}</b> decide calls · <b>${tot.toFixed(0)}s</b> model time · ` +
+  `<b>${wst.toFixed(0)}s (${tot ? (100 * wst / tot).toFixed(0) : 0}%)</b> on flagged calls · ` +
+  `${esc(DATA.models.join(", ") || "model not logged for this run")}` +
+  (hasApi ? "" : " · <i>no API call log for this run</i>");
+if (hasApi) document.getElementById("apilegend").innerHTML = "API lane: " +
+  Object.entries(API_C).map(([k, v]) => `<span class="sw" style="background:${v}"></span>${k}`).join(" ");
+
+// ---------- timeline ----------
+const svg = document.getElementById("tl"), scroller = document.getElementById("scroller");
+const laneY = n => AXIS_H + names.indexOf(n) * LANE_H;
+const X = s => 20 + s * pps;
+
+function render() {
+  const W = X(dur) + 60, H = AXIS_H + names.length * LANE_H;
+  svg.setAttribute("width", W); svg.setAttribute("height", H);
+  const out = [];
+  const step = pps >= 12 ? 10 : pps >= 4 ? 30 : pps >= 1.5 ? 60 : 300;
+  for (let s = 0; s <= dur; s += step) {
+    out.push(`<line x1="${X(s)}" y1="${AXIS_H - 6}" x2="${X(s)}" y2="${H}" stroke="#222831"/>`,
+             `<text x="${X(s) + 3}" y="16" fill="#8b95a3" font-size="11">${mmss(s)}</text>`);
+  }
+  for (const n of names) {
+    const a = DATA.agents[n], y0 = laneY(n), mid = y0 + 46;
+    out.push(`<line x1="${X(0)}" y1="${y0}" x2="${X(dur)}" y2="${y0}" stroke="#2c333d"/>`,
+             `<line x1="${X(0)}" y1="${mid}" x2="${X(dur)}" y2="${mid}" stroke="${C.wait}" stroke-width="2"/>`);
+    a.calls.forEach((c, j) => {
+      const it = ITEMS.find(q => q.kind === "call" && q.c === c);
+      const nxt = j + 1 < a.calls.length ? a.calls[j + 1].look[0] : c.act[1];
+      if (c.action === "walk_to" && c.moved_cm && nxt > c.act[1])
+        out.push(`<line x1="${X(c.act[1])}" y1="${mid}" x2="${X(nxt)}" y2="${mid}" stroke="${C.walk}" stroke-width="6"/>`);
+      const look = c.look[1] - c.look[0], think = c.think[1] - c.think[0];
+      if (look > 0) out.push(`<rect x="${X(c.look[0])}" y="${mid - 11}" width="${look * pps}" height="22" fill="${C.look}"/>`);
+      if (think > 0) out.push(`<rect class="hit" data-id="${it.id}" x="${X(c.think[0])}" y="${mid - 11}" width="${Math.max(think * pps, 2)}" height="22"
+        fill="${C.think}" stroke="${c.flag ? C[c.flag] : "none"}" stroke-width="${c.flag ? 3 : 0}"><title>${esc(c.action)} · ${fmt(think)}</title></rect>`);
+      if (look > 0 && pps >= 2) out.push(`<text x="${X(c.look[0]) - 4}" y="${mid - 16}" font-size="13">👁</text>`);
+      if (think > 0 && pps >= 2) out.push(`<text class="hit" data-id="${it.id}" x="${X((c.think[0] + c.think[1]) / 2) - 8}" y="${mid - 16}" font-size="15">💭</text>`);
+      if (c.flag && think * pps > 80) out.push(`<text x="${X(c.think[0]) + 4}" y="${mid + 4}" font-size="10" font-weight="700" fill="#111">${LABEL[c.flag]}</text>`);
+      out.push(`<text class="hit" data-id="${it.id}" x="${X(c.act[1]) + 2}" y="${mid + 30}" font-size="13">${ACTION_ICON[c.action] || "•"}</text>`);
+    });
+    for (const it of ITEMS.filter(q => q.agent === n && (q.kind === "event" || q.kind === "wake"))) {
+      const icon = it.kind === "wake" ? "★" : it.e.kind === "interrupt" ? "⚑" : "📷";
+      const fill = it.kind === "wake" ? "#ffeb3b" : "#e88ad8";
+      out.push(`<text class="hit" data-id="${it.id}" x="${X(it.t) - 6}" y="${it.kind === "wake" ? mid - 16 : mid + 50}" font-size="13" fill="${fill}">${icon}</text>`);
+    }
+    if (hasApi) {
+      const ay = y0 + LANE_H - 26;
+      out.push(`<text x="${X(0)}" y="${ay - 4}" font-size="10" fill="#8b95a3">API</text>`);
+      for (const it of ITEMS.filter(q => q.agent === n && q.kind === "api"))
+        out.push(`<rect class="hit" data-id="${it.id}" x="${X(it.t)}" y="${ay}" width="${Math.max(it.x.dur * pps, 2)}" height="12"
+          fill="${API_C[it.x.purpose] || "#aaa"}" stroke="${it.x.ok ? "none" : C.retry}" stroke-width="2" opacity=".9">
+          <title>${esc(it.x.purpose)} · ${fmt(it.x.dur)}${it.x.ok ? "" : " · FAILED"}</title></rect>`);
+    }
+  }
+  out.push(`<line id="ph" x1="0" y1="0" x2="0" y2="${H}" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/>`);
+  svg.innerHTML = out.join("");
+  const labels = document.getElementById("labels");
+  labels.style.height = H + "px";
+  labels.innerHTML = names.map(n => `<div style="top:${laneY(n) + 36}px">${esc(n)}</div>`).join("");
+  if (selected != null) svg.querySelectorAll(`[data-id="${selected}"]`).forEach(e => e.classList.add("sel"));
+  update(true);
+}
+
+// ---------- minimap ----------
+const mini = document.getElementById("mini");
+function renderMini() {
+  const rows = names.map((n, k) => {
+    const y = 8 + k * (30 / Math.max(names.length, 1)) + 4;
+    return DATA.agents[n].calls.map(c => {
+      const w = Math.max((c.think[1] - c.think[0]) / dur * 1000, 1.5);
+      return `<rect x="${c.think[0] / dur * 1000}" y="${y}" width="${w}" height="8" fill="${c.flag ? C[c.flag] : "#6b7480"}"/>`;
+    }).join("");
+  }).join("");
+  mini.innerHTML = `<svg viewBox="0 0 1000 46" preserveAspectRatio="none">${rows}
+    <rect id="view" y="2" height="42" fill="none" stroke="#fff" stroke-width="1.5" vector-effect="non-scaling-stroke"/>
+    <line id="mph" y1="0" y2="46" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>`;
+}
+mini.addEventListener("click", e => {
+  const r = mini.getBoundingClientRect();
+  seek((e.clientX - r.left) / r.width * dur, true);
+});
+
+// ---------- state at the playhead ----------
+function stateAt(n, s) {
+  const calls = DATA.agents[n].calls;
+  for (let j = 0; j < calls.length; j++) {
+    const c = calls[j];
+    if (s >= c.look[0] && s < c.look[1]) return ["👁 Looking", C.look, c];
+    if (s >= c.think[0] && s < c.think[1]) return [`💭 Thinking (decide call, ${fmt(s - c.think[0])} of ${fmt(c.think[1] - c.think[0])})`, C.think, c];
+    if (s >= c.act[0] && s <= c.act[1]) return [`⚙ Acting: ${c.action}`, "#fff", c];
+    const nxt = calls[j + 1];
+    if (s > c.act[1] && (!nxt || s < nxt.look[0])) {
+      if (c.action === "walk_to" && c.moved_cm) return [`👣 Walking (after ${c.action})`, C.walk, c];
+      return [`… Waiting (after ${c.action})`, "#8b95a3", c];
+    }
+  }
+  return ["… Not started", "#8b95a3", null];
+}
+
+function update(force) {
+  document.getElementById("ph").setAttribute("x1", X(t));
+  document.getElementById("ph").setAttribute("x2", X(t));
+  document.getElementById("clock").textContent = `${mmss(t)} / ${mmss(dur)}`;
+  document.getElementById("scrub").value = t;
+  const v = document.getElementById("view");
+  v.setAttribute("x", (scroller.scrollLeft - 20) / pps / dur * 1000);
+  v.setAttribute("width", scroller.clientWidth / pps / dur * 1000);
+  document.getElementById("mph").setAttribute("x1", t / dur * 1000);
+  document.getElementById("mph").setAttribute("x2", t / dur * 1000);
+  document.getElementById("nowbody").innerHTML = names.map(n => {
+    const [st, col, c] = stateAt(n, t);
+    const api = DATA.agents[n].api.filter(x => t >= x.t && t < x.t + x.dur).map(x => x.purpose);
+    return `<div class="agent"><b>${esc(n)}</b> <span class="state" style="color:${col}">${st}</span>` +
+      (api.length ? ` <span class="k">· API in flight: ${api.join(", ")}</span>` : "") +
+      (c ? `<div class="k">last thought: “${esc(c.thought)}”</div>` : "") + `</div>`;
+  }).join("");
+  // Feed: mark past rows, highlight the latest one, keep it in view.
+  let cur = null;
+  for (const row of feedRows) {
+    const past = row.it.t <= t;
+    row.el.classList.toggle("past", past);
+    row.el.classList.remove("cur");
+    if (past) cur = row;
+  }
+  if (cur) {
+    cur.el.classList.add("cur");
+    const f = document.getElementById("feed");
+    if (force || playing) f.scrollTop = cur.el.offsetTop - f.clientHeight / 2;
+  }
+}
+
+function follow() {
+  const x = X(t), left = scroller.scrollLeft, w = scroller.clientWidth;
+  if (x < left + 40 || x > left + w - 80) scroller.scrollLeft = x - w * 0.3;
+}
+
+function seek(s, doFollow) {
+  t = Math.max(0, Math.min(dur, s));
+  if (doFollow) follow();
+  update(false);
+}
+
+// ---------- detail panel ----------
+function select(id) {
+  svg.querySelectorAll(".sel").forEach(e => e.classList.remove("sel"));
+  selected = id;
+  svg.querySelectorAll(`[data-id="${id}"]`).forEach(e => e.classList.add("sel"));
+  const it = ITEMS[id], d = document.getElementById("detailbody");
+  if (it.kind === "call") {
+    const c = it.c, p = it.prev;
+    d.innerHTML =
+      `<div><b>${esc(it.agent)}</b> at ${esc(c.time)} UTC (run ${mmss(c.look[0])}) ` +
+      (c.flag ? `<span class="tag ${c.flag}">${LABEL[c.flag]}</span>` : "") + `</div>` +
+      (c.flag ? `<div><span class="k">Why flagged:</span> ${esc(c.reason)}</div>` : "") +
+      `<div><span class="k">Looked</span> ${fmt(c.look[1] - c.look[0])} → <span class="k">model thought</span> ` +
+      `${fmt(c.think[1] - c.think[0])} → <span class="k">did</span> <b>${esc(c.action)}</b> in cell ${esc(c.cell)}` +
+      (c.moved_cm ? ` · moved ${(c.moved_cm / 100).toFixed(1)} m` : "") + `</div>` +
+      `<div class="thought">${esc(c.thought)}</div>` +
+      (p ? `<div class="k">Call before (${esc(p.time)}): ${esc(p.action)} in cell ${esc(p.cell)}</div>
+            <div class="thought" style="opacity:.75">${esc(p.thought)}</div>` : "");
+  } else if (it.kind === "api") {
+    const x = it.x;
+    d.innerHTML = `<div><b>${esc(it.agent)}</b> API call: <b>${esc(x.purpose)}</b> at run ${mmss(x.t)}</div>
+      <div><span class="k">Model</span> ${esc(x.model)} · <span class="k">took</span> ${fmt(x.dur)}</div>
+      <div><span class="k">Tokens</span> in ${x.tokens_in ?? "?"} / out ${x.tokens_out ?? "?"}</div>
+      <div>${x.ok ? "OK" : `<span class="tag retry">FAILED</span> ${esc(x.error)}`}</div>`;
+  } else if (it.kind === "wake") {
+    d.innerHTML = `<div><b>${esc(it.agent)}</b> wake-up API call at run ${mmss(it.t)}</div><div class="k">${esc(it.w.model)}</div>`;
+  } else {
+    d.innerHTML = `<div><b>${esc(it.agent)}</b> at run ${mmss(it.t)}</div><div>${esc(it.e.text)}</div>`;
+  }
+}
+
+svg.addEventListener("click", e => {
+  const el = e.target.closest("[data-id]");
+  if (!el || dragMoved) return;
+  const id = +el.dataset.id;
+  select(id);
+  seek(ITEMS[id].kind === "call" ? ITEMS[id].c.think[0] : ITEMS[id].t, false);
+});
+
+// ---------- feed ----------
+const feed = document.getElementById("feed");
+const feedRows = ITEMS.filter(it => it.kind !== "api").map(it => {
+  const el = document.createElement("div");
+  el.className = "row";
+  let text;
+  if (it.kind === "call") text = (it.c.flag ? `<span class="tag ${it.c.flag}">${LABEL[it.c.flag]}</span> ` : "") +
+    `${esc(it.c.action)} — ${esc(it.c.thought.slice(0, 110))}${it.c.thought.length > 110 ? "…" : ""}`;
+  else if (it.kind === "wake") text = "★ wake-up call";
+  else text = (it.e.kind === "interrupt" ? "⚑ " : "📷 ") + esc(it.e.text);
+  el.innerHTML = `<span class="t">${mmss(it.t)}</span><span><b>${esc(it.agent)}</b> ${text}</span>`;
+  el.onclick = () => { select(it.id); seek(it.kind === "call" ? it.c.think[0] : it.t, true); };
+  feed.appendChild(el);
+  return { it, el };
+});
+
+// ---------- playback ----------
+const playBtn = document.getElementById("play");
+function setPlaying(p) {
+  playing = p;
+  playBtn.textContent = p ? "❚❚ Pause" : "▶ Play";
+  if (p) { if (t >= dur) t = 0; lastFrame = performance.now(); requestAnimationFrame(tick); }
+}
+function tick(now) {
+  if (!playing) return;
+  const speed = +document.getElementById("speed").value;
+  const nt = Math.min(dur, t + (now - lastFrame) / 1000 * speed);
+  lastFrame = now;
+  if (document.getElementById("stopflags").checked) {
+    const hit = FLAGGED.find(it => it.c.think[0] > t && it.c.think[0] <= nt);
+    if (hit) { seek(hit.c.think[0], true); select(hit.id); setPlaying(false); return; }
+  }
+  seek(nt, true);
+  if (t >= dur) { setPlaying(false); return; }
+  requestAnimationFrame(tick);
+}
+playBtn.onclick = () => setPlaying(!playing);
+
+function jumpFlag(dir) {
+  setPlaying(false);
+  const list = dir > 0 ? FLAGGED.filter(it => it.c.think[0] > t + 0.05)
+                       : FLAGGED.filter(it => it.c.think[0] < t - 0.05).reverse();
+  if (list.length) { select(list[0].id); seek(list[0].c.think[0], true); }
+}
+document.getElementById("next").onclick = () => jumpFlag(1);
+document.getElementById("prev").onclick = () => jumpFlag(-1);
+
+const scrub = document.getElementById("scrub");
+scrub.max = dur;
+scrub.addEventListener("input", () => { setPlaying(false); seek(+scrub.value, true); });
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "SELECT" || e.target.tagName === "INPUT" && e.target.type !== "range") return;
+  if (e.code === "Space") { e.preventDefault(); setPlaying(!playing); }
+  else if (e.key === "ArrowRight") { e.preventDefault(); e.shiftKey ? (setPlaying(false), seek(t + 5, true)) : jumpFlag(1); }
+  else if (e.key === "ArrowLeft") { e.preventDefault(); e.shiftKey ? (setPlaying(false), seek(t - 5, true)) : jumpFlag(-1); }
+});
+
+// ---------- zoom + drag-pan ----------
+function zoom(f, clientX) {
+  const r = scroller.getBoundingClientRect();
+  const mx = clientX ?? r.left + r.width / 2;
+  const at = (scroller.scrollLeft + mx - r.left - 20) / pps;
+  pps = Math.max(0.3, Math.min(60, pps * f));
+  render();
+  scroller.scrollLeft = X(at) - (mx - r.left);
+}
+scroller.addEventListener("wheel", e => { e.preventDefault(); zoom(e.deltaY < 0 ? 1.25 : 0.8, e.clientX); }, { passive: false });
+document.getElementById("zin").onclick = () => zoom(1.5);
+document.getElementById("zout").onclick = () => zoom(1 / 1.5);
+let dragX = null, dragLeft = 0, dragMoved = false;
+scroller.addEventListener("mousedown", e => { dragX = e.clientX; dragLeft = scroller.scrollLeft; dragMoved = false; scroller.classList.add("drag"); });
+window.addEventListener("mousemove", e => {
+  if (dragX == null) return;
+  if (Math.abs(e.clientX - dragX) > 3) dragMoved = true;
+  scroller.scrollLeft = dragLeft - (e.clientX - dragX);
+});
+window.addEventListener("mouseup", () => { dragX = null; scroller.classList.remove("drag"); setTimeout(() => dragMoved = false, 0); });
+scroller.addEventListener("scroll", () => update(false));
+
+renderMini();
+render();
+if (FLAGGED.length) document.getElementById("detailbody").innerHTML +=
+  `<p class="k">${FLAGGED.length} flagged calls. Press → to jump to the first one.</p>`;
+</script>
+</body>
+</html>

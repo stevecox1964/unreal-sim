@@ -8,6 +8,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from . import api_call_log
+
 logger = logging.getLogger("AgentRuntime")
 
 _ENV_PATH = Path(__file__).resolve().parents[1] / ".env"
@@ -141,40 +143,45 @@ class VisionPerceiver:
         prompt = _PROMPT.format(known_line=known_line)
 
         try:
-            if provider == "ollama":
-                # Local multimodal model (e.g. qwen3.5:4b) reads the screenshot.
-                # Vision on a small local model is slower than Gemini — give it room.
-                from .ollama_adapter import chat
-                content = chat(model, "", prompt, image_path=image_path,
-                               timeout=max(self._timeout, 180))
-            elif provider == "anthropic":
-                content = self._perceive_anthropic(model, key, prompt, image_path)
-            else:
-                raw = Path(image_path).read_bytes()
-                b64 = base64.standard_b64encode(raw).decode()
-                response = requests.post(
-                    _OPENROUTER_ENDPOINT if provider == "openrouter" else _GEMINI_ENDPOINT,
-                    headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-                    json={
-                        "model": model,
-                        "messages": [{
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": prompt},
-                                {"type": "image_url", "image_url": {"url": f"data:{_media_type(raw)};base64,{b64}"}},
-                            ],
-                        }],
-                        "max_tokens": 800,
-                        "response_format": {"type": "json_object"},
-                        **({"reasoning": {"enabled": False}} if provider == "openrouter" else {}),
-                    },
-                    timeout=self._timeout,
-                )
-                if response.status_code >= 400:
-                    return _empty(f"{provider} {response.status_code}: {response.text[:300]}")
-                content = response.json()["choices"][0]["message"]["content"]
+            with api_call_log.track("vision", None, provider, model):
+                if provider == "ollama":
+                    # Local multimodal model (e.g. qwen3.5:4b) reads the screenshot.
+                    # Vision on a small local model is slower than Gemini — give it room.
+                    from .ollama_adapter import chat
+                    content = chat(model, "", prompt, image_path=image_path,
+                                   timeout=max(self._timeout, 180))
+                elif provider == "anthropic":
+                    content = self._perceive_anthropic(model, key, prompt, image_path)
+                else:
+                    raw = Path(image_path).read_bytes()
+                    b64 = base64.standard_b64encode(raw).decode()
+                    response = requests.post(
+                        _OPENROUTER_ENDPOINT if provider == "openrouter" else _GEMINI_ENDPOINT,
+                        headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                        json={
+                            "model": model,
+                            "messages": [{
+                                "role": "user",
+                                "content": [
+                                    {"type": "text", "text": prompt},
+                                    {"type": "image_url", "image_url": {"url": f"data:{_media_type(raw)};base64,{b64}"}},
+                                ],
+                            }],
+                            "max_tokens": 800,
+                            "response_format": {"type": "json_object"},
+                            **({"reasoning": {"enabled": False}} if provider == "openrouter" else {}),
+                        },
+                        timeout=self._timeout,
+                    )
+                    if response.status_code >= 400:
+                        # Raised (not returned) so the API log records the failure.
+                        raise RuntimeError(f"{provider} {response.status_code}: {response.text[:300]}")
+                    payload = response.json()
+                    usage = payload.get("usage") or {}
+                    api_call_log.note_usage(usage.get("prompt_tokens"), usage.get("completion_tokens"))
+                    content = payload["choices"][0]["message"]["content"]
 
-            data = json.loads(_strip_fences(content))
+                data = json.loads(_strip_fences(content))
         except Exception as e:
             return _empty(f"{type(e).__name__}: {e}")
 
@@ -214,6 +221,8 @@ class VisionPerceiver:
                 ],
             }],
         )
+        usage = getattr(response, "usage", None)
+        api_call_log.note_usage(getattr(usage, "input_tokens", None), getattr(usage, "output_tokens", None))
         # Skip any thinking blocks — content[0] is a ThinkingBlock on models with
         # thinking enabled (e.g. Sonnet 5).
         text = "".join(b.text for b in response.content if b.type == "text")

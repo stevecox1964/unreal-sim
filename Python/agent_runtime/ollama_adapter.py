@@ -8,6 +8,8 @@ import threading
 import time
 from pathlib import Path
 
+from . import api_call_log
+
 logger = logging.getLogger("AgentRuntime")
 
 # qwen3.5 is a thinking model; even with thinking disabled a stray <think> block
@@ -123,5 +125,6 @@ def chat(
         logger.info(msg)
         _queue_pie(msg)  # drained to PIE by the sim loop's sequential phase
 
+    api_call_log.note_usage(body.get("prompt_eval_count"), body.get("eval_count"))
     content = body.get("message", {}).get("content", "")
     return strip_think(content)

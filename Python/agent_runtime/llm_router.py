@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Optional
 from dotenv import load_dotenv
 
 from . import agenda
+from . import api_call_log
 from . import prompt_payload
 from .place_db import yaw_to_compass
 
@@ -500,15 +501,16 @@ class LLMRouter:
         prompt_payload.check_clean(user_text, agent.agent_id, "wake prompt")
 
         try:
-            if provider == "ollama":
-                raw = self._decide_ollama(model, self._system_text(agent), user_text)
-            elif provider == "openai":
-                raw = self._decide_openai(model, self._system_text(agent), user_text)
-            elif provider == "openrouter":
-                raw = self._decide_openrouter(model, self._system_text(agent), user_text)
-            else:
-                raw = self._decide_anthropic(model, self._system_text(agent), user_text)
-            orientation = _load_decision_json(raw)
+            with api_call_log.track("wake", agent.agent_id, provider, model):
+                if provider == "ollama":
+                    raw = self._decide_ollama(model, self._system_text(agent), user_text)
+                elif provider == "openai":
+                    raw = self._decide_openai(model, self._system_text(agent), user_text)
+                elif provider == "openrouter":
+                    raw = self._decide_openrouter(model, self._system_text(agent), user_text)
+                else:
+                    raw = self._decide_anthropic(model, self._system_text(agent), user_text)
+                orientation = _load_decision_json(raw)
             logger.info(
                 "[%s] %s/%s woke up: %s",
                 agent.agent_id, provider, model,
@@ -604,21 +606,22 @@ class LLMRouter:
         # and the destination. OpenAI's path here is text-only; it still gets
         # the map's facts through the "Your Map" prompt section.
         map_image = (observation.get("route_map") or {}).get("image_path")
+        if provider not in ("ollama", "openai", "openrouter", "anthropic"):
+            logger.error("[%s] Unknown LLM provider: %s", agent.agent_id, provider)
+            return _idle_decision(agent.agent_id, f"Unknown LLM provider: {provider}")
         try:
-            if provider == "ollama":
-                raw = self._decide_ollama(model, system_text, user_text, image_path=map_image)
-            elif provider == "openai":
-                raw = self._decide_openai(model, system_text, user_text)
-            elif provider == "openrouter":
-                raw = self._decide_openrouter(model, system_text, user_text, image_path=map_image)
-            elif provider == "anthropic":
-                raw = self._decide_anthropic(model, system_text, user_text, image_path=map_image)
-            else:
-                logger.error("[%s] Unknown LLM provider: %s", agent.agent_id, provider)
-                return _idle_decision(agent.agent_id, f"Unknown LLM provider: {provider}")
+            with api_call_log.track("decide", agent.agent_id, provider, model):
+                if provider == "ollama":
+                    raw = self._decide_ollama(model, system_text, user_text, image_path=map_image)
+                elif provider == "openai":
+                    raw = self._decide_openai(model, system_text, user_text)
+                elif provider == "openrouter":
+                    raw = self._decide_openrouter(model, system_text, user_text, image_path=map_image)
+                else:
+                    raw = self._decide_anthropic(model, system_text, user_text, image_path=map_image)
 
-            logger.debug(f"[{agent.agent_id}] Raw LLM response: {raw}")
-            decision = _load_decision_json(raw)
+                logger.debug(f"[{agent.agent_id}] Raw LLM response: {raw}")
+                decision = _load_decision_json(raw)
             logger.info(
                 "[%s] %s/%s decided: %s - %s",
                 agent.agent_id,
@@ -657,13 +660,14 @@ class LLMRouter:
         # would teach the model engine vocabulary just as surely as a tick does.
         prompt_payload.check_clean(prompt, agent.agent_id, "ask prompt")
         try:
-            if provider == "ollama":
-                return self._decide_ollama(model, system, prompt)
-            if provider == "openai":
-                return self._decide_openai(model, system, prompt)
-            if provider == "openrouter":
-                return self._decide_openrouter(model, system, prompt, json_mode=False)
-            return self._decide_anthropic(model, system, prompt)
+            with api_call_log.track("ask", agent.agent_id, provider, model):
+                if provider == "ollama":
+                    return self._decide_ollama(model, system, prompt)
+                if provider == "openai":
+                    return self._decide_openai(model, system, prompt)
+                if provider == "openrouter":
+                    return self._decide_openrouter(model, system, prompt, json_mode=False)
+                return self._decide_anthropic(model, system, prompt)
         except Exception as e:
             logger.error("[%s] ask() failed: %s", agent.agent_id, e)
             return None
@@ -715,13 +719,14 @@ performed an action. Do not output JSON or markdown."""
         prompt_payload.check_clean(prompt, agent.agent_id, "chat prompt")
         prompt_payload.check_clean(system, agent.agent_id, "chat system prompt")
         try:
-            if provider == "ollama":
-                return self._decide_ollama(model, system, prompt)
-            if provider == "openai":
-                return self._openai_text(model, system, prompt)
-            if provider == "openrouter":
-                return self._decide_openrouter(model, system, prompt, json_mode=False)
-            return self._decide_anthropic(model, system, prompt)
+            with api_call_log.track("chat", agent.agent_id, provider, model):
+                if provider == "ollama":
+                    return self._decide_ollama(model, system, prompt)
+                if provider == "openai":
+                    return self._openai_text(model, system, prompt)
+                if provider == "openrouter":
+                    return self._decide_openrouter(model, system, prompt, json_mode=False)
+                return self._decide_anthropic(model, system, prompt)
         except Exception as e:
             logger.error("[%s] chat() failed: %s", agent.agent_id, e)
             return None
@@ -763,6 +768,8 @@ performed an action. Do not output JSON or markdown."""
             system=[{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}],
             messages=[{"role": "user", "content": content}],
         )
+        usage = getattr(response, "usage", None)
+        api_call_log.note_usage(getattr(usage, "input_tokens", None), getattr(usage, "output_tokens", None))
         # Models with thinking enabled (e.g. Sonnet 5) put a ThinkingBlock before
         # the TextBlock, so content[0] is not guaranteed to have .text.
         text = "".join(b.text for b in response.content if b.type == "text")
@@ -813,7 +820,10 @@ performed an action. Do not output JSON or markdown."""
         if response.status_code >= 400:
             logger.error("OpenRouter API error %s: %s", response.status_code, response.text[:500])
             response.raise_for_status()
-        text = (response.json()["choices"][0]["message"].get("content") or "").strip()
+        payload = response.json()
+        usage = payload.get("usage") or {}
+        api_call_log.note_usage(usage.get("prompt_tokens"), usage.get("completion_tokens"))
+        text = (payload["choices"][0]["message"].get("content") or "").strip()
         if not text:
             raise ValueError("OpenRouter response had no message content")
         return _strip_markdown_fences(text)
@@ -841,6 +851,8 @@ performed an action. Do not output JSON or markdown."""
             response.raise_for_status()
 
         payload = response.json()
+        usage = payload.get("usage") or {}
+        api_call_log.note_usage(usage.get("input_tokens"), usage.get("output_tokens"))
         output_text = payload.get("output_text")
         if output_text:
             return _strip_markdown_fences(output_text.strip())
@@ -875,6 +887,8 @@ performed an action. Do not output JSON or markdown."""
             logger.error("OpenAI API error %s: %s", response.status_code, response.text[:500])
             response.raise_for_status()
         payload = response.json()
+        usage = payload.get("usage") or {}
+        api_call_log.note_usage(usage.get("input_tokens"), usage.get("output_tokens"))
         output_text = payload.get("output_text")
         if output_text:
             return _strip_markdown_fences(output_text.strip())

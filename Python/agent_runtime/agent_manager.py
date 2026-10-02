@@ -15,6 +15,7 @@ from typing import Optional
 from .agent import Agent
 from .action_validator import validate
 from . import agenda
+from . import api_call_log
 from . import interruptions
 from .perception import VisionPerceiver
 from . import cell_sweep
@@ -947,6 +948,7 @@ class AgentManager:
         if self.memory.decisions_log is None:
             return
         path = (self.memory.decisions_log.parent / "sim_runner.log").resolve()
+        api_call_log.set_dir(self.memory.decisions_log.parent)
         for handler in logging.root.handlers:
             if (isinstance(handler, logging.FileHandler)
                     and Path(handler.baseFilename).resolve() == path):
@@ -1365,7 +1367,8 @@ class AgentManager:
             if not image_path:
                 logger.warning(f"[{agent.agent_id}] sweep capture '{direction}' failed")
                 continue
-            seen = self.perceiver.perceive(image_path, known_characters)
+            with api_call_log.for_agent(agent.agent_id):
+                seen = self.perceiver.perceive(image_path, known_characters)
             if seen.get("error"):
                 logger.warning(f"[{agent.agent_id}] sweep perception '{direction}' failed: {seen['error']}")
             self._note_eyes(agent.agent_id, loc, yaw, seen)
@@ -2472,9 +2475,10 @@ class AgentManager:
         agent_id = agent.agent_id
 
         if observation.get("image_path"):
-            seen = self.perceiver.perceive(
-                observation["image_path"], observation["known_characters"]
-            )
+            with api_call_log.for_agent(agent_id):
+                seen = self.perceiver.perceive(
+                    observation["image_path"], observation["known_characters"]
+                )
             if seen.get("error"):
                 logger.warning(f"[{agent_id}] perception failed: {seen['error']}")
             observation["seen"] = seen
@@ -5645,7 +5649,8 @@ class AgentManager:
         if not image_path:
             return {"status": "error", "action": "observe_heading", "direction": direction,
                     "error": "capture failed"}
-        seen = self.perceiver.perceive(image_path, observation.get("known_characters") or [])
+        with api_call_log.for_agent(agent_id):
+            seen = self.perceiver.perceive(image_path, observation.get("known_characters") or [])
         self._record_perception_pair(
             agent_id, image_path, seen,
             location=observation.get("location"), yaw=yaw,
