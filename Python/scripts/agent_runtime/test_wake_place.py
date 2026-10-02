@@ -179,9 +179,25 @@ def test_place_grows_from_the_body():
         check("another owner's same-name place shares the tile set",
               set(_tiles(mgr, "The Vegetable Truck")) == set(_tiles(mgr, name)))
 
+        # Two different places that share a name ("home": dufus's and maren's,
+        # 168 m apart in the real world) must NOT share tiles — arriving at one
+        # is not arriving at the other.
+        cx, cy = mgr.world_grid.cell_center(0, 0)
+        fx, fy = cx - 3000.0, cy - 3000.0                  # ~70 m from maren's place
+        mgr.place_db.add_owned_place("dufus", 0, 0, name, dx=-3000.0, dy=-3000.0)
+        dufus_at = lambda x, y: mgr._at_scheduled_place("dufus", BLOCK, _obs(mgr, x, y))
+        check("standing at the far place counts for its owner", dufus_at(fx, fy) is True)
+        check("the far place got its own tile set",
+              len({t["place_key"] for t in mgr.place_db.place_tiles(name)}) == 2)
+        check("standing at maren's place is not arriving at dufus's far one",
+              dufus_at(320.0, 120.0) is False)
+        check("and maren still arrives at hers",
+              mgr._at_scheduled_place("maren", BLOCK, _obs(mgr, 320.0, 120.0)) is True)
+
         import agent_runtime.agent_manager as am
         saved = am._PLACE_MAX_TILES
-        am._PLACE_MAX_TILES = len(_tiles(mgr, name))
+        am._PLACE_MAX_TILES = len([t for t in mgr.place_db.place_tiles(name)
+                                   if "@" not in t["place_key"]])   # maren's place only
         try:
             grow(east + 2, ay)
             check("a full place does not grow", (east + 2, ay) not in _tiles(mgr, name))

@@ -136,9 +136,14 @@ saves its full prompt + answer (`logs\api_calls\prompts\SR<n>\`, newest 5 runs) 
   Talk (Maren 2 m asks for help) n=15: 12/12/11 answer her at the three sizes; the rest walk toward
   the truck she asked about. **0 invalid JSON** in 210 calls; median latency flat at ~2.0 s. So: keep
   the caps; for multi-day runs compress old memory (#47) rather than raising caps.
-- **Duplicate places in the prompt:** the long-run place list shows "Don's Donuts" twice (dufus's and
-  maren's owned rows) and "sheriff station square" twice (owned + community). Since #113 one name is
-  one place (one tile set); `known_places` should list each name once.
+- **Duplicate places in the prompt — FIXED 2026-10-02:** the long-run place list showed "Don's
+  Donuts" twice (dufus's and maren's owned rows) and "sheriff station square" twice (owned +
+  community). `known_places` now lists a name once when its rows are < 30 m apart (nearest row kept).
+- **#113 bug found and FIXED 2026-10-02:** tiles were keyed by name only, so Dufus's and Maren's
+  "home" (both authored, **168 m apart**) would share one tile set — arriving at one counted as
+  arriving at the other ("four ways crossing" is also named twice, 218 m apart). Now one name is one
+  place only within `_SAME_PLACE_CM` (30 m); a far same-name place gets its own tile set keyed
+  `<name>@<tx>,<ty>`. Tests: `test_wake_place.py`, `test_map_query.py` (both seen failing first).
 
 **Proposed build (not started):** code picks the prompt by the wake reason the lizard brain already
 knows — *talk* (someone spoke / came close: persona + rules, who is close, what was said, people known),

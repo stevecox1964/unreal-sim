@@ -36,7 +36,7 @@ from . import survey_mission
 from .episodic_memory import EpisodicLog
 from .memory_store import _MOVEMENT_ACTIONS, movement_summary, movement_trace
 from .place_db import (COMMUNITY_SURVEY_MAX_AGE_SECONDS, PLACE_EXTENT_CM,
-                       PlaceDB, yaw_to_compass)
+                       PlaceDB, _place_key, yaw_to_compass)
 from .social_memory import SocialMemory, is_anonymous
 from .spatial_memory import SpatialMap
 from .world_clock import WorldClock
@@ -303,6 +303,9 @@ _PLACE_ROAM_MARGIN_CM = 100.0
 # A place grows tile by tile (#113); one grid cell's worth (10x10 tiles) is the
 # most a single place can claim, so a long roam cannot swallow the street.
 _PLACE_MAX_TILES = 100
+# Same-name rows within this distance are one place (one tile set); farther
+# apart they are two places that happen to share a name (#113, "home").
+_SAME_PLACE_CM = 3000.0
 
 # Semantic classifier for forward-trace hits.
 # Maps engine actor names/classes → generic categories the LLM can reason about.
@@ -3357,7 +3360,8 @@ class AgentManager:
                 return
             if not any((t[0] + i, t[1] + j) in tiles for i in (-1, 0, 1) for j in (-1, 0, 1)):
                 return
-        if self.place_db.stand_on_tile(agent_id, end["name"], t[0], t[1]):
+        if self.place_db.stand_on_tile(agent_id, end["name"], t[0], t[1],
+                                       key=end.get("tile_key")):
             logger.info("[%s] place '%s' grew to %d tiles — stood on tile %s",
                         agent_id, end["name"], len(tiles) + 1, t)
 
@@ -3369,19 +3373,41 @@ class AgentManager:
         arrival before still does (a 2 m box straddling a tile edge must not
         shrink to the one tile the anchor happens to sit on). Bodies standing on
         the place then grow it.
+
+        One name is one place only when its rows are near each other: the tile
+        set nearest the anchor within ``_SAME_PLACE_CM`` is this place (Maren's
+        and Dufus's "Don's Donuts", 4 m apart, share one). A same-name place
+        farther away gets its own tile set, keyed by its anchor tile — Dufus's
+        and Maren's "home" are 168 m apart and arriving at one must not count
+        as arriving at the other.
         """
         name = endpoint["name"]
-        rows = self.place_db.place_tiles(name)
-        if not rows:
-            (x, y), half = endpoint["xy"], float(endpoint["extent_cm"]) / 2.0
+        (x, y), half = endpoint["xy"], float(endpoint["extent_cm"]) / 2.0
+        ax, ay = self.world_grid.tile_of(x, y)
+        groups: dict[str, list[dict]] = {}
+        for t in self.place_db.place_tiles(name):
+            groups.setdefault(t["place_key"], []).append(t)
+        best = None
+        for key, rows in groups.items():
+            gap = min(math.hypot(t["tx"] - ax, t["ty"] - ay) for t in rows) * TILE_CM
+            if gap <= _SAME_PLACE_CM and (best is None or gap < best[0]):
+                best = (gap, key, rows)
+        if best is not None:
+            key, rows = best[1], best[2]
+        else:
+            key = _place_key(name) if not groups else f"{_place_key(name)}@{ax},{ay}"
             x0, y0 = self.world_grid.tile_of(x - half, y - half)
             x1, y1 = self.world_grid.tile_of(x + half, y + half)
             seeded = self.place_db.seed_place_tiles(
-                name, [(tx, ty) for tx in range(x0, x1 + 1) for ty in range(y0, y1 + 1)])
+                name, [(tx, ty) for tx in range(x0, x1 + 1) for ty in range(y0, y1 + 1)],
+                key=key)
             if seeded:
-                logger.info("place '%s': seeded %d tiles around its anchor", name, seeded)
-            rows = self.place_db.place_tiles(name)
+                logger.info("place '%s': seeded %d tiles around its anchor%s", name, seeded,
+                            f" (a different place from the {len(groups)} other(s) with "
+                            f"this name)" if groups else "")
+            rows = [t for t in self.place_db.place_tiles(name) if t["place_key"] == key]
         endpoint["tiles"] = {(t["tx"], t["ty"]) for t in rows}
+        endpoint["tile_key"] = key
         endpoint["tile_of"] = self.world_grid.tile_of
         return endpoint
 
@@ -3453,9 +3479,27 @@ class AgentManager:
             if center is None:
                 continue
             out.append(_entry(place, center[0] + place["dx"], center[1] + place["dy"],
-                              owner=place["owner"]))
+                              owner=place["owner"], _xy=(center[0] + place["dx"],
+                                                         center[1] + place["dy"])))
         out.sort(key=lambda p: p["distance_m"])
-        return out
+        # #113: one name near one spot is one place — list it once (the nearest
+        # row). The same name _SAME_PLACE_CM or more away is another place.
+        kept: list[dict] = []
+        for p in out:
+            xy = p.pop("_xy", None) or self._place_xy(p)
+            if any(_place_key(k["name"]) == _place_key(p["name"])
+                   and math.hypot(xy[0] - k["_at"][0], xy[1] - k["_at"][1]) < _SAME_PLACE_CM
+                   for k in kept):
+                continue
+            p["_at"] = xy
+            kept.append(p)
+        for p in kept:
+            del p["_at"]
+        return kept
+
+    def _place_xy(self, place: dict) -> tuple[float, float]:
+        """World xy of a community place entry (its cell centre)."""
+        return self.world_grid.cell_center(place["col"], place["row"])
 
     def route_map_for(self, agent_id: str, destination_name: str, observation: dict) -> dict | None:
         """Top-down route map facts + rendered image for a travel tick (#6b/WP5).

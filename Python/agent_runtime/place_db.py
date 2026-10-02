@@ -1133,15 +1133,18 @@ class PlaceDB:
     # ── Place tiles (#113) ────────────────────────────────────────────────────
 
     def place_tiles(self, name: str) -> list[dict]:
-        """Every tile of the place called ``name`` (any owner), or [] if none."""
+        """Every tile of every place called ``name``, or [] if none. Same-name
+        places far apart are separate sets: ``place_key`` is the name key, or
+        ``<name key>@<tx>,<ty>`` for a second place with that name."""
         key = _place_key(name)
         if not key:
             return []
         with self._connect() as conn:
             rows = conn.execute(
                 "SELECT place_key, name, tx, ty, source, footing, first_by, first_at, "
-                "last_at, visits FROM place_tiles WHERE place_key=? ORDER BY ty, tx",
-                (key,),
+                "last_at, visits FROM place_tiles "
+                "WHERE place_key=? OR substr(place_key, 1, ?)=? ORDER BY place_key, ty, tx",
+                (key, len(key) + 1, key + "@"),
             ).fetchall()
         return [dict(r) for r in rows]
 
@@ -1154,10 +1157,12 @@ class PlaceDB:
             ).fetchall()
         return [dict(r) for r in rows]
 
-    def seed_place_tiles(self, name: str, tiles: list[tuple[int, int]]) -> int:
+    def seed_place_tiles(self, name: str, tiles: list[tuple[int, int]],
+                         key: str | None = None) -> int:
         """Lay ``seed`` tiles for a place that has none yet. Never overwrites a
-        tile that exists. Returns how many were written."""
-        key = _place_key(name)
+        tile that exists. ``key`` names the tile set (default: the name key).
+        Returns how many were written."""
+        key = key or _place_key(name)
         if not key or not tiles:
             return 0
         with self._lock, self._connect() as conn:
@@ -1169,10 +1174,12 @@ class PlaceDB:
             )
             return conn.total_changes - before
 
-    def stand_on_tile(self, agent_id: str, name: str, tx: int, ty: int) -> bool:
+    def stand_on_tile(self, agent_id: str, name: str, tx: int, ty: int,
+                      key: str | None = None) -> bool:
         """An APC body stood on tile (tx, ty) of this place: add it as ``stood``
-        or promote/count an existing one. Returns True when the tile is new."""
-        key = _place_key(name)
+        or promote/count an existing one. ``key`` names the tile set (default:
+        the name key). Returns True when the tile is new."""
+        key = key or _place_key(name)
         if not key:
             return False
         now = _iso_now()

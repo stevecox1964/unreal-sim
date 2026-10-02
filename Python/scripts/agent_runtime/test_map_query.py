@@ -95,10 +95,30 @@ def test_known_places_includes_owned_places():
               [p["distance_m"] for p in places] == sorted(p["distance_m"] for p in places))
 
 
+def test_known_places_lists_one_place_once():
+    """#113: one name near one spot is one place, listed once (the nearest row);
+    the same name 30+ m away is a different place and stays listed."""
+    with tempfile.TemporaryDirectory() as tmp:
+        mgr = _manager(tmp)
+        # Two owners' rows for the same donut shop, 4 m apart, ~18 m east.
+        mgr.place_db.add_owned_place("maren", 10, 5, "Don's Donuts", dx=-200.0, dy=0.0)
+        mgr.place_db.add_owned_place("dufus", 10, 5, "don's donuts", dx=200.0, dy=0.0)
+        # Two homes with the same name, far apart (west edge vs east edge).
+        mgr.place_db.add_owned_place("dufus", 0, 5, "home", dx=0.0, dy=0.0)
+        mgr.place_db.add_owned_place("maren", 9, 9, "home", dx=3000.0, dy=3000.0)
+        places = mgr.known_places({"x": 200.0, "y": 200.0, "z": 90.0})
+        donuts = [p for p in places if p["name"].lower() == "don's donuts"]
+        check("the shop recorded by two owners is listed once", len(donuts) == 1)
+        check("the nearer row is the one kept", round(donuts[0]["distance_m"]) == 18)
+        homes = [p for p in places if p["name"] == "home"]
+        check("two different places named home are both listed", len(homes) == 2)
+
+
 def main():
     test_all_named_places()
     test_known_places_bearing_and_distance()
     test_known_places_includes_owned_places()
+    test_known_places_lists_one_place_once()
     print("\nAll map-query checks passed.")
 
 
