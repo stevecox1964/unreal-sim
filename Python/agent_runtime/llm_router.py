@@ -202,7 +202,7 @@ an interrupted task.
   "place": "short name for the spot you are standing on (e.g. 'vegetable truck', 'village square'), or null if unsure",
   "speech": null,
   "task_completion": null,
-  "memory_update": null,
+  "memory_update": "null on an ordinary tick. Only when something NEW happened that you would want to know tomorrow (news someone told you, a promise, a person you met for the first time): one short true line about it",
   "importance": 0.5
 }}
 """
@@ -293,7 +293,7 @@ If and only if the active task under "Right now" uses completion
   }},
   "speech": null,
   "task_completion": null,
-  "memory_update": null,
+  "memory_update": "null on an ordinary tick. Only when something NEW happened that you would want to know tomorrow (news someone told you, a promise, a person you met for the first time): one short true line about it",
   "importance": 0.5
 }}
 """

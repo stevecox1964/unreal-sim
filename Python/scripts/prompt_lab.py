@@ -462,11 +462,48 @@ def exp_maren_stays_put():
             "Maren at truck / new menu": (system, user.replace(old_menu, new_menu))}
 
 
+def exp_memory_field():
+    """H: no memory has been saved since the switch to Qwen (memory.json frozen
+    on 2026-09-22) because the decision template shows a bare
+    `"memory_update": null` that Qwen copies; explaining the field (as the wake
+    template does) gets real memories written for moments that matter, while a
+    plain travel tick still writes none."""
+    old = '"memory_update": null,'
+    new = ('"memory_update": "one short line worth remembering from this moment '
+           '(something said, someone met, something learned), or null",')
+    strict = ('"memory_update": "null on an ordinary tick. Only when something NEW happened '
+              'that you would want to know tomorrow (news someone told you, a promise, a person '
+              'you met for the first time): one short true line about it",')
+    out = {}
+    talk = _scene_village_square(
+        [{"label": "Maren", "bearing": "center", "distance": "near", "distance_cm": 200.0,
+          "confidence": 1.0, "source": "engine"}] + _FIGURES,
+        "A person stands right in front of the NPC on the square.",
+        nearby=[{"name": "Maren", "distance_cm": 200.0}])
+    talk["heard"] = [{"speaker": "Maren", "text": "Dufus, the truck broke down, I'm selling "
+                      "from the square today.", "world_time": "Day 1, 10:05",
+                      "distance_cm": 200.0}]
+    travel = _scene_village_square(
+        _FIGURES, "A quiet square with a bank and a flag; two people stand to the left.")
+    travel["schedule"] = {"status": "travel", "place": "Don's Donuts",
+                          "intent": "walk to Don's Donuts for a coffee and a donut",
+                          "block": {"start": "10:00", "end": "11:00", "place": "Don's Donuts",
+                                    "activity": "coffee and a donut"}}
+    for label, scene in (("Maren tells news", talk), ("plain travel tick", travel)):
+        system, user = build_prompt("dufus", scene, _MEMORIES)
+        assert old in user, "memory_update template line not found"
+        out[f"{label} / today (bare null)"] = (system, user)
+        out[f"{label} / field explained"] = (system, user.replace(old, new, 1))
+        out[f"{label} / only what matters"] = (system, user.replace(old, strict, 1))
+    return out
+
+
 EXPERIMENTS = {"phantom_maren": exp_phantom_maren, "survey_trim": exp_survey_trim,
                "close_maren": exp_close_maren, "talk_split": exp_talk_split,
                "roster_removal": exp_roster_removal, "no_coordinates": exp_no_coordinates,
                "context_stress": exp_context_stress, "too_far_fact": exp_too_far_fact,
-               "go_inside": exp_go_inside, "maren_stays_put": exp_maren_stays_put}
+               "go_inside": exp_go_inside, "maren_stays_put": exp_maren_stays_put,
+               "memory_field": exp_memory_field}
 
 
 # ── Sampling ──────────────────────────────────────────────────────────────────
@@ -480,7 +517,9 @@ def _one_call(router, model, system, user) -> dict:
         return {"ok": True, "type": action.get("type"),
                 "target": action.get("target") or action.get("target_location")
                 or action.get("direction"), "message": action.get("message"),
-                "thought": decision.get("thought_summary"), "ms": (time.monotonic() - t0) * 1000}
+                "thought": decision.get("thought_summary"),
+                "memory_update": decision.get("memory_update"),
+                "importance": decision.get("importance"), "ms": (time.monotonic() - t0) * 1000}
     except Exception as e:      # noqa: BLE001 — a failed sample is data, not a crash
         return {"ok": False, "error": f"{type(e).__name__}: {e}"[:200],
                 "ms": (time.monotonic() - t0) * 1000}

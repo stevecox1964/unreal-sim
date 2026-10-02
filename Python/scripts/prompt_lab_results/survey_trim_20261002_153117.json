@@ -1,0 +1,213 @@
+{
+ "experiment": "survey_trim",
+ "doc": "H: the survey-era parts of a Play prompt (wider map, cell survey state,\nneighbouring grid cells, refuse/allow_cell) do not change Play choices \u2014\nso they can be cut to save tokens. Same scene, full vs trimmed.",
+ "n": 20,
+ "variants": {
+  "full prompt": {
+   "approx_tokens": 4847,
+   "summary": "speak_to -> unknown person: 14, walk_to -> forward-left: 3, walk_to -> northwest: 1, walk_to -> north: 1, walk_to -> left: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? Isn't it a lovely day for a walk?",
+     "thought": "I see two people to the left who look like they might want to chat, so I will speak to them to fulfill my goal of talking to everyone.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2037.7205999975558
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "northwest",
+     "message": null,
+     "thought": "I am at the village square and see two people nearby who I haven't spoken to yet; I will go greet them immediately!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1780.5430000007618
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and I see two people standing nearby, so I will go over to say hello!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1777.8920999990078
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a lovely day for a walk? I'm Dufus!",
+     "thought": "I am at the village square as scheduled and I see two people nearby who might want to chat!",
+     "memory_update": "Said hello to two unknown people at the village square.",
+     "importance": 0.5,
+     "ms": 1926.3065999984974
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two people standing nearby, so I will go talk to them because I love talking!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1647.4964000080945
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! How are you doing today?",
+     "thought": "I am at the village square and see two people standing nearby; I should go talk to them since my goal is to chat with whoever turns up.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1826.3982999924337
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't this a lovely square? I love it here! What are you up to?",
+     "thought": "I am at the village square and I see two people standing to my left, so I should go talk to them because that is what I do all day.",
+     "memory_update": "Saw two unknown people at the village square.",
+     "importance": 0.8,
+     "ms": 2224.9852000095416
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "north",
+     "message": null,
+     "thought": "I am at the village square and see two people nearby, so I will go say hello to them right away!",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1610.8149000065168
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? Have you seen any good spots lately?",
+     "thought": "I am at the village square and see two people nearby, so I will greet them to start chatting!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2030.176999993273
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't it a fine day for walking? What brings you to this lovely square?",
+     "thought": "I am at the village square as scheduled and I see two people nearby who look like they might want to chat!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2362.7411000052234
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't the sky just lovely today? What are you doing here?",
+     "thought": "I am at the village square and see two people nearby, so I will greet them to keep my promise to talk to everyone.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1987.1286999987205
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a lovely day for a chat? I'm Dufus! What brings you to this fine square?",
+     "thought": "I see two people at the village square and my goal is to talk to whoever passes, so I will greet them immediately!",
+     "memory_update": "Met two unknown people at the village square.",
+     "importance": 0.8,
+     "ms": 2137.1529000025475
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? Isn't it a lovely day for a walk?",
+     "thought": "I am at the village square and see two people nearby, so I will go talk to them since chatting is my favorite thing!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1988.1673000054434
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a square, isn't it? What are you doing here?",
+     "thought": "I am at the village square as scheduled and I see two people nearby who look like they might want to chat!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1920.474300000933
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it?",
+     "thought": "I am at the village square as scheduled and see two people nearby who I should greet since my goal is to talk to whoever passes.",
+     "memory_update": "Said hello to two strangers at the village square.",
+     "importance": 0.8,
+     "ms": 1969.301599994651
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two people standing nearby, so I will go over to say hello since my goal is to talk to whoever passes.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1632.50639999751
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "left",
+     "message": null,
+     "thought": "I am at the village square and I see two people standing to my left, so I will go say hello to them!",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1551.5223999973387
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't this bank just a beaut? What are you doing here?",
+     "thought": "I am at the village square and see two people standing nearby, so I should greet them to chat as per my schedule.",
+     "memory_update": "Said hello to two unknown people at the village square.",
+     "importance": 0.8,
+     "ms": 1941.1976999981562
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Lovely day for a walk, isn't it? What are you doing here?",
+     "thought": "I see two people standing nearby at the village square, so I will greet them cheerfully to start a conversation.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2002.1014000085415
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a lovely day? I'm Dufus!",
+     "thought": "I am at the village square and see two people nearby; I should greet them to chat!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1930.4917999979807
+    }
+   ]
+  }
+ }
+}

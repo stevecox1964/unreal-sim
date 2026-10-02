@@ -1,0 +1,213 @@
+{
+ "experiment": "talk_split",
+ "doc": "H: a talk-only prompt (no movement doctrine, no walking/obstacle advice,\nno map sections) makes the same choice when Maren is 2 m away and when a\nstranger is in view \u2014 so splitting the prompt by job is safe here.",
+ "n": 20,
+ "variants": {
+  "Maren 2 m, she spoke / full": {
+   "approx_tokens": 4955,
+   "summary": "speak_to -> Maren: 20",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Donut! Yes! They are very round and sweet! I had one this morning!",
+     "thought": "Maren is asking me about Donuts right in front of me, so I must answer her cheerful and gullibly.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2173.323299997719
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! No news from Don's yet! But I bet they have good donuts! What do you think?",
+     "thought": "Maren is asking me about Don's, so I must answer her cheerful question right here in the square.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2277.2578000003705
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning! No news from Don's yet! But the donuts are round and that is good news!",
+     "thought": "Maren is asking me about Don's Donuts, and I am right here with her, so I must answer her question cheerfully.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2050.317899993388
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning, Maren! Don's has lots of donuts! Are they good? I think so!",
+     "thought": "Maren is asking me about Don's Donuts, so I must answer her cheerfully and gullibly.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2049.4952000008198
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning Maren! Don's is very quiet. Just donuts. No news from the road!",
+     "thought": "Maren is asking me a question right here at the square, so I must answer her cheerfully and gullibly.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2261.6838999965694
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! No news yet! But I am very happy to see you!",
+     "thought": "Maren is right here asking me questions, so I must answer her cheerfuly!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1945.8717000088654
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning! No news from Donuts! But the donuts are very tasty! Do you like coffee?",
+     "thought": "Maren is talking to me about Don's, so I must answer her cheerful and gullibly.",
+     "memory_update": "Spoke to Maren at the village square. She asked about Don's Donuts.",
+     "importance": 0.8,
+     "ms": 2253.6135999980615
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Good morning! The donuts were very round. Did you see the American flag? It is waving!",
+     "thought": "Maren is right here and asked me a question about Don's, so I must answer her cheerfully!",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1848.0183000065153
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Donuts are very sweet! I love the glaze!",
+     "thought": "Maren is asking me about Don's, and I am right here to answer her!",
+     "memory_update": "Said hello to Maren at the village square. She asked about Donuts.",
+     "importance": 0.9,
+     "ms": 1925.1891000021715
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning! The donuts are very loud today! Did you hear them singing?",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully using the wrong words!",
+     "memory_update": "Said hello to Maren at the square. Told her the donuts were loud.",
+     "importance": 0.8,
+     "ms": 2377.15479999315
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Good morning! Yes! The donuts are very round and sweet! Did you see any?",
+     "thought": "Maren is asking me about Don's, so I must answer her cheerfully right here.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2707.8349999937927
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Donuts are round and sweet! Did you see the map? It's done!",
+     "thought": "Maren is talking to me and asking about Don's, so I must answer her cheerfully while standing here.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1767.6777000015136
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Don's has lots of donuts! Very sweet!",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully.",
+     "memory_update": "Said hello to Maren at the village square. She likes donuts too!",
+     "importance": 0.9,
+     "ms": 1914.6957000048133
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! No news from Don's yet! But the donuts look yummy! Do you like coffee? What are those vegetables?",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully!",
+     "memory_update": null,
+     "importance": 0.9,
+     "ms": 2794.3760999914957
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh, hello Maren! News? Well, the donuts are very round today! Did you see that?",
+     "thought": "Maren is right here and asked me a question! I have to answer her, even if I don't really know what she means by 'news from Don's'.",
+     "memory_update": "Maren asked about news from Don's. I told her the donuts are round.",
+     "importance": 0.9,
+     "ms": 2485.5672999983653
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Good morning! No news from Don's yet, but the donuts are waiting!",
+     "thought": "Maren is asking me a question right in front of me, so I must answer her cheerfully.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2012.6120999921113
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "No news! But the donuts are very round! Do you like circles?",
+     "thought": "Maren is asking me about Donuts and I am right here with her, so I must answer her cheerful question!",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2058.3924999955343
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning, Maren! No news from Don's yet! But the donuts look tasty!",
+     "thought": "Maren is right here asking me a question, so I must answer her immediately as per my rules.",
+     "memory_update": "Said hello to Maren at the village square.",
+     "importance": 0.8,
+     "ms": 2035.3069999982836
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning! Donut news is good! The donuts are very tasty!",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully using the wrong word.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1889.0197000000626
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning, Maren! No news from Don's yet! But the donuts are very round!",
+     "thought": "Maren is right here asking about Donuts! I must answer her immediately because she spoke to me.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1842.7699000021676
+    }
+   ]
+  }
+ }
+}

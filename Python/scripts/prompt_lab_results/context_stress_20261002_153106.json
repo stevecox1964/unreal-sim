@@ -1,0 +1,213 @@
+{
+ "experiment": "context_stress",
+ "doc": "H (user: \"qwen may choke\"): as the prompt fills with a long run's real\ncontext \u2014 memories at their cap of 30, 8 places, 5 past moments, people \u2014\nand beyond (120 memories, 16 places, 20 moments), Qwen still picks the\nright action, returns valid JSON, and does not slow down badly. Two scenes\nwith a clear right answer: travel to Don's Donuts; answer Maren 2 m away.",
+ "n": 20,
+ "variants": {
+  "travel / long run (caps)": {
+   "approx_tokens": 5880,
+   "summary": "walk_to -> Don's Donuts: 17, speak_to -> unknown person: 2, walk_to -> forward-left: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee, so I will head west where the shop is located.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1797.5946999940788
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee, so I will head west towards it.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2088.3040000044275
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my routine says I should be walking to Don's Donuts for coffee and a donut. I see two people ahead, but since I have a specific destination in mind and they are strangers, I will continue my journey to Donuts.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2311.445499988622
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule, so I will head west towards it.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1984.3449000036344
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two people to my left, so I will go over there to say hello as that is what I do.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2108.308799986844
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my routine says I need to go to Don's Donuts for coffee and a donut. I see two people ahead, but since I have an active travel goal to reach the shop first before stopping for conversations, I will head west towards Don's Donuts.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2153.2784000009997
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts for coffee, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1959.0573000023142
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee; I see two people ahead but they are strangers so I will head west toward the donut shop as planned.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1723.953699998674
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am standing in the village square facing west, and my routine is to go to Don's Donuts which is also to the west; I see two people nearby but I need to get moving to start my errand.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1794.0278000023682
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, so I will head west.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1686.4675999968313
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a donut, isn't it?",
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee, but I see two people nearby who look like they might want to chat, so I will greet them first because talking is better than walking.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2335.859300001175
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1777.9057000007015
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head west where the shop is located.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1772.1799999999348
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am standing in the village square facing west, and my current routine is to go to Don's Donuts for coffee; I see two people to my left but they are strangers, so I will start walking toward the donut shop now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1977.9127000074368
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1523.1849999981932
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1781.369899996207
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1528.586299988092
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts for coffee, so I will head west where I know it is.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1678.3642999944277
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will walk there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1856.1114999902202
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a fine morning for a stroll? I was just thinking about going to get a donut, but talking is much better!",
+     "thought": "I am standing in the village square and I see two people nearby who look like they might want to chat, so I will go say hello before heading to Donuts.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 2340.760599996429
+    }
+   ]
+  }
+ }
+}

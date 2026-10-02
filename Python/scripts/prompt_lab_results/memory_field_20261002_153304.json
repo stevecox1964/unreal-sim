@@ -1,0 +1,419 @@
+{
+ "experiment": "memory_field",
+ "doc": "H: no memory has been saved since the switch to Qwen (memory.json frozen\non 2026-09-22) because the decision template shows a bare\n`\"memory_update\": null` that Qwen copies; explaining the field (as the wake\ntemplate does) gets real memories written for moments that matter, while a\nplain travel tick still writes none.",
+ "n": 20,
+ "variants": {
+  "Maren tells news / only what matters": {
+   "approx_tokens": 5010,
+   "summary": "speak_to -> Maren: 20",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Did your truck break? That sounds like a lot of work!",
+     "thought": "Maren is right here and told me her truck broke down, so I should greet her and ask about it!",
+     "memory_update": "Met Maren at the village square; she said her vegetable truck broke down.",
+     "importance": 0.5,
+     "ms": 2229.230800003279
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! That sounds like a big problem! Did you fix it yet?",
+     "thought": "Maren is right here and told me her truck broke down, so I should greet her and ask about it since she is speaking to me.",
+     "memory_update": "Maren's truck broke down so she is selling vegetables from the square today.",
+     "importance": 0.8,
+     "ms": 2203.0591999937315
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Gee whiz, Maren! Your truck broke? That's awful! But hey, selling from the square is even better for chatting!",
+     "thought": "Maren is right here and just told me her truck broke down, so I must greet her and ask about it!",
+     "memory_update": "Maren said her truck broke down so she is selling vegetables from the village square today.",
+     "importance": 0.8,
+     "ms": 2384.791000004043
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! That is terrible luck! But you are still selling? That is amazing!",
+     "thought": "Maren is right here and told me about her truck, so I should answer her immediately!",
+     "memory_update": "Maren's vegetable truck broke down, so she is selling from the village square today.",
+     "importance": 0.5,
+     "ms": 2297.8957000013907
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! A broken truck? That sounds terribly inconvenient! But hey, selling from the square is even better for chatting, isn't it?",
+     "thought": "Maren is right here and just told me her truck broke down, so I must answer her cheerfully!",
+     "memory_update": "Maren's truck broke down so she is selling vegetables from the village square today.",
+     "importance": 0.5,
+     "ms": 2266.6817999997875
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Golly, Maren! Your truck broke? That's a bummer! Are you okay?",
+     "thought": "Maren is right here and told me her truck broke down, so I should greet her and ask about it since she is close enough to talk.",
+     "memory_update": "Met Maren at the village square; her vegetable truck broke down so she is selling from the square today.",
+     "importance": 0.5,
+     "ms": 2241.6376000037417
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! That is terrible news! Did it make a loud noise? Do you need help pushing it?",
+     "thought": "Maren is right here and just told me her truck broke down, so I must answer her cheerfully!",
+     "memory_update": "Maren said her truck broke down so she is selling vegetables from the square today.",
+     "importance": 0.8,
+     "ms": 2170.073900007992
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! What happened to the truck? Is it okay?",
+     "thought": "Maren is right here and just told me the truck broke down, so I should greet her and ask about it!",
+     "memory_update": "Maren said her vegetable truck broke down, so she is selling from the square today.",
+     "importance": 0.5,
+     "ms": 2083.488000003854
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! Did it break? Do you need a push? I am very strong for pushing!",
+     "thought": "Maren is right here and just told me her truck broke down! I have to answer her and ask if she needs help carrying things or something!",
+     "memory_update": "Maren's vegetable truck broke down so she is selling from the square today.",
+     "importance": 0.8,
+     "ms": 2049.026299995603
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! A broken truck? That is a big deal! Do you need help pushing it? I am very strong for not being useful!",
+     "thought": "Maren is right here and just told me her truck broke down, so I will stop to chat with her as planned.",
+     "memory_update": "Maren's vegetable truck broke down so she is selling from the square today.",
+     "importance": 0.5,
+     "ms": 2095.00190000108
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh my! A broken truck? That sounds terribly inconvenient! Are you alright, Maren?",
+     "thought": "Maren is right here and told me her truck broke down, so I must answer her immediately!",
+     "memory_update": "Maren's vegetable truck broke down, so she is selling from the village square today.",
+     "importance": 0.5,
+     "ms": 2091.8462999979965
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Oh no! What happened to the truck? Is it broken? Do you need help?",
+     "thought": "Maren is right here and told me her truck broke down, so I must greet her and ask about it because I love talking!",
+     "memory_update": "Maren said her vegetable truck broke down so she is selling from the square today.",
+     "importance": 0.5,
+     "ms": 2047.029500012286
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! A broken truck? That sounds exciting! Did it break because it was tired?",
+     "thought": "Maren is right here telling me about her truck, so I must answer her immediately!",
+     "memory_update": "Maren said her truck broke down and she is selling vegetables from the square today.",
+     "importance": 0.8,
+     "ms": 2129.615999991074
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Did the truck break down? That sounds terrible! How are you selling things from the square?",
+     "thought": "Maren is right here and just told me her truck broke down, so I should greet her and ask about it since she is close by.",
+     "memory_update": "Maren's vegetable truck broke down, so she is selling produce from the village square today.",
+     "importance": 0.5,
+     "ms": 2313.3932999917306
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! That is terrible news! Is it fixed yet? Can I help?",
+     "thought": "Maren is right here and talking to me about her truck, so I must answer her!",
+     "memory_update": "Maren's truck broke down so she is selling vegetables from the square today.",
+     "importance": 0.8,
+     "ms": 4631.694999989122
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! A broken truck? That sounds very loud! Are you selling vegetables or donuts today? I love both!",
+     "thought": "Maren is right here and told me her truck broke down! I have to answer her and ask about the donuts!",
+     "memory_update": "Maren's vegetable truck broke down so she is selling from the square today.",
+     "importance": 0.8,
+     "ms": 2126.6146000125445
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! A broken truck? That sounds very heavy! Are you okay? Do you need a push?",
+     "thought": "Maren is right here and told me her truck broke down, so I must answer her with excitement!",
+     "memory_update": "Maren's vegetable truck broke down so she is selling from the village square today.",
+     "importance": 0.8,
+     "ms": 2454.6277999907034
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! A broken truck? That sounds terrible! But hey, selling from the square is fun too, isn't it? How did that happen?",
+     "thought": "Maren is right here and just told me her truck broke down, so I must answer her immediately as per my rules.",
+     "memory_update": "Maren's vegetable truck broke down so she is selling produce at the village square today.",
+     "importance": 0.8,
+     "ms": 2729.44079998706
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh wow! Did you say your truck broke? That is terrible! How do you sell veggies now?",
+     "thought": "Maren is right here and told me her truck broke down, so I must greet her and ask about it!",
+     "memory_update": "Maren's vegetable truck broke down, so she is selling from the village square today.",
+     "importance": 0.8,
+     "ms": 2200.410899997223
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh my! Broken down? That sounds terrible! Are you okay? Do you need a hand?",
+     "thought": "Maren is right here and told me her truck broke down, so I must answer her immediately.",
+     "memory_update": "Maren's vegetable truck broke down, so she is selling from the square today.",
+     "importance": 0.8,
+     "ms": 1823.7393999879714
+    }
+   ]
+  },
+  "plain travel tick / only what matters": {
+   "approx_tokens": 4887,
+   "summary": "walk_to -> Don's Donuts: 19, walk_to -> northwest: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1725.3017000039108
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts, so I will head there now!",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2975.9101000090595
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut. I see two people to my left, but since I have not met them yet and my primary goal is to travel to the shop, I will start walking towards it.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 2243.904599992675
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "northwest",
+     "message": null,
+     "thought": "I see two people at the bank and need to get to Don's Donuts for my morning coffee and donut, so I will head northwest towards it.",
+     "memory_update": "null",
+     "importance": 0.5,
+     "ms": 2179.0832999977283
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am standing in the village square facing North, but my schedule says to go to Don's Donuts which is to the Northwest. I see two people ahead of me who might be interesting, but I need to get moving to the donut shop as per my routine.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1953.8374000112526
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1737.2622999973828
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says I should be walking to Don's Donuts for coffee and a donut right now, so I will head there immediately.",
+     "memory_update": "null",
+     "importance": 0.8,
+     "ms": 1532.677800001693
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1736.65209999308
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1656.010000006063
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head northwest towards the shop.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1589.1013000073144
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning routine, so I will walk there now.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1639.8240999988047
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1704.8878999921726
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now!",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1632.3530999943614
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning routine, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.8,
+     "ms": 1551.0368999966886
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says I should be at Don's Donuts for coffee and a donut, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1741.6879999946104
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1657.563000000664
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am standing in the village square and my schedule says to go to Don's Donuts for coffee, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1813.8827999937348
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1681.3885000010487
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head northwest towards the shop.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1562.757399995462
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut. I see two people, but I need to get moving to my destination first.",
+     "memory_update": null,
+     "importance": 0.5,
+     "ms": 1718.6814999877242
+    }
+   ]
+  }
+ }
+}

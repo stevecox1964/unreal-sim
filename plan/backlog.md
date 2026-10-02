@@ -160,6 +160,18 @@ saves its full prompt + answer (`logs\api_calls\prompts\SR<n>\`, newest 5 runs) 
   `cost_usd` on its `api_calls` line (asked with `usage: {include: true}`), so the next run shows the
   real figure. Cost is not a reason to split the prompt for Qwen; quality and the lab results are.
 
+- **APCs stopped saving memories when we moved to Qwen — FIXED 2026-10-02 (pending live proof).**
+  Both `memory.json` files were last written 2026-09-22 (the Qwen switch); SR65 and SR66_P (73
+  decisions, 26 spoken lines) saved **0** memories. The save code works (tested); the decision
+  template showed a bare `"memory_update": null` that Qwen copies. Lab `memory_field` (n=20): Maren
+  tells real news → today 9/20 remembered; "explain the field" 20/20 but plain travel ticks 12/20
+  (junk, partly invented, which would evict real memories from the cap of 30); **strict wording
+  ("null on an ordinary tick; only something NEW you'd want to know tomorrow") → news 20/20, travel
+  0/20** real lines. Built: strict wording in both decision templates; `MemoryStore.record` ignores the
+  text "null"/"none"/blank (Qwen returned the word 2/20). Tests: `test_decision_feed.py`
+  (mutation-checked). Live proof: next run's `api_calls\prompts\` answers + `memory.json` mtime.
+  Still open: why live was 0/73 rather than the lab's few — the saved prompts will show.
+
 **Proposed build (not started):** code picks the prompt by the wake reason the lizard brain already
 knows — *talk* (someone spoke / came close: persona + rules, who is close, what was said, people known),
 *move* (schedule travel, stuck, blocked: places, path facts, movement doctrine), *plan* (wake, schedule

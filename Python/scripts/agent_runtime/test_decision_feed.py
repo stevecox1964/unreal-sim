@@ -115,8 +115,41 @@ def test_survey_heading_events_are_attributed_and_structured():
               and event["survey_progress"]["completed_headings"] == ["E"])
 
 
+def test_memory_update_is_saved_and_the_word_null_is_not():
+    """A real memory_update is saved; the text "null"/"none" (Qwen sometimes
+    answers the word) and idle ticks save nothing (prompt lab memory_field)."""
+    import json as _json
+    with tempfile.TemporaryDirectory() as t:
+        ms = _store(Path(t))
+        mem = Path(t) / "agents" / "dufus" / "memory.json"
+        ms.record("dufus", {}, {"type": "speak_to"}, {"status": "success"},
+                  memory_update="Maren's truck broke down; she sells from the square today.")
+        saved = _json.loads(mem.read_text(encoding="utf-8"))["memories"]
+        check("a real memory line is saved", saved[-1]["text"].startswith("Maren's truck broke"))
+        for word in ("null", "None", "  null  ", ""):
+            ms.record("dufus", {}, {"type": "speak_to"}, {"status": "success"},
+                      memory_update=word)
+        after = _json.loads(mem.read_text(encoding="utf-8"))["memories"]
+        check("the words null/none/blank are not saved as memories", len(after) == len(saved))
+        ms.record("dufus", {}, {"type": "idle"}, {"status": "accepted"},
+                  memory_update="idle thought")
+        check("an idle tick saves no memory",
+              len(_json.loads(mem.read_text(encoding="utf-8"))["memories"]) == len(saved))
+
+
+def test_decision_template_explains_memory_update():
+    from agent_runtime import llm_router
+    for name in ("_USER_TEMPLATE_VISION", "_USER_TEMPLATE"):
+        text = getattr(llm_router, name)
+        check(f"{name} explains when to write a memory (not a bare null)",
+              '"memory_update": null,' not in text
+              and "something NEW happened that you would want to know tomorrow" in text)
+
+
 def main():
     test_record_then_read_with_timestamp()
+    test_memory_update_is_saved_and_the_word_null_is_not()
+    test_decision_template_explains_memory_update()
     test_clear_empties_feed_but_keeps_path()
     test_feed_can_show_only_the_active_run()
     test_clear_on_empty_is_safe()

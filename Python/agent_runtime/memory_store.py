@@ -398,11 +398,14 @@ class MemoryStore:
         # Don't persist memories for idle actions — they're never meaningful.
         # Also skip low-importance updates to avoid log spam.
         action_type = action.get("type", "idle")
+        # Normalize: LLM sometimes returns {"text": "..."} instead of a plain string.
+        if isinstance(memory_update, dict):
+            memory_update = memory_update.get("text", str(memory_update))
+        # Qwen sometimes answers the word "null" as text (prompt lab
+        # memory_field) — that is "nothing to remember", not a memory.
+        if memory_update is not None and str(memory_update).strip().lower() in ("", "null", "none"):
+            memory_update = None
         if memory_update and action_type != "idle":
-            # Normalize: LLM sometimes returns {"text": "..."} instead of a plain string.
-            if isinstance(memory_update, dict):
-                memory_update = memory_update.get("text", str(memory_update))
-
             p = self.agents_dir / agent_id / "memory.json"
             data = (
                 json.loads(p.read_text(encoding="utf-8"))
