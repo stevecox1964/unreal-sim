@@ -198,8 +198,8 @@ name, mannequin no lookup, prompt line, schema text, close radius), `test_vision
 in, "Maren" out → "unknown person"), `test_http_retry.py` (429/5xx/connection retry, Retry-After cap,
 no retry on 4xx or read timeout). Seed fix found by `test_route_planner`: seed tiles now cover every
 tile the old box touches (a 2 m place had shrunk to one tile).
-**Still untested:** the "someone came close" event end-to-end through `_observe_agent` (only the radius
-helper is tested).
+"Someone came close" end-to-end: `test_event_driven_cognition.py` (15 m stays asleep, 2 m wakes once,
+staying close does not re-wake, stepping out and back in is a new event; mutation-checked).
 
 **Not in scope (parked):** survey treats interiors as off-limits (`doctrine/survey.md`) — Dufus is a
 townsperson now, so left alone. Route the travel target to the nearest *stood* tile instead of the
@@ -327,7 +327,8 @@ run decides. (This supersedes the 2026-08-19 "speed mode: no tests" note for Pla
 
 ### #107 — Test suite rot: 9 scripts fail on untouched HEAD
 
-**Status:** DONE 2026-10-02 — `scriptsun_tests.py` 68/68. Stubs got `mission`/`radar`; the surveyor
+**Status:** DONE 2026-10-02 — `scripts
+un_tests.py` 68/68. Stubs got `mission`/`radar`; the surveyor
 policy checks moved from Dufus to `agents/surveyor` (#105); runner default is `play`; the spool-up wake
 test sets `survey`; `test_frontier_blocking` deleted (explore mode was removed in #102 — its
 `_MAX_FRONTIER_FAILURES` / `_frontier_failures` are now dead code in `agent_manager.py`, not removed).

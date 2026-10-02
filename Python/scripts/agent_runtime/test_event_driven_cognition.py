@@ -185,6 +185,30 @@ def test_movement_and_nearby_arrival_resume_cognition():
         check("nearby APC arrival bypasses suppression", mgr._observe_agent(agent) is not None)
 
 
+def test_someone_coming_close_wakes_a_settled_agent_once():
+    """#113: the lizard brain's "someone came close" event. Dufus already in
+    sight (15 m) changes nothing; Dufus stepping within reach (2 m) wakes Maren
+    once, so she can respond; staying close does not wake her every tick."""
+    with tempfile.TemporaryDirectory() as tmp:
+        mgr, agent, _ = _manager(tmp)
+        mgr._live_pos["dufus"] = {"x": 1820.0, "y": 120.0, "yaw": 0.0}   # 15 m
+        check("someone 15 m away: settled agent stays asleep",
+              mgr._observe_agent(agent) is None)
+        check("still 15 m away: still asleep", mgr._observe_agent(agent) is None)
+        mgr._live_pos["dufus"]["x"] = 520.0                               # 2 m
+        observation = mgr._observe_agent(agent)
+        check("someone stepping within reach wakes cognition", observation is not None)
+        check("the nearby fact then says close enough to talk",
+              "close enough to talk" in __import__("agent_runtime.llm_router",
+                  fromlist=["x"])._nearby_character_lines(
+                      [{"name": "Dufus", "distance_cm": 200.0}]))
+        check("staying close does not wake her again", mgr._observe_agent(agent) is None)
+        mgr._live_pos["dufus"]["x"] = 1820.0
+        mgr._observe_agent(agent)                       # steps back out of reach
+        mgr._live_pos["dufus"]["x"] = 520.0
+        check("coming close again is a new event", mgr._observe_agent(agent) is not None)
+
+
 def test_mapped_place_suppresses_routine_pixel_change():
     with tempfile.TemporaryDirectory() as tmp:
         changed = StubBridge(changed=True)
@@ -253,6 +277,7 @@ def main():
     test_ungrounded_agent_keeps_anti_freeze_heartbeat()
     test_schedule_transition_and_displacement_resume_cognition()
     test_movement_and_nearby_arrival_resume_cognition()
+    test_someone_coming_close_wakes_a_settled_agent_once()
     test_mapped_place_suppresses_routine_pixel_change()
     test_active_non_survey_interrupt_wakes_settled_agent()
     asyncio.run(test_manual_pulse_bypasses_settled_suppression())
