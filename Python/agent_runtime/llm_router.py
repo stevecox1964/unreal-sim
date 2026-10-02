@@ -808,6 +808,8 @@ performed an action. Do not output JSON or markdown."""
             # Thinking models (qwen3.7-flash) otherwise spend the budget and
             # seconds on hidden reasoning before the JSON.
             "reasoning": {"enabled": False},
+            # Ask for the real per-call cost so long runs log money, not estimates.
+            "usage": {"include": True},
         }
         if json_mode:
             body["response_format"] = {"type": "json_object"}
@@ -824,7 +826,8 @@ performed an action. Do not output JSON or markdown."""
             response.raise_for_status()
         payload = response.json()
         usage = payload.get("usage") or {}
-        api_call_log.note_usage(usage.get("prompt_tokens"), usage.get("completion_tokens"))
+        api_call_log.note_usage(usage.get("prompt_tokens"), usage.get("completion_tokens"),
+                                usage.get("cost"))
         text = (payload["choices"][0]["message"].get("content") or "").strip()
         api_call_log.note_response(text)
         if not text:

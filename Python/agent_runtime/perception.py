@@ -171,7 +171,8 @@ class VisionPerceiver:
                             }],
                             "max_tokens": 800,
                             "response_format": {"type": "json_object"},
-                            **({"reasoning": {"enabled": False}} if provider == "openrouter" else {}),
+                            **({"reasoning": {"enabled": False}, "usage": {"include": True}}
+                               if provider == "openrouter" else {}),
                         },
                         timeout=self._timeout,
                     )
@@ -180,7 +181,8 @@ class VisionPerceiver:
                         raise RuntimeError(f"{provider} {response.status_code}: {response.text[:300]}")
                     payload = response.json()
                     usage = payload.get("usage") or {}
-                    api_call_log.note_usage(usage.get("prompt_tokens"), usage.get("completion_tokens"))
+                    api_call_log.note_usage(usage.get("prompt_tokens"),
+                                            usage.get("completion_tokens"), usage.get("cost"))
                     content = payload["choices"][0]["message"]["content"]
 
                 api_call_log.note_response(content)

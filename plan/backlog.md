@@ -154,6 +154,12 @@ saves its full prompt + answer (`logs\api_calls\prompts\SR<n>\`, newest 5 runs) 
   nothing, kept until the next action runs) → `observation["last_action_fact"]` → `Sense: your last
   action (speak_to Maren) did nothing — …`. Test: `test_talk_reach.py` (real act phase).
 
+- **Cost per hour is small** (2026-10-02): OpenRouter reports qwen3.7-flash at ~$0.03 / 1M prompt
+  tokens and ~$0.13 / 1M answer tokens. SR66_P used ~640k in + 36k out in 50 min for 2 APCs →
+  **≈ $0.03 / hour, ≈ $0.70 / day**. Every OpenRouter call now logs the provider-reported
+  `cost_usd` on its `api_calls` line (asked with `usage: {include: true}`), so the next run shows the
+  real figure. Cost is not a reason to split the prompt for Qwen; quality and the lab results are.
+
 **Proposed build (not started):** code picks the prompt by the wake reason the lizard brain already
 knows — *talk* (someone spoke / came close: persona + rules, who is close, what was said, people known),
 *move* (schedule travel, stuck, blocked: places, path facts, movement doctrine), *plan* (wake, schedule

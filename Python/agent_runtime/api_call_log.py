@@ -7,7 +7,7 @@ decide call; wake-up, ask, chat and vision calls left no timing trace at all.
         raw = ...provider call...          # provider code may call note_usage(in, out)
 
 Line: {"timestamp", "sim_run", "agent_id", "purpose", "provider", "model",
-       "ms", "ok", "error", "input_tokens", "output_tokens"}
+       "ms", "ok", "error", "input_tokens", "output_tokens"[, "cost_usd"], ...}
 The timestamp is when the call STARTED. One file per run; when a new run's file is created,
 only the newest KEEP_RUNS files are kept (older runs are deleted).
 
@@ -51,12 +51,15 @@ def set_dir(logs_dir: Path) -> None:
     _dir = Path(logs_dir) / "api_calls"
 
 
-def note_usage(input_tokens, output_tokens) -> None:
-    """Attach token counts to the call being tracked on this thread (no-op otherwise)."""
+def note_usage(input_tokens, output_tokens, cost_usd=None) -> None:
+    """Attach token counts (and the provider-reported cost in USD, when it gives
+    one — OpenRouter does) to the call being tracked on this thread."""
     rec = _current.get()
     if rec is not None:
         rec["input_tokens"] = input_tokens
         rec["output_tokens"] = output_tokens
+        if cost_usd is not None:
+            rec["cost_usd"] = cost_usd
 
 
 def note_prompt(system_text: str, user_text: str, image_path=None) -> None:

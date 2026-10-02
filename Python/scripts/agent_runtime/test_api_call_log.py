@@ -59,6 +59,13 @@ def test_line_and_prompt_file():
             pass
         check("a call that noted no prompt writes no prompt file",
               "prompt_file" not in _lines(logs, "SR70_P")[-1])
+        check("no cost reported -> no cost field (never a guessed 0)",
+              "cost_usd" not in _lines(logs, "SR70_P")[-1])
+
+        with api_call_log.track("decide", "dufus", "openrouter", "qwen/qwen3.7-flash"):
+            api_call_log.note_usage(6400, 150, 0.000211)
+        check("a provider-reported cost lands on the line",
+              _lines(logs, "SR70_P")[-1]["cost_usd"] == 0.000211)
 
 
 def test_failed_call_still_saves_its_prompt():
