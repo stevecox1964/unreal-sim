@@ -1172,6 +1172,9 @@ verification, which folds into the #36/#37 live session.
 
 **2026-09-22 ledger (speed mode ON again — user: "don't write and run tests, but put those test
 suggestions in the backlog"). Code landed untested; each line is the test to write later:**
+- [ ] **Run tags with mode** (`sim_run`, 2026-10-02): `allocate_run(dir, "play")` → `SR<n>_P`,
+  `"survey"` → `SR<n>_S`, one counter across modes; `run_number("SR66_P") == 66`; api_call_log
+  `_prune` with `SR9.jsonl` + `SR66_P.jsonl` deletes `SR9` first; replay lists `SR66_P` above `SR45`.
 - [ ] **Tick crash fix** (`_not_ready_reason`): an agent inside its cooldown makes the tick log
   `cooling down (Ns)` and the tick still runs the other agents — no `AttributeError`.
 - [ ] **#27 A arrival** (`_MOVING_TO_RE` / `_ARRIVED_CM` in `_observe_agent`): fake observation
