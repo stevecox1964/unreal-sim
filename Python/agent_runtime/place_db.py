@@ -179,6 +179,24 @@ CREATE TABLE IF NOT EXISTS agent_visual_history (
     visit_count    INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY (agent_id, place_image_id)
 );
+
+-- A place is a set of 3 m floor tiles (#113), shared by every APC that uses the
+-- name. tx/ty index tiles from the grid's logical origin (world_grid.TILE_CM).
+-- source: seed = laid down from the old extent box, never stood on;
+--         stood = an APC body stood here (the floor is walkable).
+CREATE TABLE IF NOT EXISTS place_tiles (
+    place_key TEXT    NOT NULL,   -- _place_key(name)
+    name      TEXT    NOT NULL,   -- display name as first recorded
+    tx        INTEGER NOT NULL,
+    ty        INTEGER NOT NULL,
+    source    TEXT    NOT NULL DEFAULT 'seed',
+    footing   TEXT,               -- last ground label perceived on this tile
+    first_by  TEXT,               -- agent_id that first stood here
+    first_at  TEXT,               -- wall-clock UTC
+    last_at   TEXT,               -- wall-clock UTC of the last stand
+    visits    INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (place_key, tx, ty)
+);
 """
 
 _MAX_LABELS_PER_DIRECTION = 5
@@ -347,7 +365,7 @@ class PlaceDB:
             image_paths = [r[0] for r in conn.execute("SELECT image_path FROM place_images")]
             tables = ("agent_visual_history", "place_images", "place_cells",
                       "place_observations", "agent_visits", "owned_place_cells",
-                      "cell_ground", "cell_refusals", "no_go_patches")
+                      "cell_ground", "cell_refusals", "no_go_patches", "place_tiles")
             counts = {
                 table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
                 for table in tables
@@ -1111,6 +1129,77 @@ class PlaceDB:
                 (col, row),
             ).fetchall()
         return [dict(r) for r in rows]
+
+    # ── Place tiles (#113) ────────────────────────────────────────────────────
+
+    def place_tiles(self, name: str) -> list[dict]:
+        """Every tile of the place called ``name`` (any owner), or [] if none."""
+        key = _place_key(name)
+        if not key:
+            return []
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT place_key, name, tx, ty, source, footing, first_by, first_at, "
+                "last_at, visits FROM place_tiles WHERE place_key=? ORDER BY ty, tx",
+                (key,),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def all_place_tiles(self) -> list[dict]:
+        """Every tile of every place — the web map draws these."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT place_key, name, tx, ty, source, footing, first_by, first_at, "
+                "last_at, visits FROM place_tiles ORDER BY place_key, ty, tx"
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    def seed_place_tiles(self, name: str, tiles: list[tuple[int, int]]) -> int:
+        """Lay ``seed`` tiles for a place that has none yet. Never overwrites a
+        tile that exists. Returns how many were written."""
+        key = _place_key(name)
+        if not key or not tiles:
+            return 0
+        with self._lock, self._connect() as conn:
+            before = conn.total_changes
+            conn.executemany(
+                "INSERT OR IGNORE INTO place_tiles (place_key, name, tx, ty, source) "
+                "VALUES (?, ?, ?, ?, 'seed')",
+                [(key, name.strip(), int(tx), int(ty)) for tx, ty in tiles],
+            )
+            return conn.total_changes - before
+
+    def stand_on_tile(self, agent_id: str, name: str, tx: int, ty: int) -> bool:
+        """An APC body stood on tile (tx, ty) of this place: add it as ``stood``
+        or promote/count an existing one. Returns True when the tile is new."""
+        key = _place_key(name)
+        if not key:
+            return False
+        now = _iso_now()
+        with self._lock, self._connect() as conn:
+            cur = conn.execute(
+                "UPDATE place_tiles SET source='stood', visits=visits+1, last_at=?, "
+                "  first_by=COALESCE(first_by, ?), first_at=COALESCE(first_at, ?) "
+                "WHERE place_key=? AND tx=? AND ty=?",
+                (now, agent_id, now, key, int(tx), int(ty)),
+            )
+            if cur.rowcount:
+                return False
+            conn.execute(
+                "INSERT INTO place_tiles (place_key, name, tx, ty, source, first_by, "
+                "  first_at, last_at, visits) VALUES (?, ?, ?, ?, 'stood', ?, ?, ?, 1)",
+                (key, name.strip(), int(tx), int(ty), agent_id, now, now),
+            )
+        return True
+
+    def set_tile_footing(self, tx: int, ty: int, footing: str) -> None:
+        """Stamp the perceived ground label on every place's tile at (tx, ty)."""
+        footing = str(footing or "").strip()
+        if not footing:
+            return
+        with self._lock, self._connect() as conn:
+            conn.execute("UPDATE place_tiles SET footing=? WHERE tx=? AND ty=?",
+                         (footing, int(tx), int(ty)))
 
     def _visual_place_ref(self, agent_id: str, col: int, row: int,
                           place_name: str = None) -> dict:

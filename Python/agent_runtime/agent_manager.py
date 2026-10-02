@@ -40,7 +40,7 @@ from .place_db import (COMMUNITY_SURVEY_MAX_AGE_SECONDS, PLACE_EXTENT_CM,
 from .social_memory import SocialMemory, is_anonymous
 from .spatial_memory import SpatialMap
 from .world_clock import WorldClock
-from .world_grid import WorldGrid
+from .world_grid import TILE_CM, WorldGrid
 
 logger = logging.getLogger("AgentRuntime")
 
@@ -293,7 +293,17 @@ _NEARBY_CHARACTER_CM = 2500.0
 # across the district does not overhear a conversation.
 _HEARING_CM = 1200.0
 _MAX_UTTERANCES = 20                # bounded scrollback; speech is ephemeral
+# Talk / use range (#113, user option A): speak_to and inspect_object happen
+# within the standoff distance (3 m). Farther away, the body walks up to the
+# target first, faces it, then acts. The slack absorbs the engine stopping a
+# little short of the ordered point.
+_CLOSE_IN_SLACK_CM = 50.0
+_CLOSE_IN_MAX_TICKS = 6
+_CLOSE_IN_ACTIONS = ("speak_to", "inspect_object")
 _PLACE_ROAM_MARGIN_CM = 100.0
+# A place grows tile by tile (#113); one grid cell's worth (10x10 tiles) is the
+# most a single place can claim, so a long roam cannot swallow the street.
+_PLACE_MAX_TILES = 100
 
 # Semantic classifier for forward-trace hits.
 # Maps engine actor names/classes → generic categories the LLM can reason about.
@@ -524,6 +534,7 @@ class AgentManager:
         self._breadcrumbs: dict[str, list[dict]] = {}  # agent_id -> recent legs walked (#58)
         self._last_order: dict[str, dict] = {}      # agent_id -> last movement ordered, for the achieved-vs-ordered check (#59)
         self._walk_plans: dict[str, dict] = {}      # agent_id -> grown step being walked hop by hop (#86)
+        self._close_ins: dict[str, dict] = {}       # agent_id -> parked speak/use waiting to be within 3 m (#113)
         self._tried_here: dict[str, dict] = {}      # agent_id -> {at, tried: {heading: moved_cm}} while wedged on one spot (#60)
         self._stall_run: dict[str, int] = {}        # agent_id -> consecutive stalled orders (#65)
         self._walls: dict[str, list[dict]] = {}     # agent_id -> volumes the body has proved impassable (#91)
@@ -627,6 +638,7 @@ class AgentManager:
         self._breadcrumbs.clear()
         self._last_order.clear()
         self._walk_plans.clear()
+        self._close_ins.clear()
         self._tried_here.clear()
         self._stall_run.clear()
         self._walls.clear()
@@ -1531,6 +1543,10 @@ class AgentManager:
         # an APC that has arrived somewhere worth surveying is done travelling.
         walking = [a for a in ready if self._has_active_walk(a)]
         ready = [a for a in ready if not self._has_active_walk(a)]
+        # Agents walking up to someone to talk / use something (#113): bridge
+        # only, no perceive, no decide, until within 3 m or the try runs out.
+        closing = [a for a in ready if a.agent_id in self._close_ins]
+        ready = [a for a in ready if a.agent_id not in self._close_ins]
         # Survey-mission APCs (#96) with no survey, no walk, and no checkpoint
         # owed get their next target chosen by code — no perceive, no decide.
         # The one tick this deliberately leaves to the LLM is the checkpoint:
@@ -1546,7 +1562,8 @@ class AgentManager:
         # mark it: no decision entry, no skip line, no capture. Silence must not
         # be the same observation as "nothing was wrong".
         running = ({id(a) for a in ready} | {id(a) for a in sweeping}
-                   | {id(a) for a in walking} | {id(a) for a in missioning})
+                   | {id(a) for a in walking} | {id(a) for a in missioning}
+                   | {id(a) for a in closing})
         excluded = [
             f"{a.agent_id} ({self._not_ready_reason(a)})"
             for a in sorted(self.agents.values(), key=lambda a: a.agent_id)
@@ -1565,6 +1582,11 @@ class AgentManager:
         for agent in walking:
             self._set_activity(agent, "walking")
             results.append(self._pulse_walk(agent))
+
+        # Close-in phase (#113, sequential — same single bridge socket).
+        for agent in closing:
+            self._set_activity(agent, "closing in")
+            results.append(self._pulse_close_in(agent))
 
         # Mission phase (#96, sequential — same single bridge socket).
         for agent in missioning:
@@ -1947,6 +1969,12 @@ class AgentManager:
             logger.warning(f"[{agent_id}] mapped-place cognition gate failed: {e}")
             mapped_schedule = None
         mapped_block = (mapped_schedule or {}).get("block") or {}
+        # #113: the body stood here — the tile under its feet joins the place it
+        # is bound to (the block's place, else where it is travelling).
+        self._grow_place(agent_id, observation,
+                         mapped_block.get("place")
+                         or (self._routes.get(agent_id) or {}).get("destination"),
+                         stuck)
         mapped_settled = bool(
             mapped_schedule
             and mapped_schedule.get("status") == "act"
@@ -2483,7 +2511,7 @@ class AgentManager:
                 logger.warning(f"[{agent_id}] perception failed: {seen['error']}")
             observation["seen"] = seen
             observation["breadcrumbs"] = self._stamp_footing(
-                agent_id, observation.get("grid"), seen)
+                agent_id, observation.get("grid"), seen, observation.get("location"))
             self._note_eyes(agent_id, observation.get("location"),
                             _yaw_of(observation.get("rotation")), seen)
             self._save_perception_evidence(agent_id, observation, seen)
@@ -3215,6 +3243,27 @@ class AgentManager:
         if xyz is None or desired is None or end is None:
             return {"type": "idle"}
 
+        # A tiled place (#113) may be roamed up to one tile past its edge — that
+        # frontier tile is how a place grows into a building as the APC walks in.
+        # Walk the line toward the wanted point and stop where it leaves the
+        # place-plus-frontier.
+        if end.get("tiles"):
+            reach = {(tx + i, ty + j) for tx, ty in end["tiles"]
+                     for i in (-1, 0, 1) for j in (-1, 0, 1)}
+            length = math.hypot(desired[0] - xyz[0], desired[1] - xyz[1])
+            steps = int(length // 100.0)
+            last = None
+            for k in range(1, steps + 1):
+                f = k * 100.0 / length
+                px = xyz[0] + (desired[0] - xyz[0]) * f
+                py = xyz[1] + (desired[1] - xyz[1]) * f
+                if self.world_grid.tile_of(px, py) not in reach:
+                    break
+                last = (px, py)
+            if last is not None and math.hypot(last[0] - xyz[0], last[1] - xyz[1]) >= 100.0:
+                return {"type": "walk_to", "location": [last[0], last[1], xyz[2]]}
+            return {"type": "walk_to", "location": [end["xy"][0], end["xy"][1], xyz[2]]}
+
         cx, cy = end["xy"]
         extent = float(end.get("extent_cm") or 0.0)
         half = (extent / 2.0 if extent > 0 else self.world_grid.cell_size / 2.0)
@@ -3270,7 +3319,7 @@ class AgentManager:
         if owned is not None:
             endpoint = self._owned_place_endpoint(owned)
             if endpoint is not None:
-                return endpoint
+                return self._with_tiles(endpoint)
 
         cell = self.place_db.find_named_cell(name)
         if cell is not None:
@@ -3279,9 +3328,58 @@ class AgentManager:
                 place = self.place_db.get_place(*cell) or {}
                 if place.get("stand_x") is not None and place.get("stand_y") is not None:
                     center = (float(place["stand_x"]), float(place["stand_y"]))
-                return {"cell": cell, "xy": center, "extent_cm": PLACE_EXTENT_CM,
-                        "kind": "community", "name": place.get("name") or name}
+                return self._with_tiles(
+                    {"cell": cell, "xy": center, "extent_cm": PLACE_EXTENT_CM,
+                     "kind": "community", "name": place.get("name") or name})
         return None
+
+    def _grow_place(self, agent_id: str, observation: dict, name, stuck: bool) -> None:
+        """Record the tile under this APC's feet on the place it is bound to (#113).
+
+        A body fact, never the LLM's: a tile already in the place is promoted to
+        ``stood`` (walkable proof) and counted; a tile touching the place
+        (8-neighbour) is added, which is how a place grows into a building as
+        the APC walks in. Nothing while stuck, nothing past the tile cap.
+        """
+        if not name or stuck or self.place_db is None:
+            return
+        xyz = _loc_xyz(observation.get("location"))
+        if xyz is None:
+            return
+        end = self._resolve_place_endpoint(agent_id, str(name))
+        if end is None or not end.get("tiles"):
+            return
+        tiles = end["tiles"]
+        t = self.world_grid.tile_of(xyz[0], xyz[1])
+        if t not in tiles:
+            if len(tiles) >= _PLACE_MAX_TILES:
+                return
+            if not any((t[0] + i, t[1] + j) in tiles for i in (-1, 0, 1) for j in (-1, 0, 1)):
+                return
+        if self.place_db.stand_on_tile(agent_id, end["name"], t[0], t[1]):
+            logger.info("[%s] place '%s' grew to %d tiles — stood on tile %s",
+                        agent_id, end["name"], len(tiles) + 1, t)
+
+    def _with_tiles(self, endpoint: dict) -> dict:
+        """Attach the place's 3 m tiles (#113) to a resolved endpoint.
+
+        The first time a place resolves with no tiles, seed tiles are laid over
+        its old extent box around the anchor (900 cm -> 3x3), so arrival keeps
+        its old size until bodies stand on the place and grow it.
+        """
+        name = endpoint["name"]
+        rows = self.place_db.place_tiles(name)
+        if not rows:
+            ax, ay = self.world_grid.tile_of(*endpoint["xy"])
+            r = max(0, round((float(endpoint["extent_cm"]) / TILE_CM - 1) / 2))
+            seeded = self.place_db.seed_place_tiles(
+                name, [(ax + i, ay + j) for i in range(-r, r + 1) for j in range(-r, r + 1)])
+            if seeded:
+                logger.info("place '%s': seeded %d tiles around its anchor", name, seeded)
+            rows = self.place_db.place_tiles(name)
+        endpoint["tiles"] = {(t["tx"], t["ty"]) for t in rows}
+        endpoint["tile_of"] = self.world_grid.tile_of
+        return endpoint
 
     def _owned_place_endpoint(self, owned: dict) -> dict | None:
         center = self.world_grid.cell_center(owned["col"], owned["row"])
@@ -4654,7 +4752,7 @@ class AgentManager:
         smap.save(self._agents_dir / agent_id / "spatial_map.json")
 
     def _stamp_footing(self, agent_id: str, grid: dict | None,
-                       seen: dict | None) -> list[dict]:
+                       seen: dict | None, location=None) -> list[dict]:
         """Attach the ground underfoot to the crumb the APC is standing on (#58).
 
         Footing arrives a phase later than position — the crumb is dropped
@@ -4673,6 +4771,11 @@ class AgentManager:
             col, row = self._cell_col_row(grid)
             if col is not None:
                 self.place_db.record_ground(agent_id, col, row, footing)
+            # #113: the map tells inside from sidewalk by the tile's footing.
+            xyz = _loc_xyz(location)
+            if xyz is not None:
+                self.place_db.set_tile_footing(
+                    *self.world_grid.tile_of(xyz[0], xyz[1]), footing)
         return list(trail)
 
     def _travel_fact(self, agent_id: str, location, grid: dict | None = None) -> dict | None:
@@ -5619,7 +5722,133 @@ class AgentManager:
                 action["location"] = [me[0] + (tgt[0] - me[0]) * f,
                                       me[1] + (tgt[1] - me[1]) * f, tgt[2]]
 
+        if t in _CLOSE_IN_ACTIONS:
+            return self._act_within_reach(agent, action, observation)
+
         return self.bridge.execute_action(agent.bound_unreal_actor_name, action)
+
+    def _target_xyz(self, actor_name: str):
+        """World position of a targeted character, or None when the engine
+        cannot place it (a mannequin, "unknown person", a typo)."""
+        if not actor_name:
+            return None
+        tf = self.bridge.get_character_transform(actor_name)
+        return _loc_xyz((tf or {}).get("location"))
+
+    def _face(self, agent: Agent, me, tgt) -> None:
+        """Turn the body in place toward a world point (#113)."""
+        yaw = math.degrees(math.atan2(tgt[1] - me[1], tgt[0] - me[0]))
+        self.bridge.set_facing(agent.bound_unreal_actor_name, list(me), yaw)
+
+    @staticmethod
+    def _close_in_stop(me, tgt) -> list[float]:
+        """The point on the line to the target, one standoff short of it."""
+        dist = math.hypot(tgt[0] - me[0], tgt[1] - me[1])
+        f = (dist - _STANDOFF_CM) / dist
+        return [me[0] + (tgt[0] - me[0]) * f, me[1] + (tgt[1] - me[1]) * f, tgt[2]]
+
+    def _act_within_reach(self, agent: Agent, action: dict, observation: dict) -> dict:
+        """speak_to / inspect_object happen within 3 m, facing the target (#113).
+
+        In reach: turn to the target, then act. Out of reach: walk to the
+        standoff point and park the action; ``_pulse_close_in`` delivers it on
+        arrival with no model call. A target the engine cannot place passes
+        straight through — there is nothing to measure.
+        """
+        actor = agent.bound_unreal_actor_name
+        me = _loc_xyz(observation.get("location"))
+        target = str(action.get("target") or "")
+        tgt = self._target_xyz(target) if me is not None else None
+        if tgt is None:
+            return self.bridge.execute_action(actor, action)
+        dist = math.hypot(tgt[0] - me[0], tgt[1] - me[1])
+        if dist <= _STANDOFF_CM + _CLOSE_IN_SLACK_CM:
+            self._face(agent, me, tgt)
+            return self.bridge.execute_action(actor, action)
+
+        stop = self._close_in_stop(me, tgt)
+        result = self.bridge.execute_action(actor, {"type": "walk_to", "location": stop})
+        if result.get("error"):
+            return {"status": "accepted", "action": "idle",
+                    "note": f"{target} is {dist / 100:.1f} m away and the "
+                            f"walk closer failed: {result.get('error')}"}
+        self._close_ins[agent.agent_id] = {
+            "action": dict(action), "target": target, "ticks": 0,
+            "ordered_to": (tgt[0], tgt[1]), "observation": dict(observation),
+        }
+        verb = "talk" if action.get("type") == "speak_to" else "look"
+        logger.info("[%s] %s is %.1f m away — walking closer to %s (reach %.0f m)",
+                    agent.agent_id, target, dist / 100.0, verb, _STANDOFF_CM / 100.0)
+        return {"status": "accepted", "action": "walk_to",
+                "note": f"{target} is {dist / 100:.1f} m away — walking up to them to "
+                        f"{verb} (reach {_STANDOFF_CM / 100:.0f} m)"}
+
+    def _end_close_in(self, agent_id: str, why: str) -> None:
+        """Drop the parked action and buy the APC a full cognition tick."""
+        if self._close_ins.pop(agent_id, None) is not None:
+            self._force_next_decide.add(agent_id)
+            logger.info("[%s] close-in ended: %s", agent_id, why)
+
+    def _pulse_close_in(self, agent: Agent) -> dict:
+        """One tick of walking up to a target — bridge only, no model call (#113).
+
+        Within reach: stop, face the target, deliver the parked action, and do
+        the same bookkeeping a direct line gets (spoke, interactions, the
+        utterance others can hear). A target that moved gets a fresh walk
+        order. Gives up after ``_CLOSE_IN_MAX_TICKS`` or when the target can no
+        longer be placed, and hands the tick back to cognition.
+        """
+        agent_id = agent.agent_id
+        actor = agent.bound_unreal_actor_name
+        job = self._close_ins.get(agent_id)
+        agent.mark_ticked(self._agents_dir)
+        if job is None:
+            return {"agent_id": agent_id, "action": "idle", "close_in": True}
+        job["ticks"] += 1
+        reader = getattr(self.bridge, "get_character_state", None)
+        state = (reader(actor) if callable(reader) else {}) or {}
+        me = _loc_xyz(state.get("location"))
+        tgt = self._target_xyz(job["target"])
+        if me is None or tgt is None:
+            who = "itself" if me is None else job["target"]
+            self._end_close_in(agent_id, f"cannot place {who}")
+            return {"agent_id": agent_id, "action": "idle", "close_in": True}
+
+        dist = math.hypot(tgt[0] - me[0], tgt[1] - me[1])
+        if dist <= _STANDOFF_CM + _CLOSE_IN_SLACK_CM:
+            self._close_ins.pop(agent_id, None)
+            action = job["action"]
+            self.bridge.execute_action(actor, {"type": "stop"})
+            self._face(agent, me, tgt)
+            result = self.bridge.execute_action(actor, action) or {}
+            status = result.get("status") or result.get("success")
+            if action.get("type") == "speak_to" and str(status).lower() in ("success", "true"):
+                obs = job["observation"]
+                obs["location"] = state.get("location")
+                obs["world_time"] = self.world_clock.now_text()
+                agent.mark_spoke(self._agents_dir)
+                self._record_interactions(agent_id, obs)
+                self._record_utterance(agent, action, obs)
+            logger.info("[%s] within %.1f m of %s — faced them, %s: %s (%s)", agent_id,
+                        dist / 100.0, job["target"], action.get("type"),
+                        str(action.get("message") or "")[:60], status)
+            return {"agent_id": agent_id, "action": action.get("type"), "close_in": True,
+                    "status": status}
+
+        if job["ticks"] >= _CLOSE_IN_MAX_TICKS:
+            self._end_close_in(agent_id, f"still {dist / 100:.1f} m from {job['target']} "
+                                         f"after {job['ticks']} ticks — did not "
+                                         f"{job['action'].get('type')}")
+            return {"agent_id": agent_id, "action": "idle", "close_in": True}
+
+        # The target walked on: chase its new spot.
+        ox, oy = job["ordered_to"]
+        if math.hypot(tgt[0] - ox, tgt[1] - oy) > 100.0:
+            job["ordered_to"] = (tgt[0], tgt[1])
+            self.bridge.execute_action(actor, {"type": "walk_to",
+                                               "location": self._close_in_stop(me, tgt)})
+        return {"agent_id": agent_id, "action": "walking", "close_in": True,
+                "distance_cm": round(dist, 1)}
 
     def _execute_sweep_observe(self, agent: Agent, action: dict, observation: dict) -> dict:
         """Execute one sweep observation: turn in place to the absolute yaw,
@@ -5982,6 +6211,7 @@ class AgentManager:
         self._breadcrumbs.clear()
         self._last_order.clear()
         self._walk_plans.clear()
+        self._close_ins.clear()
         self._tried_here.clear()
         self._stall_run.clear()
         self._walls.clear()

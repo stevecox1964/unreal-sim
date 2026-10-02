@@ -105,7 +105,13 @@ APCs talk to each other, they need to be facing the person or thing they are con
 *"APCs need to be within 3 meters of other things to be interacting with them."* Chose **option A**
 (the body walks closer itself) and *"add the tile rendering to the cockpit so the map shows growing
 tiles with information"*.
-**Status:** SPEC 2026-10-02. Build in this session.
+**Status:** BUILT 2026-10-02, local commit, not pushed — needs a live run. Checked only by import
+and one run of `build_map` on a copy of `world_places.db` (seed 9 tiles, stand next to them → grows,
+footing stamped, map JSON carries the tiles). No tests (speed mode).
+**Live run checks (SR66+):** log lines `place '<name>': seeded N tiles`, `place '<name>' grew to N tiles`,
+`walking closer to talk`, `within X m of <who> — faced them, speak_to`; /map shows teal tiles that glow
+when new. Watch for: growth eating the street (cap 100), and log noise from `Resolved owned place`
+(now also hit once per observed tick by tile growth).
 
 **Decisions (made, do not reopen):**
 - **Tile = 3 m square** (`world_grid.TILE_CM = 300`), indexed from the grid's logical origin:

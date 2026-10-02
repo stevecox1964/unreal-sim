@@ -7,6 +7,10 @@ from pathlib import Path
 
 logger = logging.getLogger("AgentRuntime")
 
+# A place is built from 3 m floor tiles (#113). Tiles are indexed from the
+# logical origin like cells, so a 30 m cell is exactly 10x10 tiles.
+TILE_CM = 300.0
+
 
 class WorldGrid:
     """Fixed world-space grid shared by every agent in a level.
@@ -60,6 +64,11 @@ class WorldGrid:
 
     def _index(self, coord: float, origin: float = 0.0) -> int:
         return math.floor((coord - origin) / self.cell_size)
+
+    def tile_of(self, x: float, y: float) -> tuple[int, int]:
+        """The 3 m tile (#113) holding world (x, y), indexed from the logical origin."""
+        return (math.floor((x - self.origin_x) / TILE_CM),
+                math.floor((y - self.origin_y) / TILE_CM))
 
     def locate(self, x: float, y: float) -> dict:
         """Return the fixed grid cell containing world (x, y).

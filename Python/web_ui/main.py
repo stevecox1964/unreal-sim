@@ -2,6 +2,7 @@
 
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlencode
 
@@ -22,7 +23,7 @@ from agent_runtime import run_replay
 from agent_runtime.runner_client import RunnerClient, DEFAULT_BASE_URL
 from agent_runtime.place_db import (COMMUNITY_SURVEY_MAX_AGE_SECONDS,
                                     PLACE_EXTENT_CM, PlaceDB)
-from agent_runtime.world_grid import WorldGrid
+from agent_runtime.world_grid import TILE_CM, WorldGrid
 from web_ui import unreal_client
 
 BASE_DIR = Path(__file__).parent
@@ -320,6 +321,7 @@ def build_map(level: str) -> dict:
             if image_id else None
         )
     owned = db.all_owned_places() if db else []
+    tiles = _map_tiles(db, grid) if db else []
     # Ground someone ruled out, and why (#80). Refusals are cells; no-go
     # patches are sub-cell circles (#78). Shown, never editable from the map:
     # withdrawing one stays the APC's own act (allow_cell).
@@ -351,6 +353,9 @@ def build_map(level: str) -> dict:
         "owned": [{"col": o["col"], "row": o["row"], "owner": o["owner"], "name": o["name"],
                    "dx": o["dx"], "dy": o["dy"], "extent_cm": o["extent_cm"]}
                   for o in owned],
+        # Place tiles (#113): 3 m squares, x/y = world min corner.
+        "tiles": tiles,
+        "tile_cm": TILE_CM,
         "refusals": [{"col": r["col"], "row": r["row"], "refused_by": r["refused_by"],
                       "reason": r["reason"], "refused_at": r["refused_at"]}
                      for r in refusals],
@@ -367,6 +372,8 @@ def build_map(level: str) -> dict:
                   for p in no_go],
         "counts": {"named": named, "surveyed": surveyed, "swept": swept,
                    "mapped": len(cells), "stale": stale, "owned": len(owned),
+                   "tiles": len(tiles),
+                   "tiles_stood": sum(1 for t in tiles if t["source"] == "stood"),
                    "refused": len({(r["col"], r["row"]) for r in refusals}),
                    "no_go": len(no_go),
                    "no_go_measured": sum(1 for p in no_go
@@ -374,6 +381,32 @@ def build_map(level: str) -> dict:
                    "no_go_expired": sum(1 for p in no_go if p["id"] not in live_ids),
                    "total_cells": (cols or 0) * (rows or 0)},
     }
+
+
+def _map_tiles(db: PlaceDB, grid: WorldGrid) -> list[dict]:
+    """Every place tile (#113) placed in world space for the /map overlay.
+
+    ``x``/``y`` are the tile's world min corner (tiles index from the logical
+    origin). ``age_s`` is real seconds since a body last stood on it (None for
+    a seed tile nobody has stood on) so the page can make fresh growth glow.
+    """
+    now = datetime.now(timezone.utc)
+    out = []
+    for t in db.all_place_tiles():
+        age = None
+        if t.get("last_at"):
+            try:
+                age = round((now - datetime.fromisoformat(t["last_at"])).total_seconds())
+            except ValueError:
+                age = None
+        out.append({
+            "place": t["place_key"], "name": t["name"], "tx": t["tx"], "ty": t["ty"],
+            "x": grid.origin_x + t["tx"] * TILE_CM, "y": grid.origin_y + t["ty"] * TILE_CM,
+            "source": t["source"], "footing": t.get("footing"),
+            "first_by": t.get("first_by"), "first_at": t.get("first_at"),
+            "last_at": t.get("last_at"), "visits": t.get("visits") or 0, "age_s": age,
+        })
+    return out
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────

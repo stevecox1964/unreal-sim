@@ -21,7 +21,12 @@ def at_place(endpoint: dict, xy: tuple[float, float]) -> bool:
     """Place arrival is spatial containment, independent of survey districts.
 
     Use the same square extent for agenda completion and movement completion.
+    A place built from tiles (#113) is arrived at by standing on one of them:
+    ``endpoint["tiles"]`` is a set of (tx, ty) and ``endpoint["tile_of"]`` maps
+    world (x, y) to a tile. No tiles = the old extent box.
     """
+    if endpoint.get("tiles"):
+        return tuple(endpoint["tile_of"](xy[0], xy[1])) in endpoint["tiles"]
     half = float(endpoint["extent_cm"]) / 2.0
     return (abs(xy[0] - endpoint["xy"][0]) <= half
             and abs(xy[1] - endpoint["xy"][1]) <= half)

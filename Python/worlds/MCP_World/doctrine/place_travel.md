@@ -12,6 +12,9 @@
   you are inside the building or at its counter. Use the current view to find
   the entrance and establish what you can actually do here. Do not claim to
   have entered, bought something, or met someone without evidence.
+- When you arrive at a building, you may walk inside it with short local moves.
+  Every 3 m of floor you stand on there becomes part of that place for
+  everyone, so the place grows to cover where people can really go.
 - If the approach is blocked, look for a visible entrance or another accessible
   approach. Use local directional movement to investigate, then continue toward
   the goal. A detour can temporarily take you farther from the destination.
