@@ -1,0 +1,351 @@
+{
+ "experiment": "talk_split",
+ "doc": "H: a talk-only prompt (no movement doctrine, no walking/obstacle advice,\nno map sections) makes the same choice when Maren is 2 m away and when a\nstranger is in view \u2014 so splitting the prompt by job is safe here.",
+ "n": 10,
+ "variants": {
+  "Maren 2 m / full": {
+   "approx_tokens": 4818,
+   "summary": "speak_to -> Maren: 10",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! What a fine day for chatting!",
+     "thought": "I am at the village square as scheduled, and Maren is right here talking to someone; I should say hello!",
+     "ms": 2229.058000011719
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! How's the veggie doing today?",
+     "thought": "I am at the village square and Maren is right here, so I will say hello to her as planned.",
+     "ms": 2230.242999998154
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! How are you doing today?",
+     "thought": "I am at the village square and Maren is right here, so I will stop to chat with her as planned.",
+     "ms": 2439.619600001606
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! What's the big news? Did you see any giant pumpkins out there?",
+     "thought": "I am at the village square and Maren is right here! I should say hello to her since she is a character I may encounter.",
+     "ms": 2366.452799993567
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! How are you today? Do you like vegetables?",
+     "thought": "I am at the village square and Maren is right here! She is a character I may encounter, so I should greet her and start a conversation.",
+     "ms": 3167.8669000102673
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya, Maren! How are the veggies growing today? I walked all around them once!",
+     "thought": "I am at the village square and see Maren nearby, so I will stop to chat with her as planned.",
+     "ms": 2147.196799996891
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya, Maren! Nice day for a chat, isn't it?",
+     "thought": "I am at the village square and Maren is right there, so I will say hello to her!",
+     "ms": 2002.8257999947527
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya, Maren! Good to see ya! What's cookin'?",
+     "thought": "I am at the village square and Maren is right here! I should say hello to her since she is close by.",
+     "ms": 2076.4660999993794
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya, Maren! What a fine day for veggies!",
+     "thought": "I am at the village square and see Maren right there, so I should say hello to her!",
+     "ms": 2028.393699991284
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Good to see ya!",
+     "thought": "I am at the village square and Maren is right here, so I will say hello to her!",
+     "ms": 2127.179899995099
+    }
+   ]
+  },
+  "Maren 2 m / talk job": {
+   "approx_tokens": 2447,
+   "summary": "speak_to -> Maren: 10",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Lovely day for vegetables, isn't it? Or is it a fruit day? I always get those mixed up!",
+     "thought": "Maren is right here and I know her, so I should say hello even though she hasn't spoken yet.",
+     "ms": 1854.666699990048
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! How are the veggies? Are they green? I love green things!",
+     "thought": "Maren is right here and I know her, so I should say hello even though she hasn't spoken yet because I like talking!",
+     "ms": 1748.590500006685
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! How are you doing today? I was just thinking about vegetables!",
+     "thought": "Maren is right here and I am supposed to be talking to her at the vegetable truck, but I seem to have wandered to the square! I will greet her immediately because she is a friend.",
+     "ms": 1989.7477999911644
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hello there! Isn't this a lovely spot for a chat? I'm Dufus!",
+     "thought": "I am at the village square and see Maren nearby, so I will greet her cheerfully as per my schedule to talk to people.",
+     "ms": 1934.087300003739
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Nice weather for a stroll, isn't it? What's the big news?",
+     "thought": "I am at the village square as scheduled and see Maren nearby, so I will greet her to fulfill my goal of talking to everyone.",
+     "ms": 1981.6626000101678
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya, Maren! What a lovely day for vegetables! Are you selling turnips today?",
+     "thought": "I am at the village square and see Maren nearby, so I will greet her cheerfully.",
+     "ms": 1873.9989000023343
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Good morning! Or afternoon! It's so nice to see you! Do you have any more veggies? They are very crunchy!",
+     "thought": "Maren is right here and I am scheduled to be at the vegetable truck, but my memory says I already said good morning to her there; since I am currently at the village square and she is nearby, I should greet her again because I love talking!",
+     "ms": 2869.3487999989884
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya, Maren! Good to see ya! What's the news?",
+     "thought": "I am at the village square and see Maren nearby, so I should greet her to keep my promise of talking to everyone.",
+     "ms": 1740.566399996169
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Good morning! Are you selling vegetables today? Or maybe donuts? I love donuts!",
+     "thought": "Maren is right here and I know her, so I should say hello immediately!",
+     "ms": 1622.515499999281
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Nice weather for a chat, isn't it? What are you up to today?",
+     "thought": "Maren is right here and I am supposed to be hanging around the village square talking to people, so I will say hello!",
+     "ms": 1914.659500005655
+    }
+   ]
+  },
+  "Maren 2 m, she spoke / full": {
+   "approx_tokens": 4914,
+   "summary": "speak_to -> Maren: 10",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Yes! The donuts are very round and tasty! Did you know that?",
+     "thought": "Maren is asking me about Don's Donuts, so I must answer her cheerful question right away.",
+     "ms": 2285.3745999891544
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Donuts are delicious! But I don't know any news!",
+     "thought": "Maren is talking to me right here at the square, so I must answer her question about Don's!",
+     "ms": 1982.0595000055619
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "I sure did! The donuts were very round. And the coffee was hot like fire!",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully.",
+     "ms": 1975.0341000035405
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning, Maren! No news from Don's! The donuts are safe! How are you?",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully.",
+     "ms": 2197.0346000016434
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Good morning! Don's has lots of donuts! Very sweet!",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully!",
+     "ms": 1879.8027000011643
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning! News? Oh boy. Donut shop was very busy! Lots of sugar everywhere! Did you see the big pink one?",
+     "thought": "Maren is right here and asked me a question, so I must answer her immediately with my usual cheerful confusion.",
+     "ms": 2375.645499996608
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Donut! The best donut in the world! Yes!",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully.",
+     "ms": 2021.0592999937944
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Donut shop was loud! Lots of sugar! You want one?",
+     "thought": "Maren is asking me about Don's Donuts, so I must answer her cheerfully and gullibly right here.",
+     "ms": 1993.1748999952106
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Donuts are very good! I went there. The coffee was hot!",
+     "thought": "Maren is asking me about Don's, so I must answer her immediately as she is close by and speaking to me.",
+     "ms": 2340.784200001508
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Don's is very donutty this morning!",
+     "thought": "Maren is asking me a question right in front of me, so I must answer her immediately.",
+     "ms": 2010.4314999916824
+    }
+   ]
+  },
+  "Maren 2 m, she spoke / talk job": {
+   "approx_tokens": 2543,
+   "summary": "speak_to -> Maren: 10",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning! The donuts are fresh! And the coffee is hot! Did you see the big flag? It is very red!",
+     "thought": "Maren is right here asking about Don's, so I must answer her cheerful question immediately.",
+     "ms": 1851.667599999928
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Donut news! The donuts are very round. I love them!",
+     "thought": "Maren is right here asking me about Donuts, so I must answer her cheerful question!",
+     "ms": 1606.8090999906417
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Morning! Yes! The donuts are very round and sweet! Do you want one? It is a good day for sugar!",
+     "thought": "Maren is talking to me right here in the square, so I must answer her question about Don's Donuts immediately.",
+     "ms": 2316.287399997236
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Good morning! Donut shop is very quiet! No news at all!",
+     "thought": "Maren is asking me a question right here, so I must answer her cheerfully!",
+     "ms": 1995.8946000115247
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Donuts are very round and sweet! Did you see any? I think the donut man said yes!",
+     "thought": "Maren is asking me a question right here, so I must answer her immediately!",
+     "ms": 1777.3360000137473
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Donuts are very sweet! Don said they were fresh this morning! Did you know that? What do you want to buy?",
+     "thought": "Maren is asking me a question right in front of me! I have to answer her about the donuts, even though I haven't been there yet this morning. She is my favorite person to talk to.",
+     "ms": 2517.390399996657
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! No news from Don's yet! The donuts are very quiet today. Did you see any clouds?",
+     "thought": "Maren is talking to me and I know her, so I must answer her question about Don's immediately.",
+     "ms": 2030.0911000085762
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Don's has many sweet circles. They are very round. Do you like them? What is the news from the donut place?",
+     "thought": "Maren is right here and asked me a question, so I must answer her cheerfully with wrong words.",
+     "ms": 1895.2835999953095
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Good morning, Maren! No news from Don's yet! But the donuts are very round! Do you like round things?",
+     "thought": "Maren is right here and asked me a question! I must answer her immediately because she spoke to me.",
+     "ms": 2344.8559999960708
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Donut! Yes! The donuts are very sweet! Do you want one? I have none. But Don has many!",
+     "thought": "Maren is asking me a question right here! I must answer her immediately because she spoke to me.",
+     "ms": 2122.6683000131743
+    }
+   ]
+  }
+ }
+}

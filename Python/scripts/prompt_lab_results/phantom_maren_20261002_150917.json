@@ -1,0 +1,179 @@
+{
+ "experiment": "phantom_maren",
+ "doc": "H: the vision model naming a far figure \"Maren\" made Dufus greet her\n(SR66_P 13:49). Old eyes vs new eyes, same scene, Maren really 72 m away.",
+ "n": 10,
+ "variants": {
+  "old eyes (VLM says Maren)": {
+   "approx_tokens": 4820,
+   "summary": "speak_to -> Maren: 10",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! How is the weather for vegetables today? Is it sunny or rainy-rain?",
+     "thought": "I am at the village square and I see Maren right in front of me, so I should say hello to her!",
+     "ms": 2474.753699993016
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Good to see you! How is the vegetable business going today?",
+     "thought": "I am at the village square and I see Maren right in front of me, so I should stop and chat with her as per my schedule to keep her company.",
+     "ms": 2109.2542999977013
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! How are you doing today? I just came by to say hello!",
+     "thought": "I see Maren right in front of me and my schedule says to keep her company at the vegetable truck, so I will go talk to her immediately!",
+     "ms": 2886.22430000396
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! How are you doing today? I just walked by and saw you!",
+     "thought": "I am at the village square as scheduled and I see Maren nearby, so I will go over to chat with her since she is a person I know.",
+     "ms": 2154.3203000037465
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Nice day for veggies, eh?",
+     "thought": "I see Maren right in front of me and it is time to keep her company at the vegetable truck area, so I will go say hello.",
+     "ms": 2094.2987999878824
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! How is the weather for veggies today? I walked all the roads once but now I prefer talking over walking!",
+     "thought": "I am at the village square as scheduled and I see Maren nearby, so I will go say hello to her!",
+     "ms": 2489.565500000026
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Good to see ya! How's the weather treating you today? Or is it wind? Or maybe rain? It looks like a good day for walking, don't you think?",
+     "thought": "I am at the village square as scheduled and I see Maren right in front of me, so I will stop to chat with her!",
+     "ms": 3095.6333999929484
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hiya Maren! Good to see ya!",
+     "thought": "I am at the village square and see Maren nearby, so I will stop to chat with her as per my schedule.",
+     "ms": 1966.3141000055475
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! How are you today? What is going on?",
+     "thought": "I am at the village square as scheduled and see Maren nearby, so I will stop to chat with her since that is my job.",
+     "ms": 2463.9853999979096
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! How are you today?",
+     "thought": "I am at the village square and I see Maren right in front of me, so I will go say hello!",
+     "ms": 2021.6349999973318
+    }
+   ]
+  },
+  "new eyes (unknown person)": {
+   "approx_tokens": 4821,
+   "summary": "speak_to -> unknown person: 8, observe: 2",
+   "samples": [
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I see people nearby and my goal is to loiter and chat, so I will observe them to see if they want to talk.",
+     "ms": 1814.684600001783
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! What is going on? Is it a nice day for walking?",
+     "thought": "I am at the village square and see some folks standing nearby, so I will go say hello to them right now!",
+     "ms": 2154.507500003092
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square as scheduled and see some people nearby, so I will observe them to see if anyone wants to chat.",
+     "ms": 1813.1706999993185
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? It's a lovely day for a walk, isn't it?",
+     "thought": "I am at the village square as scheduled, and I see some people nearby who might want to chat!",
+     "ms": 2136.7207000002963
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! How are you doing today? Have you seen any interesting roads lately?",
+     "thought": "I am at the village square and see some people ahead, so I will stop and chat with them since that is my job!",
+     "ms": 2018.9555999968434
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't it a fine day for walking? I'm Dufus!",
+     "thought": "I am at the village square and see three people nearby; I will greet them cheerfully to follow my goal of talking to everyone.",
+     "ms": 2072.7783999900566
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! How are you doing today? The weather is fine, isn't it?",
+     "thought": "I am at the village square as scheduled, and I see some people nearby who look like they might want to chat!",
+     "ms": 1934.886099988944
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a lovely day for walking?",
+     "thought": "I am at the village square and see some people ahead, so I will stop and say hello to them since I like talking.",
+     "ms": 2105.481199992937
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square and see some folks nearby; I should greet them to keep my promise of talking to everyone.",
+     "ms": 2264.755199998035
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't it a lovely day for walking?",
+     "thought": "I am at the village square and see some people nearby; I will greet them cheerfully to start chatting.",
+     "ms": 2060.469499992905
+    }
+   ]
+  }
+ }
+}

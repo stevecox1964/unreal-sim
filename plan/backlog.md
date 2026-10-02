@@ -95,6 +95,45 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #114 — Spread the prompt load: split the decision prompt by job (talk / move / plan)
+
+**Source:** user, 2026-10-02: *"I want to spread out the prompt load... I don't want the prompt to get
+too much for any given LLM"*; *"qwen may choke, but opus will have no problem... this system has to run
+for hours and maybe days"*; then *"build tests. test. The open router spend is pennies."*
+**Status:** EVIDENCE GATHERED 2026-10-02 (prompt lab, Qwen 3.7 flash); not built.
+
+**Tool:** `Python\scripts\prompt_lab.py` builds Dufus's real decision prompt (real character, goals,
+rules, doctrine, actions + a scene rebuilt from SR66_P), changes one thing, samples the live model N
+times. Results: `Python\scripts\prompt_lab_results\*.json`. Every model call of a live run now also
+saves its full prompt + answer (`logs\api_calls\prompts\SR<n>\`, newest 5 runs) —
+`prompt_lab.py replay <file> -n 10` re-asks any real prompt.
+
+**Findings:**
+- **Where the tokens go** (decide prompt ≈ 4,800 tokens in the lab, 6,400 live): Rules (mostly the 4
+  doctrine files) ≈ 1,580; "What Wins Right Now" (mostly walking/obstacle advice) ≈ 1,070; Allowed
+  Actions ≈ 720. ~70% is the same fixed text every call. The prompt is bounded over time (lists are
+  capped; SR66_P grew 6,180 → 6,500 only while memories filled to their cap of 30).
+- **Survey trim alone is small:** cutting Wider Map / Survey State / neighbour cells / refuse+allow
+  saves ~380 tokens (8%); choices unchanged (talk 12 vs 14 of 20, walk 7 vs 6).
+- **Job split is big and safe for talking:** a talk-only prompt (own rules only, no movement doctrine,
+  no walking advice, no map sections) is **2,450 vs 4,820 tokens** and chose `speak_to Maren` **10/10**
+  in both versions, with Maren 2 m away and when she had just asked a question. Replies equal in
+  quality and character.
+- **SR66_P bug reproduced, fix confirmed:** with the old eyes (VLM says "Maren, near" while she is 72 m
+  away) Dufus greets Maren **10/10**; with the new eyes ("unknown person") **0/10** (8 greet the figure —
+  mannequin learning per #109 — 2 observe).
+
+**Proposed build (not started):** code picks the prompt by the wake reason the lizard brain already
+knows — *talk* (someone spoke / came close: persona + rules, who is close, what was said, people known),
+*move* (schedule travel, stuck, blocked: places, path facts, movement doctrine), *plan* (wake, schedule
+change). Each carries only its doctrine and actions. Test each job with the lab before switching it.
+**Also seen in the rendered prompt:** (1) the prompt says a CHARACTER matching "Characters You May
+Encounter" *is* that person — now that the eyes never name people this line should go, and the roster
+with it (it lists Maren every tick wherever she is); (2) "Your Location x=… y=… z=…" is raw engine
+coordinates (lizard-brain rule says no engine data); (3) "Current Goal" can disagree with "Your
+Routine Right Now" (goal from `runtime.json` said the sheriff square while the routine said the village
+square) — check on a live run whether that happens there too.
+
 ### #113 — Places are built from 3 m tiles; talk and use things from 3 m, facing them
 
 **Source:** user, 2026-10-02 (follows [HANDOFF_2026-09-30_1723](handoffs/HANDOFF_2026-09-30_1723.md)):

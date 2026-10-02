@@ -1,0 +1,339 @@
+{
+ "experiment": "survey_trim",
+ "doc": "H: the survey-era parts of a Play prompt (wider map, cell survey state,\nneighbouring grid cells, refuse/allow_cell) do not change Play choices \u2014\nso they can be cut to save tokens. Same scene, full vs trimmed.",
+ "n": 20,
+ "variants": {
+  "full prompt": {
+   "approx_tokens": 4807,
+   "summary": "speak_to -> unknown person: 12, walk_to -> forward-left: 4, walk_to: 2, observe: 1, walk_to -> left: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! What a lovely day for a chat, isn't it? I'm Dufus!",
+     "thought": "I am at the village square and see two people nearby who I haven't met yet; I should greet them to start my day of talking!",
+     "ms": 2440.3048000094714
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a lovely day for a walk? I'm Dufus!",
+     "thought": "I am at the village square and I see two people standing to my left; since my goal is to talk to whoever passes, I should greet them immediately!",
+     "ms": 2380.312799999956
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today?",
+     "thought": "I am at the village square and I see two people nearby who might want to chat!",
+     "ms": 2344.298299998627
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't it a fine day for a walk? I'm Dufus!",
+     "thought": "I am at the village square as scheduled and I see two people nearby, so I will greet them to start chatting!",
+     "ms": 2643.008400002145
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a lovely day for a chat? I'm Dufus!",
+     "thought": "I am at the village square as scheduled and see two people nearby, so I will greet them to fulfill my goal of talking to everyone.",
+     "ms": 2135.541199997533
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it? Where are you off to?",
+     "thought": "I am at the village square and I see two people nearby who I haven't met yet; my goal is to talk to whoever passes, so I will greet them!",
+     "ms": 2456.3465999963228
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and I see two people standing nearby who look like they might want to chat, so I will go over there to say hello!",
+     "ms": 1837.6912000094308
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I see two people standing to my left in the square; I should go say hello!",
+     "ms": 1614.2748999991454
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it?",
+     "thought": "I am at the village square and see two people nearby, so I will greet them to chat as per my schedule.",
+     "ms": 1922.190800003591
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and see two people nearby who I haven't met yet, so I will go say hello to them!",
+     "ms": 1825.1996000035433
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Lovely day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square as scheduled and I see two people nearby, so I will greet them to start chatting.",
+     "ms": 2422.965199992177
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I see two people to the left who look like they might be talking or waiting, so I will go say hello!",
+     "ms": 1723.614999995334
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square as scheduled and see two people nearby, so I will go say hello to them.",
+     "ms": 1616.2245000014082
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see two people at the village square and my schedule says to hang here and talk, so I will go say hello!",
+     "ms": 1679.612799998722
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't this a lovely day for standing around?",
+     "thought": "I see two people at the village square and my goal is to talk to whoever passes, so I will greet them cheerfully.",
+     "ms": 2167.206800004351
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square as scheduled and see two people nearby who look like they might want to chat, so I will idle and observe to see if they approach or if I should greet them.",
+     "ms": 1897.6982000021962
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "left",
+     "message": null,
+     "thought": "I am at the village square and I see two people standing to my left, so I will go over and say hello because I love talking to people!",
+     "ms": 1845.2903000143124
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't this a lovely day for a chat? What are you up to?",
+     "thought": "I see two people at the village square and I am scheduled to loiter here and talk to whoever passes, so I will greet them immediately!",
+     "ms": 2122.8390999895055
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it?",
+     "thought": "I am at the village square and see two people nearby; I should greet them to chat as per my schedule.",
+     "ms": 2201.99029998912
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it?",
+     "thought": "I am at the village square as scheduled and see two people nearby, so I will greet them to chat.",
+     "ms": 1946.5790999965975
+    }
+   ]
+  },
+  "survey parts cut": {
+   "approx_tokens": 4427,
+   "summary": "speak_to -> unknown person: 14, walk_to -> left: 3, walk_to -> forward-left: 3",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't this a fine day for a chat? What are you up to?",
+     "thought": "I see two people at the village square and my schedule says to loiter here and talk to whoever is around, so I will greet them immediately!",
+     "ms": 2121.458200010238
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "left",
+     "message": null,
+     "thought": "I see two people to my left and I am cheerful, so I will go say hello!",
+     "ms": 1626.1768999975175
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! How are you today? Have you seen any interesting roads lately?",
+     "thought": "I am at the village square and see two people nearby, so I will greet them because talking is what I do!",
+     "ms": 2100.7941999996547
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "left",
+     "message": null,
+     "thought": "I see two people standing to the left in the village square and my schedule says to chat with whoever is around, so I will go say hello!",
+     "ms": 1817.6002000109293
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? Isn't this a lovely day for a walk?",
+     "thought": "I see two people at the village square and I want to chat with them right away!",
+     "ms": 1921.527700003935
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! How are you doing today? Isn't it a lovely day for a walk?",
+     "thought": "I see two people to the left who might want to chat, so I will speak to them since my goal is to talk to whoever passes.",
+     "ms": 2137.1071000030497
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! I'm Dufus. What's that thing you're doing? Is it fun?",
+     "thought": "I am at the village square and I see two people standing nearby, so I will go say hello to them because talking is what I do!",
+     "ms": 2108.0366000096546
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square and see two people nearby; I should greet them to start chatting!",
+     "ms": 2003.7715999933425
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! How are you today? Isn't it a lovely day for a walk?",
+     "thought": "I see two people to my left at the village square! I must go say hello right now!",
+     "ms": 2022.0277000044007
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a lovely day for walking? I've seen everything around here, you know!",
+     "thought": "I am at the village square as scheduled and see two people nearby; I will greet them cheerfully to fulfill my goal of talking to everyone.",
+     "ms": 2161.38449999562
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "left",
+     "message": null,
+     "thought": "I see two people to the left who look like they might want to chat, so I will walk over to them and say hello!",
+     "ms": 1805.3857999911997
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square and see two people nearby, so I will go greet them to chat!",
+     "ms": 2070.3746999934083
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square as scheduled and see two people nearby, so I should go say hello to them!",
+     "ms": 1669.3303000065498
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I see two people to the left who look like they might want to chat, so I will go say hello!",
+     "ms": 1818.2196999987355
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two people nearby who look like they might want to chat, so I will go say hello!",
+     "ms": 1950.9828000009293
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't it a fine day for a chat? What are you up to?",
+     "thought": "I see two people at the village square and my schedule says to hang out here and talk, so I will go greet them!",
+     "ms": 1853.2840999978362
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day, isn't it? What brings you to the square?",
+     "thought": "I am at the village square and see two people nearby; I will greet them to start chatting!",
+     "ms": 1793.5623000084888
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? The weather is lovely, isn't it?",
+     "thought": "I am at the village square and I see two people standing nearby, so I will go greet them because talking is my favorite part of the day!",
+     "ms": 2002.626900008181
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! I'm Dufus! Have you seen any interesting roads lately? Or maybe a really big rock?",
+     "thought": "I am at the village square and see two people nearby who I haven't met yet; since my goal is to talk to everyone, I should greet them immediately!",
+     "ms": 2274.6001000050455
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Good morning! Isn't this a lovely square? What are you up to?",
+     "thought": "I see two people to my left and I want to say hello because talking is my favorite part of the day!",
+     "ms": 1920.5770999978995
+    }
+   ]
+  }
+ }
+}
