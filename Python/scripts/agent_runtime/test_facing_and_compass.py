@@ -55,6 +55,11 @@ class _StubBridge:
         self.facings.append(float(yaw))
         return {"status": "success"}
 
+    def radar(self, *args, **kwargs):
+        # The survey stand-point chooser (#103) probes the ground first; an
+        # empty reading is "not measured", so the geometric centre is kept.
+        return {}
+
 
 class _StubMemory:
     def record(self, **kwargs):

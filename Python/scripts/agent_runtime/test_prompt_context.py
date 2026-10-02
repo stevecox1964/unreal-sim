@@ -194,17 +194,25 @@ def test_reaction_gate_template():
         text = (world / "agents" / agent_id / "rules.md").read_text(encoding="utf-8")
         return " ".join(resolve_rule_imports(text, world, agent_id).split())
 
+    # Since #105 (2026-09-01) Dufus is a townsperson; the surveyor policy lives
+    # in the inactive `surveyor` template, which is what these clauses guard.
+    surveyor_rules = _rules("surveyor")
+    check("the surveyor still must not stop for strangers",
+          "Do NOT stop for strangers" in surveyor_rules)
+    check("surveyor greet gate skips a recently-greeted person",
+          "have NOT already greeted recently" in surveyor_rules)
+    check("the surveyor still answers someone speaking to him",
+          "even if you already greeted them" in surveyor_rules)
+    check("the surveyor still explores when unscheduled",
+          "keep exploring" in surveyor_rules and "unexplored" in surveyor_rules)
+    check("the surveyor reads the wider map, not only eight neighbours (#73)",
+          "The Wider Map" in surveyor_rules and "grows a blob, not a line" in surveyor_rules)
+
     dufus_rules = _rules("dufus")
-    check("dufus still must not stop for strangers",
-          "Do NOT stop for strangers" in dufus_rules)
-    check("dufus greet gate skips a recently-greeted person",
-          "have NOT already greeted recently" in dufus_rules)
-    check("dufus still answers someone speaking to him",
-          "even if you already greeted them" in dufus_rules)
-    check("dufus still explores when unscheduled",
-          "keep exploring" in dufus_rules and "unexplored" in dufus_rules)
-    check("dufus reads the wider map, not only his eight neighbours (#73)",
-          "The Wider Map" in dufus_rules and "grows a blob, not a line" in dufus_rules)
+    check("dufus the townsperson does not carry the surveyor's suppression",
+          "Do NOT stop for strangers" not in dufus_rules)
+    check("dufus always answers someone speaking to him",
+          "Someone speaking to you always gets an answer" in dufus_rules)
 
     # And Maren carries the opposite policy, which is the whole point of the move.
     maren_rules = _rules("maren")

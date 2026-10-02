@@ -93,6 +93,7 @@ class StubAgent:
         self.unreal_actor_name = "Maren"
         self.display_name = "Maren"
         self.has_unreal_binding = True
+        self.mission = ""          # townsperson (Agent.mission default)
         self.is_active = True
         self.is_busy = False
         self.daily_schedule_day = "Day 1"

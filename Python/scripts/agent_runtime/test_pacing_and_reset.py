@@ -69,6 +69,7 @@ class StubAgent:
         self.bound_unreal_actor_label = agent_id
         self.unreal_actor_name = agent_id
         self.has_unreal_binding = True
+        self.mission = ""          # townsperson (Agent.mission default)
         self.is_active = True
         self.is_busy = False
         self.current_goal = "test goal"

@@ -83,6 +83,7 @@ class StubAgent:
         self.unreal_actor_name = agent_id
         self.display_name = agent_id
         self.has_unreal_binding = True
+        self.mission = ""          # townsperson (Agent.mission default)
         self.is_active = True
 
     def mark_ticked(self, agents_dir):

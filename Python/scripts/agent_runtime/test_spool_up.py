@@ -66,6 +66,11 @@ class StubAgent:
         self.goal = "authored goal"
         self.current_goal = "authored goal"
         self.allowed_actions = ["idle", "walk_to", "wander", "observe"]
+        self.mission = ""                 # townsperson
+        # The wake directive (agenda) needs a full Agent and logs "wake directive
+        # failed" here; it is covered by test_wake_place, not by this test.
+        self.daily_schedule_day = None
+        self.daily_schedule_blocks = []
 
     def set_goal(self, goal, agents_dir):
         self.goal = goal
@@ -104,7 +109,7 @@ def make_manager(tmp, router):
     mgr = AgentManager(worlds_dir=Path(tmp), llm_router=router,
                        unreal_bridge=StubBridge(), memory_store=StubMemory())
     mgr._agents_dir = Path(tmp) / "agents"
-    mgr.mode = "live"
+    mgr.mode = "survey"   # the four-view wake look-around is a Survey-mode behaviour (#102)
     mgr.perceiver = StubPerceiver()
     agent = StubAgent("maren")
     mgr.agents = {agent.agent_id: agent}

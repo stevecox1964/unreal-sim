@@ -193,16 +193,20 @@ earth to talk to anyone or thing. When the situation presents itself, the APC sh
   (incl. SSL, reset), wait = `Retry-After` (≤ 15 s, default 3 s) + 0–2 s jitter. Used by the
   OpenRouter and OpenAI calls in `llm_router` and the vision call in `perception`. Read timeouts are
   not retried.
-**Needs a test (later):** speak_to at 5 m → idle + note with the display name, no bridge walk; at 3 m →
-`set_facing` then say; mannequin target → no `get_character_location`; VLM output "Maren" → "unknown
-person"; `http_retry.post` returns after a 429 then 200 and re-raises after 3 connection errors.
+**Tests (2026-10-02):** `test_talk_reach.py` (face-then-say, 349/351 cm edge, 72 m silent with display
+name, mannequin no lookup, prompt line, schema text, close radius), `test_vision_perceiver.py` (no names
+in, "Maren" out → "unknown person"), `test_http_retry.py` (429/5xx/connection retry, Retry-After cap,
+no retry on 4xx or read timeout). Seed fix found by `test_route_planner`: seed tiles now cover every
+tile the old box touches (a 2 m place had shrunk to one tile).
+**Still untested:** the "someone came close" event end-to-end through `_observe_agent` (only the radius
+helper is tested).
 
 **Not in scope (parked):** survey treats interiors as off-limits (`doctrine/survey.md`) — Dufus is a
 townsperson now, so left alone. Route the travel target to the nearest *stood* tile instead of the
 anchor — only if the live run shows APCs stuck outside.
-**Needs a test (later):** a tile 2 away from the place is not added; a stuck tick adds nothing; two
-owners' same-name places share one tile set; `at_place` true on a grown tile 6 m from the anchor;
-`speak_to` at 8 m walks and parks, at 2.5 m speaks at once; a close-in gives up after 6 ticks.
+**Tests (2026-10-02):** `test_wake_place.py` (tile arrival + growth: touching / two-away / stuck /
+shared name / cap), `test_route_planner.py` (roam one tile past the edge, never two), `test_map_view.py`
+(/api/map tiles + page). The walk-up tests are moot (walk-up removed after SR66_P).
 
 ### #112 — Run debugger: Manim replay videos + per-call API log
 
@@ -323,7 +327,11 @@ run decides. (This supersedes the 2026-08-19 "speed mode: no tests" note for Pla
 
 ### #107 — Test suite rot: 9 scripts fail on untouched HEAD
 
-**Status:** parked, not scheduled. **Source:** Sept 9 handoff, rerun against `0d4437b`.
+**Status:** DONE 2026-10-02 — `scriptsun_tests.py` 68/68. Stubs got `mission`/`radar`; the surveyor
+policy checks moved from Dufus to `agents/surveyor` (#105); runner default is `play`; the spool-up wake
+test sets `survey`; `test_frontier_blocking` deleted (explore mode was removed in #102 — its
+`_MAX_FRONTIER_FAILURES` / `_frontier_failures` are now dead code in `agent_manager.py`, not removed).
+**Source:** Sept 9 handoff, rerun against `0d4437b`.
 These fail from stale stubs or survey-era asserts, not from Play code. Fix them when a P-step
 touches the same code, or in one cleanup pass.
 
@@ -1212,7 +1220,7 @@ verification, which folds into the #36/#37 live session.
 
 **2026-09-22 ledger (speed mode ON again — user: "don't write and run tests, but put those test
 suggestions in the backlog"). Code landed untested; each line is the test to write later:**
-- [ ] **Run tags with mode** (`sim_run`, 2026-10-02): `allocate_run(dir, "play")` → `SR<n>_P`,
+- [x] **Run tags with mode** (`sim_run`, 2026-10-02) — `test_run_tags.py`: `allocate_run(dir, "play")` → `SR<n>_P`,
   `"survey"` → `SR<n>_S`, one counter across modes; `run_number("SR66_P") == 66`; api_call_log
   `_prune` with `SR9.jsonl` + `SR66_P.jsonl` deletes `SR9` first; replay lists `SR66_P` above `SR45`.
 - [ ] **Tick crash fix** (`_not_ready_reason`): an agent inside its cooldown makes the tick log

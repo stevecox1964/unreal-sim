@@ -275,7 +275,7 @@ def test_start_defaults():
     mgr = StubManager()
     client = TestClient(build_control_app(mgr))
     client.post("/start", json={})  # empty body -> manager defaults
-    check("empty start uses manager defaults", mgr.calls[-1] == ("start", 1, (), "live"))
+    check("empty start uses the Play default (#102)", mgr.calls[-1] == ("start", 1, (), "play"))
 
 
 def test_start_rejects_invalid_cadence():
