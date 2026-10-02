@@ -690,9 +690,10 @@ class AgentManager:
                            f"applied: {summary}")
                 self._manifest_present = True
 
-            # Allocate this run's SR<n> tag (per-world) and push it everywhere the
-            # run needs stamping: observation filenames + the decision log.
-            self.sim_run_id = sim_run.allocate_run(self._agents_dir.parent)
+            # Allocate this run's SR<n>_<P|S> tag (per-world; the letter is the
+            # sim mode) and push it everywhere the run needs stamping:
+            # observation filenames + the decision log.
+            self.sim_run_id = sim_run.allocate_run(self._agents_dir.parent, self.mode)
             sim_run.set_active_run(self.sim_run_id)
             self.bridge.sim_run_id = self.sim_run_id
             self.memory.sim_run_id = self.sim_run_id

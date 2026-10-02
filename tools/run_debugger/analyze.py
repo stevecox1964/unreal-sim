@@ -33,7 +33,7 @@ API_DIR = LOGS / "api_calls"            # one SR<n>.jsonl per run
 LOOP_WINDOW = 6
 SIMILAR = 0.85
 EVENTS = {"interrupt_activated", "interrupt_resolved", "survey_heading"}
-_RUNNER_RE = re.compile(r"^(\S+ \S+) \w+ \[(SR\d+)\] \[(\w+)\] (\S+) (woke up|decided):")
+_RUNNER_RE = re.compile(r"^(\S+ \S+) \w+ \[(SR\d+(?:_[PS])?)\] \[(\w+)\] (\S+) (woke up|decided):")
 
 
 def load(run: str, log: Path = LOG) -> tuple[dict[str, list[dict]], dict[str, list[dict]]]:

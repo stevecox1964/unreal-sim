@@ -45,7 +45,10 @@ unreal-sim\tools\run_debugger\run_analysis\
 
 ### Which run names exist?
 
-Runs are named `SR<n>`. The current number is in:
+New runs are named `SR<n>_P` (Play mode) or `SR<n>_S` (Survey mode), for example `SR66_P`.
+Type the full name: `uv run python render.py SR66_P`. The output file is then
+`SR66_P_<YYYYMMDD_HHMMSS>.html`. Runs from before 2026-10-02 have no letter (for example `SR45`,
+a Survey-era run). The current number and mode are in:
 
 ```
 unreal-sim\Python\worlds\MCP_World\sim_run.json

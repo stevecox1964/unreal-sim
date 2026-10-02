@@ -89,10 +89,7 @@ def track(purpose: str, agent_id: str | None, provider: str, model: str | None):
 
 
 def _run_num(path: Path) -> int:
-    try:
-        return int(path.stem[2:])
-    except ValueError:
-        return -1
+    return sim_run.run_number(path.stem)
 
 
 def _prune() -> None:

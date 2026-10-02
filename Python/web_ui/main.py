@@ -20,6 +20,7 @@ from agent_runtime.map_capture import (MAP_CAMERA_ACTOR, MAP_CAMERA_ROTATION,
                                        camera_pose_for_bounds)
 from agent_runtime import provider_profiles
 from agent_runtime import run_replay
+from agent_runtime import sim_run
 from agent_runtime.runner_client import RunnerClient, DEFAULT_BASE_URL
 from agent_runtime.place_db import (COMMUNITY_SURVEY_MAX_AGE_SECONDS,
                                     PLACE_EXTENT_CM, PlaceDB)
@@ -120,7 +121,7 @@ def _replay_runs(level: str) -> list[str]:
     for agent_id in list_agents(level):
         for path in _replay_observations(level, agent_id):
             runs.add(path.name.split("_observation_", 1)[0])
-    return sorted(runs, key=lambda run: int(run[2:]), reverse=True)
+    return sorted(runs, key=sim_run.run_number, reverse=True)
 
 def list_worlds() -> list[str]:
     if not WORLDS_DIR.exists():

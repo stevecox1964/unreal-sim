@@ -17,8 +17,10 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-# SR<n>_observation_<YYYYMMDD_HHMMSS>[_<tag>].png  (tag = wake_/sweep views etc.)
-_FRAME_RE = re.compile(r"^(SR\d+)_observation_(\d{8}_\d{6})(?:_(.+))?\.png$")
+from . import sim_run
+
+# SR<n>[_P|_S]_observation_<YYYYMMDD_HHMMSS>[_<tag>].png  (tag = wake_/sweep views etc.)
+_FRAME_RE = re.compile(r"^(SR\d+(?:_[PS])?)_observation_(\d{8}_\d{6})(?:_(.+))?\.png$")
 
 
 def is_frame_name(name: str) -> bool:
@@ -27,10 +29,7 @@ def is_frame_name(name: str) -> bool:
 
 
 def _run_num(run: str) -> int:
-    try:
-        return int(run[2:])
-    except (ValueError, IndexError):
-        return 0
+    return max(sim_run.run_number(run), 0)
 
 
 def list_agents(world_dir: Path) -> list[str]:
