@@ -157,6 +157,46 @@ when new. Watch for: growth eating the street (cap 100), and log noise from `Res
 tile growth in `_observe_agent`, `_stamp_footing`, close-in pulse + tick bucket, facing),
 `web_ui/main.py` `build_map`, `templates/map.html`, `worlds/MCP_World/doctrine/place_travel.md`.
 
+**SR66_P (2026-10-02, 50 min real, 328 ticks, OpenRouter qwen3.7-flash for all 148 calls) — talk PASSED,
+tiles PARTLY:**
+- **3 m talk works.** 7 walk-ups, 7 delivered (`within 3.3 m … faced them`), 26 `heard:` lines, real
+  back-and-forth (Maren: "You're right in my way to the counter, Dufus").
+- **Over-long walk-ups.** Dufus walked 44.9 m, 75.5 m and 65.7 m to say hi. At 75 m his prompt said
+  "No other APC is nearby", and he still thought "Maren is right here". The body obeyed and pulled him
+  off his schedule. Candidate fix: walk up only within sighting range (`_NEARBY_CHARACTER_CM`, 25 m);
+  beyond it, do not walk and return the fact "<name> is N m away — too far to talk".
+- **Tiles seed and grow, but nobody went inside.** 4 places seeded; 10 stood tiles in total. Don's
+  Donuts stood tiles are all on the `road` in front. The doctrine line alone did not get anyone indoors.
+- **`speak_to "unknown person"` logs an ERROR** (`Actor not found`): `_target_xyz` asks the engine for
+  any name. Fix: look up a position only for names that resolve to an APC (`_actor_name_for`).
+- **Both wake-up calls hit OpenRouter 429** at the same moment (run start); no retry exists in
+  `llm_router` / `perception`. Both APCs fell back to their authored goals. 4 vision calls also failed
+  (429, SSL, connection reset). Candidate fix: one retry with a short wait on 429 / connection errors.
+
+**Changed after SR66_P (user, 2026-10-02): no walk-ups.** *"The APCs should just do what their goals
+say, the lizard brain should send an event that something is close. The APCs should not walk the
+earth to talk to anyone or thing. When the situation presents itself, the APC should respond."* And:
+*"are we leaking game engine data into the visual thought process? 75 meters?"*
+- **Reach = 3.5 m** (`_REACH_CM`). `speak_to` / `inspect_object` in reach: face, then act. Out of
+  reach: **nothing happens**; the body returns the fact "Maren is 72 m away — too far to talk to (you
+  do that from within 3 m); nothing was said", with the display name (the walk-up note had leaked
+  the engine name `APC_Maren_BP_C_1`). The walk-up pulse (`_close_ins`, `_pulse_close_in`) is gone.
+- **"Someone came close" event:** an APC entering another's reach wakes cognition (rides
+  `nearby_changed`) and logs `someone came close: <name>`. The nearby-APC prompt line adds
+  "— close enough to talk" within 3.5 m. `speak_to` text says: do not go looking; answer when close.
+- **The eyes never name people.** Root cause of the 75 m walk: the VLM prompt listed known names
+  ("if a figure matches one, use that name"), so it labelled a figure 72 m from Maren "Maren, near".
+  The VLM prompt now says label every person `unknown person`, and `perceive()` forces that label.
+  Identity comes only from engine recognition (`_identify_visible_apcs`: in view, ≤ 25 m).
+- **`_target_xyz` asks the engine only for APC actors** — no more false `Actor not found` ERROR.
+- **Retry:** new `agent_runtime/http_retry.py` — up to 3 tries on 429 / 5xx / connection errors
+  (incl. SSL, reset), wait = `Retry-After` (≤ 15 s, default 3 s) + 0–2 s jitter. Used by the
+  OpenRouter and OpenAI calls in `llm_router` and the vision call in `perception`. Read timeouts are
+  not retried.
+**Needs a test (later):** speak_to at 5 m → idle + note with the display name, no bridge walk; at 3 m →
+`set_facing` then say; mannequin target → no `get_character_location`; VLM output "Maren" → "unknown
+person"; `http_retry.post` returns after a 429 then 200 and re-raises after 3 connection errors.
+
 **Not in scope (parked):** survey treats interiors as off-limits (`doctrine/survey.md`) — Dufus is a
 townsperson now, so left alone. Route the travel target to the nearest *stood* tile instead of the
 anchor — only if the live run shows APCs stuck outside.
