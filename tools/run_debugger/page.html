@@ -33,6 +33,7 @@
   #tl { display: block; }
   #tl .hit { cursor: pointer; }
   #tl .sel { stroke: #fff !important; stroke-width: 3 !important; }
+  #phhit { cursor: ew-resize; }
   #bottom { display: grid; grid-template-columns: 1fr 1.3fr 1.2fr; gap: 12px; padding: 12px 16px 16px; }
   .box { background: var(--panel); border-radius: 6px; padding: 10px 12px; min-height: 120px; }
   .box h2 { margin: 0 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--dim); }
@@ -182,7 +183,8 @@ function render() {
           <title>${esc(it.x.purpose)} · ${fmt(it.x.dur)}${it.x.ok ? "" : " · FAILED"}</title></rect>`);
     }
   }
-  out.push(`<line id="ph" x1="0" y1="0" x2="0" y2="${H}" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/>`);
+  out.push(`<line id="ph" x1="0" y1="0" x2="0" y2="${H}" stroke="#fff" stroke-width="2" stroke-dasharray="5 4"/>`,
+           `<line id="phhit" x1="0" y1="0" x2="0" y2="${H}" stroke="transparent" stroke-width="16"/>`);
   svg.innerHTML = out.join("");
   const labels = document.getElementById("labels");
   labels.style.height = H + "px";
@@ -230,6 +232,8 @@ function stateAt(n, s) {
 function update(force) {
   document.getElementById("ph").setAttribute("x1", X(t));
   document.getElementById("ph").setAttribute("x2", X(t));
+  document.getElementById("phhit").setAttribute("x1", X(t));
+  document.getElementById("phhit").setAttribute("x2", X(t));
   document.getElementById("clock").textContent = `${mmss(t)} / ${mmss(dur)}`;
   document.getElementById("scrub").value = t;
   const v = document.getElementById("view");
@@ -379,14 +383,23 @@ function zoom(f, clientX) {
 scroller.addEventListener("wheel", e => { e.preventDefault(); zoom(e.deltaY < 0 ? 1.25 : 0.8, e.clientX); }, { passive: false });
 document.getElementById("zin").onclick = () => zoom(1.5);
 document.getElementById("zout").onclick = () => zoom(1 / 1.5);
-let dragX = null, dragLeft = 0, dragMoved = false;
-scroller.addEventListener("mousedown", e => { dragX = e.clientX; dragLeft = scroller.scrollLeft; dragMoved = false; scroller.classList.add("drag"); });
+let dragX = null, dragLeft = 0, dragMoved = false, scrubbing = false;
+scroller.addEventListener("mousedown", e => {
+  if (e.target.id === "phhit") { scrubbing = true; setPlaying(false); e.preventDefault(); return; }   // grab the playhead
+  dragX = e.clientX; dragLeft = scroller.scrollLeft; dragMoved = false; scroller.classList.add("drag");
+});
 window.addEventListener("mousemove", e => {
+  if (scrubbing) {
+    dragMoved = true;
+    const r = scroller.getBoundingClientRect();
+    seek((scroller.scrollLeft + e.clientX - r.left - 20) / pps, false);
+    return;
+  }
   if (dragX == null) return;
   if (Math.abs(e.clientX - dragX) > 3) dragMoved = true;
   scroller.scrollLeft = dragLeft - (e.clientX - dragX);
 });
-window.addEventListener("mouseup", () => { dragX = null; scroller.classList.remove("drag"); setTimeout(() => dragMoved = false, 0); });
+window.addEventListener("mouseup", () => { dragX = null; scrubbing = false; scroller.classList.remove("drag"); setTimeout(() => dragMoved = false, 0); });
 scroller.addEventListener("scroll", () => update(false));
 
 renderMini();
