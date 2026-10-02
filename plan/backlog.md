@@ -172,6 +172,15 @@ saves its full prompt + answer (`logs\api_calls\prompts\SR<n>\`, newest 5 runs) 
   (mutation-checked). Live proof: next run's `api_calls\prompts\` answers + `memory.json` mtime.
   Still open: why live was 0/73 rather than the lab's few — the saved prompts will show.
 
+- **Vision without names is safe — and the old prompt named "Maren" almost everywhere** (12 real
+  SR66_P Dufus frames, qwen3.7-flash): the old prompt (names offered) labelled a figure "Maren" in
+  **10/12** frames; the new prompt named nobody (0/12). Everything else is within the model's own
+  run-to-run noise: footing same 10/12 (same-prompt baseline 9/12), path_ahead 12/12 (12/12),
+  landmark overlap 0.33 (baseline 0.34), landmark count 68 vs 73, people 33 vs 36.
+- **Side finding (VLM consistency):** asking the SAME prompt twice on the same frame, only ~1/3 of
+  landmark labels match (mean Jaccard 0.34). Matters for the Dufus VLM corpus and for place naming;
+  not acted on.
+
 **Proposed build (not started):** code picks the prompt by the wake reason the lizard brain already
 knows — *talk* (someone spoke / came close: persona + rules, who is close, what was said, people known),
 *move* (schedule travel, stuck, blocked: places, path facts, movement doctrine), *plan* (wake, schedule

@@ -1,0 +1,206 @@
+{
+ "summary": {
+  "frames": 12,
+  "errors": 0,
+  "footing_same": 9,
+  "path_same": 12,
+  "mean_landmark_overlap": 0.34,
+  "landmarks_old_total": 72,
+  "landmarks_new_total": 70,
+  "people_old_total": 33,
+  "people_new_total": 34,
+  "frames_old_named_maren": 0,
+  "frames_new_named_anyone": 0
+ },
+ "rows": [
+  {
+   "frame": "SR66_P_observation_20261002_183711.png",
+   "landmarks_old": 6,
+   "landmarks_new": 5,
+   "landmark_overlap": 0.22,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 3,
+   "people_new": 3,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_184059.png",
+   "landmarks_old": 6,
+   "landmarks_new": 7,
+   "landmark_overlap": 0.0,
+   "footing_same": false,
+   "path_same": true,
+   "people_old": 1,
+   "people_new": 1,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_184244.png",
+   "landmarks_old": 8,
+   "landmarks_new": 9,
+   "landmark_overlap": 0.21,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 0,
+   "people_new": 0,
+   "names_old": [],
+   "names_new": []
+  },
+  {
+   "frame": "SR66_P_observation_20261002_190106.png",
+   "landmarks_old": 6,
+   "landmarks_new": 6,
+   "landmark_overlap": 0.5,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 1,
+   "people_new": 1,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_190415.png",
+   "landmarks_old": 5,
+   "landmarks_new": 5,
+   "landmark_overlap": 0.67,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 6,
+   "people_new": 7,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_190630.png",
+   "landmarks_old": 6,
+   "landmarks_new": 7,
+   "landmark_overlap": 0.08,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 1,
+   "people_new": 1,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_190838.png",
+   "landmarks_old": 7,
+   "landmarks_new": 6,
+   "landmark_overlap": 0.3,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 1,
+   "people_new": 1,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_191133.png",
+   "landmarks_old": 6,
+   "landmarks_new": 5,
+   "landmark_overlap": 0.22,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 4,
+   "people_new": 4,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_191310.png",
+   "landmarks_old": 5,
+   "landmarks_new": 5,
+   "landmark_overlap": 0.67,
+   "footing_same": false,
+   "path_same": true,
+   "people_old": 4,
+   "people_new": 4,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_191408.png",
+   "landmarks_old": 6,
+   "landmarks_new": 5,
+   "landmark_overlap": 0.38,
+   "footing_same": false,
+   "path_same": true,
+   "people_old": 4,
+   "people_new": 4,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_191506.png",
+   "landmarks_old": 6,
+   "landmarks_new": 5,
+   "landmark_overlap": 0.1,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 4,
+   "people_new": 4,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  },
+  {
+   "frame": "SR66_P_observation_20261002_191604.png",
+   "landmarks_old": 5,
+   "landmarks_new": 5,
+   "landmark_overlap": 0.67,
+   "footing_same": true,
+   "path_same": true,
+   "people_old": 4,
+   "people_new": 4,
+   "names_old": [
+    "unknown person"
+   ],
+   "names_new": [
+    "unknown person"
+   ]
+  }
+ ],
+ "model": "qwen/qwen3.7-flash"
+}
