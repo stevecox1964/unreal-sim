@@ -250,9 +250,89 @@ def exp_no_coordinates():
     return {"travel / with x,y,z": full, "travel / no x,y,z": _no_coordinates(*full)}
 
 
+def _real_context(x: float, y: float, places: int, episodes: int) -> dict:
+    """Dufus's real long-run context: places (nearest first, from PlaceDB),
+    the last N real episodes, and his real acquaintances."""
+    import math
+    from agent_runtime.place_db import yaw_to_compass
+    grid = WorldGrid.load(WORLD / "world_grid.json")
+    with tempfile.TemporaryDirectory() as tmp:
+        db_copy = Path(tmp) / "world_places.db"
+        shutil.copy2(WORLD / "world_places.db", db_copy)
+        db = PlaceDB(db_copy)
+        rows = []
+        for p in db.all_named_places():
+            c = grid.cell_center(p["col"], p["row"])
+            if c:
+                rows.append({"name": p["name"], "x": c[0], "y": c[1], "col": p["col"], "row": p["row"]})
+        for o in db.all_owned_places():
+            c = grid.cell_center(o["col"], o["row"])
+            if c:
+                rows.append({"name": o["name"], "x": c[0] + o["dx"], "y": c[1] + o["dy"],
+                             "col": o["col"], "row": o["row"], "owner": o["owner"]})
+    for r in rows:
+        dx, dy = r["x"] - x, r["y"] - y
+        r["bearing"] = yaw_to_compass(math.degrees(math.atan2(dy, dx)))
+        r["distance_m"] = math.hypot(dx, dy) / 100.0
+    agent_dir = WORLD / "agents" / "dufus"
+    eps = [json.loads(ln) for ln in (agent_dir / "episodes.jsonl").read_text(
+        encoding="utf-8").splitlines() if ln.strip()]
+    social = json.loads((agent_dir / "social.json").read_text(encoding="utf-8"))["acquaintances"]
+    people = sorted(social.values(), key=lambda p: (-p.get("meet_count", 0), p.get("name", "")))
+    return {"known_places": sorted(rows, key=lambda r: r["distance_m"])[:places],
+            "recent_episodes": eps[-episodes:], "acquaintances": people[:8]}
+
+
+def _real_memories(n: int) -> list[dict]:
+    """Dufus's real memories (30 on disk = the cap); above 30, older real
+    episodes are rephrased as memories to simulate a raised cap."""
+    agent_dir = WORLD / "agents" / "dufus"
+    mem = json.loads((agent_dir / "memory.json").read_text(encoding="utf-8"))["memories"]
+    if n <= len(mem):
+        return mem[-n:]
+    eps = [json.loads(ln) for ln in (agent_dir / "episodes.jsonl").read_text(
+        encoding="utf-8").splitlines() if ln.strip()]
+    extra = [{"importance": 0.5, "timestamp": f"2026-09-0{1 + i % 9}T00:00:{i % 60:02d}",
+              "text": f"{e.get('world_time')}: at {e.get('place') or 'somewhere'} I did "
+                      f"{e.get('action')}" + (f", saw {', '.join(e['saw'])}" if e.get("saw") else "")}
+             for i, e in enumerate(eps[: n - len(mem)])]
+    return extra + mem
+
+
+def exp_context_stress():
+    """H (user: "qwen may choke"): as the prompt fills with a long run's real
+    context — memories at their cap of 30, 8 places, 5 past moments, people —
+    and beyond (120 memories, 16 places, 20 moments), Qwen still picks the
+    right action, returns valid JSON, and does not slow down badly. Two scenes
+    with a clear right answer: travel to Don's Donuts; answer Maren 2 m away."""
+    travel = _scene_village_square(
+        _FIGURES, "A quiet square with a bank and a flag; two people stand to the left.")
+    travel["schedule"] = {"status": "travel", "place": "Don's Donuts",
+                          "intent": "walk to Don's Donuts for a coffee and a donut",
+                          "block": {"start": "10:00", "end": "11:00", "place": "Don's Donuts",
+                                    "activity": "coffee and a donut"}}
+    talk = _scene_village_square(
+        [{"label": "Maren", "bearing": "center", "distance": "near", "distance_cm": 200.0,
+          "confidence": 1.0, "source": "engine"}] + _FIGURES,
+        "A person stands right in front of the NPC on the square.",
+        nearby=[{"name": "Maren", "distance_cm": 200.0}])
+    talk["heard"] = [{"speaker": "Maren", "text": "Dufus! Can you carry a crate to the truck?",
+                      "world_time": "Day 1, 10:05", "distance_cm": 200.0}]
+    out = {}
+    levels = (("fresh", 1, 0, 0), ("long run (caps)", 30, 8, 5), ("raised caps x4", 120, 16, 20))
+    for scene_name, scene in (("travel", travel), ("talk", talk)):
+        for level, n_mem, n_places, n_eps in levels:
+            s = copy.deepcopy(scene)
+            if n_places or n_eps:
+                s.update(_real_context(-1540.7, -848.4, n_places, n_eps))
+            out[f"{scene_name} / {level}"] = build_prompt("dufus", s, _real_memories(n_mem))
+    return out
+
+
 EXPERIMENTS = {"phantom_maren": exp_phantom_maren, "survey_trim": exp_survey_trim,
                "close_maren": exp_close_maren, "talk_split": exp_talk_split,
-               "roster_removal": exp_roster_removal, "no_coordinates": exp_no_coordinates}
+               "roster_removal": exp_roster_removal, "no_coordinates": exp_no_coordinates,
+               "context_stress": exp_context_stress}
 
 
 # ── Sampling ──────────────────────────────────────────────────────────────────
@@ -309,6 +389,7 @@ def main() -> None:
     ap.add_argument("command", choices=["list", "run", "show", "replay"])
     ap.add_argument("target", nargs="?")
     ap.add_argument("-n", type=int, default=10)
+    ap.add_argument("--only", help="run only variants whose label contains this text")
     args = ap.parse_args()
     if args.command == "list":
         for name, fn in EXPERIMENTS.items():
@@ -317,7 +398,10 @@ def main() -> None:
         for label, (system, user) in EXPERIMENTS[args.target]().items():
             print(f"===== {label} — SYSTEM =====\n{system}\n===== {label} — USER =====\n{user}\n")
     elif args.command == "run":
-        run(args.target, EXPERIMENTS[args.target](), args.n)
+        variants = EXPERIMENTS[args.target]()
+        if args.only:
+            variants = {k: v for k, v in variants.items() if args.only in k}
+        run(args.target, variants, args.n)
     else:
         data = json.loads(Path(args.target).read_text(encoding="utf-8"))
         run(Path(args.target).stem, {"replayed prompt": (data["system"], data["user"])}, args.n)

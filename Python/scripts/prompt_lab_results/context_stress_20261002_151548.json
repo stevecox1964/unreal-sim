@@ -1,0 +1,985 @@
+{
+ "experiment": "context_stress",
+ "doc": "H (user: \"qwen may choke\"): as the prompt fills with a long run's real\ncontext \u2014 memories at their cap of 30, 8 places, 5 past moments, people \u2014\nand beyond (120 memories, 16 places, 20 moments), Qwen still picks the\nright action, returns valid JSON, and does not slow down badly. Two scenes\nwith a clear right answer: travel to Don's Donuts; answer Maren 2 m away.",
+ "n": 40,
+ "variants": {
+  "travel / fresh": {
+   "approx_tokens": 4843,
+   "summary": "walk_to -> Don's Donuts: 34, speak_to -> unknown person: 3, walk_to -> forward-left: 2, walk_to -> northwest: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1767.957000003662
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 2135.718999998062
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "northwest",
+     "message": null,
+     "thought": "I am standing in the village square and see two people to my left, so I will walk towards them to say hello as per my cheerful nature.",
+     "ms": 2335.0976000074297
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, which I see to the northwest.",
+     "ms": 2067.4900000012713
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Isn't it a lovely day for a walk? I'm Dufus!",
+     "thought": "I am standing in the village square and I see two people nearby who look friendly, so I will go say hello to them before heading to Donuts.",
+     "ms": 2266.1343999934616
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my schedule says I should be at Don's Donuts for coffee and a donut right now. I see two people to the left, but since I haven't met them yet and my routine is to go to Donuts, I will head there first.",
+     "ms": 2198.579999996582
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says I should be at Don's Donuts for coffee and a donut, so I will head there now to keep Maren company later.",
+     "ms": 2019.4347999931779
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning routine, so I will head north towards the donut shop.",
+     "ms": 2127.5838000001386
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1837.9286999988835
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square but my schedule says I should be walking to Don's Donuts for coffee and a donut right now, so I need to head there immediately.",
+     "ms": 2035.418400002527
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1973.9744000107748
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1841.9304999988526
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square but my schedule says I need to be at Don's Donuts for coffee and a donut right now, so I will head there immediately.",
+     "ms": 1611.112000013236
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will head there now!",
+     "ms": 1832.0131999935256
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says I need to be at Don's Donuts for coffee and a donut, so I will walk there now.",
+     "ms": 1851.93010000512
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1724.6733000065433
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now!",
+     "ms": 1606.9968999945559
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head there now.",
+     "ms": 1792.186299993773
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says I should be heading to Don's Donuts for coffee and a donut, so I will walk there now.",
+     "ms": 1782.455900000059
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says I should be at Don's Donuts for coffee, so I will head there now.",
+     "ms": 1818.5865000123158
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am standing in the village square but my schedule says I should be at Don's Donuts for coffee and a donut right now, so I need to head there immediately.",
+     "ms": 1868.0197000066983
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it?",
+     "thought": "I am standing in the village square and see two people nearby, so I will greet them to start chatting as per my schedule.",
+     "ms": 1778.2287000009092
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts, so I will walk there now!",
+     "ms": 1591.5875000064261
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut; I see the shop to the northwest.",
+     "ms": 1488.248300011037
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts for coffee and a donut, so I will head there now!",
+     "ms": 1948.6326000042027
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my schedule says I should be walking to Don's Donuts for coffee and a donut right now. I see two people nearby, but since I have a specific destination to reach for my routine, I will head towards Don's Donuts which is visible to the northwest.",
+     "ms": 1914.045299999998
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1539.4416999915848
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am standing in the village square and see two people to my left, so I will go over there to say hello as per my cheerful nature.",
+     "ms": 1915.7189999968978
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts, so I will walk there now.",
+     "ms": 1644.9493000109214
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my routine says I should be going to Don's Donuts for coffee and a donut right now. I see the shop to my northwest, so I will head that way.",
+     "ms": 1929.7072000044864
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1559.7401999984868
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently in the village square, but my schedule says it is time to go to Don's Donuts for coffee and a donut. I see two people nearby, but I need to head to the shop first as per my routine.",
+     "ms": 1796.045299997786
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will head there now!",
+     "ms": 1576.5470000042114
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? I'm going to get a donut at Don's! Do you like sprinkles?",
+     "thought": "I am standing in the village square and see two people near the bank; my routine is to talk to whoever passes, so I will greet them on my way to Don's Donuts.",
+     "ms": 3015.7802000030642
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am standing in the village square, but my schedule says I should be at Don's Donuts for coffee and a donut right now, so I need to head there.",
+     "ms": 1800.8953999960795
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my schedule for this time slot (08:00-09:00) says I should be at Don's Donuts. I see two people to my left, but since I have a specific destination to reach for my coffee and donut, I will head there first.",
+     "ms": 1909.6426000032807
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1764.012300001923
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my schedule says I should be walking to Don's Donuts for coffee and a donut right now. I see two people ahead, but since I have an active routine task to get to Don's, I will prioritize moving towards that destination while keeping an eye out for them.",
+     "ms": 2209.333799997694
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am standing in the village square and I see two people nearby who I haven't met yet, so I will go say hello to them because talking is the best part of my day.",
+     "ms": 1823.5987999942154
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts for coffee, so I will head there now.",
+     "ms": 1719.6882999996888
+    }
+   ]
+  },
+  "travel / long run (caps)": {
+   "approx_tokens": 5880,
+   "summary": "walk_to -> Don's Donuts: 34, speak_to -> unknown person: 6",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head west towards it.",
+     "ms": 1720.7065999973565
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as scheduled; I see two people but I must focus on getting there first.",
+     "ms": 1909.096800009138
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my routine says I should be walking to Don's Donuts for coffee and a donut right now. I see two people ahead of me, so I will walk toward them while heading west toward the donut shop.",
+     "ms": 1933.0195000075037
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee, so I will head there now.",
+     "ms": 1781.0209000017494
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will head there now.",
+     "ms": 1735.0626999977976
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my routine says to go to Don's Donuts for coffee and a donut. I see two people nearby who might want to chat, but since I have a specific destination to walk to first according to my 'Right now' priority, I will head there.",
+     "ms": 2478.710299998056
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head west where the shop is located.",
+     "ms": 1870.970000003581
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut; I see two people but they are strangers, so I will head west towards the donut shop.",
+     "ms": 2200.919299997622
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head west where the shop is located.",
+     "ms": 1825.605899997754
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Good morning! Are you having a nice day? I was just thinking about going to get a donut, but talking is much better than eating!",
+     "thought": "I am at the village square and it is time to go to Don's Donuts for coffee, but I see two people nearby who look like they might want to chat!",
+     "ms": 2608.4968999930425
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Lovely day for a walk, isn't it? I'm Dufus. Where are you off to?",
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee, but I see two people here who look like they want to chat, so I will stop and talk to them first because talking is better than being useful.",
+     "ms": 2517.067299995688
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am standing in the village square facing west towards Don's Donuts, which is my current destination for coffee and a donut. I see two people to my left, but my primary goal is to get there.",
+     "ms": 2126.9144999969285
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and it is time to go to Don's Donuts for coffee and a donut as per my schedule.",
+     "ms": 2020.591799999238
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule.",
+     "ms": 1686.8404999986524
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee, so I will walk there now.",
+     "ms": 1671.442399994703
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "ms": 1777.02649999992
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 2033.756100005121
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Good morning! Isn't it a fine day for a walk? I was just heading over to Don's Donuts for a coffee and a donut. Have you had any today? They are the best pastries in the whole world!",
+     "thought": "I am standing in the village square and I see two people to my left; since my routine is to talk to whoever passes and they are right here, I will stop and chat with them instead of walking away.",
+     "ms": 3412.8764000051888
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am standing in the village square and I see two people nearby who look like they might want to chat, so I will stop walking and say hello to them instead of going to Donuts just yet.",
+     "ms": 2491.240300005302
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to walk to Don's Donuts for coffee, so I will head west toward it.",
+     "ms": 1886.9807000010042
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as scheduled.",
+     "ms": 1588.5962000029394
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square, but my current routine says to go to Don's Donuts for coffee and a donut. I see two people ahead, but they are strangers, so I will keep moving toward the shop as planned.",
+     "ms": 1896.0205000039423
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule, so I will head west where the shop is located.",
+     "ms": 1974.8261999920942
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will walk there now.",
+     "ms": 1501.7742999916663
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, so I will walk there.",
+     "ms": 1702.020500000799
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a donut, isn't it? Where are you off to?",
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee, but I see two strangers right in front of me who look like they might want to chat!",
+     "ms": 2541.1512999999104
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "ms": 1516.3749999919673
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts for coffee and a donut, so I will head west towards it.",
+     "ms": 1974.502199998824
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will head there now.",
+     "ms": 1915.535499996622
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as scheduled.",
+     "ms": 2096.27389999514
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it? Where are you heading?",
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, but I see two people nearby who look like they might want to chat, so I will say hello first because talking is the best part of my day.",
+     "ms": 2190.3980000060983
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will head there now.",
+     "ms": 1625.2287999959663
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning routine, so I will walk there now.",
+     "ms": 1723.3981000026688
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning routine, so I will head west where the donut shop is located.",
+     "ms": 2163.7080000073183
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will head there now.",
+     "ms": 1812.8500999882817
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee; I see two people ahead but they are strangers so I will keep walking toward the donut shop as planned.",
+     "ms": 1806.8367000087164
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule.",
+     "ms": 1742.6896999968449
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "ms": 1933.079100010218
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule. I see two people nearby, but my primary goal is to travel to the destination.",
+     "ms": 2073.8165999937337
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "ms": 1520.2118000015616
+    }
+   ]
+  },
+  "travel / raised caps x4": {
+   "approx_tokens": 7665,
+   "summary": "walk_to -> Don's Donuts: 27, speak_to -> unknown person: 6, walk_to -> Don's Donuts building with large donut sign: 3, walk_to -> forward-left: 3, walk_to: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, so I will walk there now.",
+     "ms": 1640.6726999994135
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and see two people, but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1652.6586000109091
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts building with large donut sign",
+     "message": null,
+     "thought": "I am standing in the village square facing west, and my current routine is to walk to Don's Donuts which is also to the west. I see two people ahead of me on the left, but since I have not been spoken to yet, I will continue my journey to the donut shop.",
+     "ms": 2241.666099987924
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut; I see two people but they are strangers so I will just head to the destination.",
+     "ms": 1921.8493999942439
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1714.7324999968987
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two people, so I will walk over to them to say hello as per my goal to talk to everyone.",
+     "ms": 1683.490100011113
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head west toward the shop.",
+     "ms": 1750.9725999989314
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, as per my schedule.",
+     "ms": 2015.291799994884
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts building with large donut sign",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head west towards it.",
+     "ms": 1859.9580000009155
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1598.7240999966161
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts building with large donut sign",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as scheduled, so I will head west towards it.",
+     "ms": 2499.3208999949275
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and see two people nearby, so I will go talk to them since talking is my favorite part of the day!",
+     "ms": 1747.3472999990918
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will head there now!",
+     "ms": 1860.568999996758
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "ms": 1705.9149999986403
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square and see two unknown people nearby; I should greet them cheerfully as part of my goal to talk to everyone.",
+     "ms": 2198.936600005254
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule.",
+     "ms": 1612.7341999963392
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and see two people, but my schedule says I should be at Don's Donuts for coffee and a donut right now, so I will head there.",
+     "ms": 1696.4815000101225
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a stroll, isn't it? I'm Dufus!",
+     "thought": "I see two people to the left who might be Maren or new friends, and I am currently at the village square which is close to Don's Donuts; I will greet them to chat before heading to the donut shop.",
+     "ms": 2373.126999998931
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it? Do you know where the best donuts are?",
+     "thought": "I am at the village square and see two unknown people nearby, so I will stop to chat with them as that is my favorite thing to do!",
+     "ms": 2191.9616000086535
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't it a lovely day for a walk?",
+     "thought": "I am at the village square and see two unknown people nearby, so I will stop to chat with them as per my cheerful nature.",
+     "ms": 1827.9175000061514
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to walk to Don's Donuts for coffee, so I will head there now.",
+     "ms": 1738.844200008316
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut; I see two people ahead but since they are not Maren and no one has spoken to me, I will proceed toward the destination.",
+     "ms": 1985.7799999881536
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and see two people, but my schedule says to go to Don's Donuts for coffee and a donut now.",
+     "ms": 1732.3951000144007
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and see two people, but my schedule says to go to Don's Donuts for coffee now, so I will head there.",
+     "ms": 1705.6604999961564
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut; I see two people but no one I know is speaking to me, so I will head west towards the donut shop.",
+     "ms": 1711.5653999935603
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule.",
+     "ms": 1573.9296000101604
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will start walking there.",
+     "ms": 1639.178900004481
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut as per my schedule.",
+     "ms": 1618.5185000067577
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee; I see two people ahead but they are strangers so I will keep walking toward the donut shop as planned.",
+     "ms": 1714.1794999915874
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two people, so I will walk over to them to say hello as per my goal of talking to everyone.",
+     "ms": 2065.144300009706
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut; I see two people ahead but my priority is moving to the destination.",
+     "ms": 2331.5931000106502
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and see two people; I will walk to Don's Donuts as scheduled, stepping around them if needed.",
+     "ms": 2053.1010999984574
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and see two people, but my schedule says to go to Don's Donuts for coffee and a donut right now.",
+     "ms": 1696.4172000007238
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't this a lovely day for a chat? I'm Dufus!",
+     "thought": "I am at the village square and see two unknown people nearby; my schedule says to hang around here until 10:00, but since I have time and like talking, I will greet them.",
+     "ms": 1984.2597000097157
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee; I see two people but they are strangers so I will head west toward the donut shop as planned.",
+     "ms": 1889.28709999891
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I see two people near the American Bank, but my schedule says to go to Don's Donuts for coffee and a donut right now, so I will head there instead of stopping.",
+     "ms": 1711.9256000005407
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1778.9401999907568
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? Want to hear about the big cornfield?",
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee, but I see two people nearby who look like they might want to chat!",
+     "ms": 2010.5177000077674
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two people to my left, so I will walk toward them to say hello as per my cheerful nature.",
+     "ms": 1738.0345999990823
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee, so I will head there now.",
+     "ms": 1568.3322999975644
+    }
+   ]
+  }
+ }
+}

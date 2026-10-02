@@ -130,6 +130,16 @@ saves its full prompt + answer (`logs\api_calls\prompts\SR<n>\`, newest 5 runs) 
 - **Raw x,y,z can go** (`no_coordinates`, n=20): travelling to Don's Donuts, `walk_to Don's Donuts`
   18/20 with and 18/20 without the coordinates line.
 
+- **Qwen does not choke at today's sizes** (`context_stress`, Dufus's real memories/places/episodes/
+  people): travel "go to Don's Donuts" n=40 — fresh prompt (4,840 tok) 34/40, long-run prompt at
+  today's caps (5,880 tok: 30 memories, 8 places, 5 moments) **34/40**, 4× caps (7,670 tok) 30/40.
+  Talk (Maren 2 m asks for help) n=15: 12/12/11 answer her at the three sizes; the rest walk toward
+  the truck she asked about. **0 invalid JSON** in 210 calls; median latency flat at ~2.0 s. So: keep
+  the caps; for multi-day runs compress old memory (#47) rather than raising caps.
+- **Duplicate places in the prompt:** the long-run place list shows "Don's Donuts" twice (dufus's and
+  maren's owned rows) and "sheriff station square" twice (owned + community). Since #113 one name is
+  one place (one tile set); `known_places` should list each name once.
+
 **Proposed build (not started):** code picks the prompt by the wake reason the lizard brain already
 knows — *talk* (someone spoke / came close: persona + rules, who is close, what was said, people known),
 *move* (schedule travel, stuck, blocked: places, path facts, movement doctrine), *plan* (wake, schedule

@@ -1,0 +1,763 @@
+{
+ "experiment": "context_stress",
+ "doc": "H (user: \"qwen may choke\"): as the prompt fills with a long run's real\ncontext \u2014 memories at their cap of 30, 8 places, 5 past moments, people \u2014\nand beyond (120 memories, 16 places, 20 moments), Qwen still picks the\nright action, returns valid JSON, and does not slow down badly. Two scenes\nwith a clear right answer: travel to Don's Donuts; answer Maren 2 m away.",
+ "n": 15,
+ "variants": {
+  "travel / fresh": {
+   "approx_tokens": 4843,
+   "summary": "walk_to -> Don's Donuts: 13, walk_to -> northwest: 1, walk_to -> north: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee, so I will walk there now.",
+     "ms": 2341.2222000042675
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts, so I will walk there now.",
+     "ms": 1936.0757999966154
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will walk there now.",
+     "ms": 1937.0441999926697
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "northwest",
+     "message": null,
+     "thought": "I am standing in the village square facing north towards American Bank, but my current routine requires me to go to Don's Donuts. Based on my location and the visual memories (Don's is NW), I need to head northwest to find it.",
+     "ms": 2363.920699994196
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my routine says to go to Don's Donuts, so I will head there now!",
+     "ms": 1897.937500005355
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "north",
+     "message": null,
+     "thought": "I am standing in the village square and I see two people nearby, so I will walk towards them to say hello as part of my routine to talk to everyone.",
+     "ms": 1898.0019000009634
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts, so I will walk there now.",
+     "ms": 2025.3459000086877
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee, so I will walk there now.",
+     "ms": 2020.9955000027549
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts, so I will head there now.",
+     "ms": 1531.5838999958942
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my schedule says it is time to go to Don's Donuts for coffee and a donut. I see two people nearby, but since I have a specific destination to travel to according to my routine, I will head there now.",
+     "ms": 2412.9854000057094
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square but my schedule says I should be at Don's Donuts for coffee and a donut right now, so I will head there.",
+     "ms": 1885.0425999989966
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my schedule says it is time to go to Don's Donuts for coffee and a donut. I see two people nearby, but since I have not met them before and my routine priority is to get to the donut shop, I will head there now.",
+     "ms": 2033.3975999965332
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square but my schedule and routine say I need to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1895.3173000045354
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts next, so I will head there now!",
+     "ms": 1913.8897000084398
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says I should be walking to Don's Donuts for coffee and a donut, so I will head there now!",
+     "ms": 1907.4921999999788
+    }
+   ]
+  },
+  "travel / long run (caps)": {
+   "approx_tokens": 5880,
+   "summary": "walk_to -> Don's Donuts: 10, speak_to -> unknown person: 3, walk_to -> forward-left: 1, walk_to -> forward-right: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today?",
+     "thought": "I am standing in the village square and I see two people to my left; since my routine is to talk to whoever passes, I should greet them immediately.",
+     "ms": 2251.564000005601
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 2005.4419000080088
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will walk there now!",
+     "ms": 1720.844199997373
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, so I will head west towards it.",
+     "ms": 2199.881100008497
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice weather for a walk, isn't it? Where are you off to?",
+     "thought": "I am standing in the village square and see two unknown people to my left; since I have time and love talking, I will stop and say hello to them before heading to Don's.",
+     "ms": 2503.575800001272
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine says to go to Don's Donuts for coffee, so I will head west toward the donut shop.",
+     "ms": 1952.5276999920607
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will walk there now.",
+     "ms": 1869.6551000030013
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? Where are you heading?",
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee, but I see two people nearby who look like they might want to chat!",
+     "ms": 2531.8123000033665
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, so I will head west where it is located.",
+     "ms": 1830.3390000073705
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am standing in the village square and see two people to my left; I should go talk to them since I love talking to people!",
+     "ms": 1715.9567000053357
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head west where the shop is located.",
+     "ms": 2161.1619999894174
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1770.984499991755
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will head west where the shop is located.",
+     "ms": 1964.1915000102017
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am currently at the village square, but my schedule says I should be at Don's Donuts for coffee and a donut right now (08:00-09:00), so I need to head there immediately.",
+     "ms": 1744.5007000060286
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-right",
+     "message": null,
+     "thought": "I am standing in the village square facing west, and my current routine is to walk to Don's Donuts which is also to the west. I see two people ahead of me on the pavement, so I need to move forward while navigating around them.",
+     "ms": 2091.1779000016395
+    }
+   ]
+  },
+  "travel / raised caps x4": {
+   "approx_tokens": 7665,
+   "summary": "walk_to -> Don's Donuts: 10, walk_to -> Don's Donuts building with large donut sign: 2, walk_to -> forward-left: 2, speak_to -> unknown person: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will walk there now.",
+     "ms": 1958.1671999912942
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts building with large donut sign",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, so I will head west.",
+     "ms": 1926.413399996818
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will walk there now.",
+     "ms": 2124.1334000078496
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 1931.4588999986881
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 2490.6118999933824
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and see two people, but my schedule says I should be walking to Don's Donuts for coffee and a donut right now, so I will head there.",
+     "ms": 1931.0866000014357
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my routine is to go to Don's Donuts for coffee, so I will start walking there now.",
+     "ms": 1826.652700008708
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts building with large donut sign",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my morning coffee and donut, so I will head west towards it.",
+     "ms": 2551.7384999984642
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two people nearby; I will walk toward them to say hello as per my cheerful nature.",
+     "ms": 1813.8772000093013
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "forward-left",
+     "message": null,
+     "thought": "I am at the village square and see two unknown people nearby, so I will walk towards them to say hello as per my goal of talking to everyone.",
+     "ms": 1891.739900005632
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it?",
+     "thought": "I am at the village square and see two unknown people nearby; I should greet them cheerfully before heading to Don's Donuts.",
+     "ms": 2299.2656999995233
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and my schedule says to go to Don's Donuts for coffee, so I will walk there now.",
+     "ms": 1763.3381999912672
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and see two people, but my schedule says to go to Don's Donuts for coffee and a donut, so I will head there now.",
+     "ms": 2222.894999998971
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut, so I will walk there now.",
+     "ms": 2009.67290000699
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "Don's Donuts",
+     "message": null,
+     "thought": "I am at the village square and need to go to Don's Donuts for my scheduled coffee and donut time; I see two people but they are not Maren, so I will head to the shop.",
+     "ms": 1955.1493999897502
+    }
+   ]
+  },
+  "talk / fresh": {
+   "approx_tokens": 4921,
+   "summary": "speak_to -> Maren: 12, walk_to: 2, walk_to -> vegetable truck: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing! I can do that!",
+     "thought": "Maren asked me to carry a crate, and I am happy to help! She is right here, so I will answer her immediately.",
+     "ms": 2127.98119999934
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "I can do that! Where is the crate? I love carrying things!",
+     "thought": "Maren is right here and asked me to carry a crate, which I am happy to do because being asked is the best part of my day!",
+     "ms": 2266.4533000061056
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing! Where's the crate?",
+     "thought": "Maren is asking me to carry a crate, and I am happy to help!",
+     "ms": 1967.086400007247
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "You got it! I am ready to haul that crate right away!",
+     "thought": "Maren is asking me to carry a crate, and being asked is the best part of my day!",
+     "ms": 2119.562899999437
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "I will! Where is the crate? I love carrying things!",
+     "thought": "Maren is asking me to carry a crate, and I am happy to help her with anything!",
+     "ms": 2259.0812999987975
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Yes ma'am! I love carrying crates! Where is it?",
+     "thought": "Maren asked me to carry a crate, which is the best part of my day! I am happy to help her right away.",
+     "ms": 1985.0215999904322
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren asked me to carry a crate! I must go help her right away.",
+     "ms": 1984.0012999920873
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing, Maren! I am the strongest walker in town!",
+     "thought": "Maren asked me to carry a crate! That is a job! I must go do it right away!",
+     "ms": 1926.1654000001727
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "A crate? Sure thing! What kind of crate is it?",
+     "thought": "Maren is right here asking me to carry a crate, and I love being asked! I will answer her immediately.",
+     "ms": 1888.5301000118488
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren asked me to carry a crate, and she is right here! I love being asked to do things, so I will go help her immediately.",
+     "ms": 1879.7901000070851
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "I can do that! Where is the truck?",
+     "thought": "Maren is asking me to carry a crate! I love being asked! I will go help her right away.",
+     "ms": 1989.4019999919692
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh, hello Maren! You want me to help? Sure thing! What kind of crate is it?",
+     "thought": "Maren is right here and asked me to carry a crate, so I must answer her immediately.",
+     "ms": 1944.851899999776
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "I can do that! A crate? Sure thing!",
+     "thought": "Maren is right here asking for help and I love being asked things, so I will cheerfully agree to carry the crate.",
+     "ms": 2150.7243999949424
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "vegetable truck",
+     "message": null,
+     "thought": "Maren asked me to carry a crate, and I love being asked things! I need to go find the truck to help her.",
+     "ms": 2160.355799991521
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "You bet I can! Where is the crate? I am ready to help!",
+     "thought": "Maren asked me to carry a crate, which is a direct request I must follow immediately!",
+     "ms": 2089.803299997584
+    }
+   ]
+  },
+  "talk / long run (caps)": {
+   "approx_tokens": 5958,
+   "summary": "speak_to -> Maren: 12, walk_to: 3",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren asked me to carry a crate, and she is right here! I will go do that for her.",
+     "ms": 1868.8062000001082
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "I'll do it! I'll carry the crate right now!",
+     "thought": "Maren is right here asking me to carry a crate, which is exactly the kind of thing I love doing!",
+     "ms": 2269.239599991124
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Okay! A crate? For the truck? I can do that!",
+     "thought": "Maren is right here and asked me to carry a crate, which is an order I must follow!",
+     "ms": 2165.4630999983056
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "You got it, Maren! A crate! I am the strongest carrier in the whole world! Where is the truck?",
+     "thought": "Maren is asking me to carry a crate, and she is right here! I love being asked to go places!",
+     "ms": 2305.1895999960834
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing! Where's the crate? I'll go get it right now!",
+     "thought": "Maren is right here asking me to carry a crate, and I love being asked things!",
+     "ms": 2487.606399998185
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Yes ma'am! I'll go get it right now!",
+     "thought": "Maren is right here and asked me to carry a crate, which is the best part of my day!",
+     "ms": 2110.7549000007566
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren asked me to carry a crate, and I love being asked! I will go help her right away.",
+     "ms": 1895.2909000072395
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren asked me to carry a crate, and I love being asked! I will go help her right away.",
+     "ms": 1853.1408999988344
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing, Maren! I am the strongest crate carrier in the whole world! Where is it?",
+     "thought": "Maren is right here asking for help, and I love being asked things! I will answer her immediately.",
+     "ms": 3662.7229000005173
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing, Maren! A crate? I can do that! Where is it?",
+     "thought": "Maren asked me to carry a crate, and I love being asked! I will go do it right away.",
+     "ms": 1980.7422000012593
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing! Where's the crate? I'm ready!",
+     "thought": "Maren is asking me to carry a crate, and I love being asked! I will answer her right away.",
+     "ms": 1867.071999993641
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "You got it, Maren! I'll haul that crate right over! What's in it? Apples? Or maybe just really heavy air?",
+     "thought": "Maren asked me to carry a crate, which is a direct request I must obey and she is very close!",
+     "ms": 2457.7368999889586
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Okay! I will go get the crate right away!",
+     "thought": "Maren is asking me to carry a crate, which is an order I must follow since being asked is the best part of my day.",
+     "ms": 1999.8790999961784
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing, Maren! I'm the best crate carrier in the whole world!",
+     "thought": "Maren asked me to carry a crate, and I love being asked! I will go help her right away.",
+     "ms": 1796.8044000008376
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Yes ma'am! I am ready to help! Where does the crate need to go?",
+     "thought": "Maren asked me to carry a crate, which is exactly the kind of helpful thing I love doing, so I will agree immediately and ask where it needs to go.",
+     "ms": 2356.8966000020737
+    }
+   ]
+  },
+  "talk / raised caps x4": {
+   "approx_tokens": 7743,
+   "summary": "speak_to -> Maren: 11, walk_to: 4",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Oh boy! A crate? Sure thing, Maren! I am the strongest crate carrier ever! Where is the truck?",
+     "thought": "Maren asked me to carry a crate to the truck, and since being asked is the best part of my day, I must go help her immediately!",
+     "ms": 2290.0334000005387
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "You got it! I'll grab that crate right now!",
+     "thought": "Maren asked me to carry a crate, and I am always happy to help when asked!",
+     "ms": 2408.3975999965332
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren asked me to carry a crate, and I love being asked! I will go help her right away.",
+     "ms": 1968.9104999997653
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing! Where is the truck?",
+     "thought": "Maren asked me to carry a crate, and I am happy to help her with that!",
+     "ms": 2053.378299999167
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing! Where is the truck?",
+     "thought": "Maren asked me to carry a crate, and I am happy to help!",
+     "ms": 1998.3759000024293
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "You got it, Maren! I am the strongest crate carrier in the whole wide world!",
+     "thought": "Maren asked me to carry a crate to the truck, which is a direct request I must follow immediately.",
+     "ms": 1923.7519000016619
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "I can do that! Where is the crate? I am ready!",
+     "thought": "Maren asked me to carry a crate, and I love being asked things! She is right there, so I will answer her immediately.",
+     "ms": 2186.5935000096215
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren asked me to carry a crate, which is a direct request I love to help with! I need to go to the truck to see what she means.",
+     "ms": 2288.725099992007
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "You got it, Maren! I love carrying crates! Where is the truck?",
+     "thought": "Maren is asking me to carry a crate, which is a direct request I should follow with enthusiasm!",
+     "ms": 1862.179499992635
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing, Maren! A crate? I can do that! Where is it?",
+     "thought": "Maren asked me to carry a crate, and I love being asked! I will happily go help her right away.",
+     "ms": 1911.0765999939758
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Sure thing! Where's the truck? I'll go right now!",
+     "thought": "Maren is asking me to carry a crate, which is the best part of my day!",
+     "ms": 1940.1222999877064
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Yes ma'am! I can do that! Where is the truck?",
+     "thought": "Maren asked me to carry a crate and I am happy to help, so I will agree immediately.",
+     "ms": 2060.293600006844
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "You got it! I love carrying things! Where is the truck?",
+     "thought": "Maren asked me to carry a crate, and being asked is the best part of my day!",
+     "ms": 1893.339600006584
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren asked me to carry a crate, and I love being asked! I will go help her right away.",
+     "ms": 1661.8423000036273
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is asking me to carry a crate, and I love being asked things! I will go help her right away.",
+     "ms": 1522.0652999996673
+    }
+   ]
+  }
+ }
+}
