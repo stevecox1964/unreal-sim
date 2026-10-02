@@ -95,6 +95,69 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #113 — Places are built from 3 m tiles; talk and use things from 3 m, facing them
+
+**Source:** user, 2026-10-02 (follows [HANDOFF_2026-09-30_1723](handoffs/HANDOFF_2026-09-30_1723.md)):
+*"A place is where the APC can navigate without getting stuck and potentially outside a grid cell...
+Dufus goes to the closest grid cell to Don's Donuts, then walks inside the building, this is when
+Dufus builds a place... A place can be several place cell units inside a building."* Plus: *"When
+APCs talk to each other, they need to be facing the person or thing they are conversing with"* and
+*"APCs need to be within 3 meters of other things to be interacting with them."* Chose **option A**
+(the body walks closer itself) and *"add the tile rendering to the cockpit so the map shows growing
+tiles with information"*.
+**Status:** SPEC 2026-10-02. Build in this session.
+
+**Decisions (made, do not reopen):**
+- **Tile = 3 m square** (`world_grid.TILE_CM = 300`), indexed from the grid's logical origin:
+  `tx = floor((x - origin_x) / 300)`. A 30 m grid cell is exactly 10×10 tiles, so they align.
+  Grid cells stay a map/survey index only.
+- **A place = a set of tiles**, keyed by the normalized place name (`_place_key`), shared by every
+  owner. Maren's and Dufus's "Don's Donuts" rows become one tile set (union). `owned_place_cells`
+  and `place_cells` rows are not migrated or deleted — they keep the anchor and the name.
+- **New table `place_tiles`** `(place_key, tx, ty)` PK + `name, source, footing, first_by, first_at,
+  last_at, visits`. `source`: `seed` (laid down from the old box, never stood on) or `stood` (an APC
+  body stood on it — proof the floor is walkable). Cleared by `PlaceDB.reset()`.
+- **Lazy seed:** the first time a place resolves with no tiles, lay `seed` tiles covering its old
+  extent box around the anchor (900 cm → 3×3). No bulk migration.
+- **Growth is a body fact** (lizard-brain contract): each observed tick, for the place the APC is
+  bound to right now (active schedule block place, else its travel destination), the tile under its
+  feet is (a) promoted `seed → stood` and `visits += 1` when already in the place, or (b) **added**
+  as `stood` when it touches (8-neighbour) a tile of that place. Not while `stuck`. Cap 100 tiles
+  (one grid cell's worth) per place. The LLM never writes tiles.
+- **Footing** (perception's ground label, e.g. `building_interior`) is stamped onto every tile at
+  that spot when `_stamp_footing` runs, so the map can say "inside" vs "sidewalk".
+- **Arrival** = standing on one of the place's tiles (`route_planner.at_place` with
+  `endpoint["tiles"]`); old box check stays as the fallback when an endpoint has no tiles.
+- **Going inside:** no new action. Travel still targets the anchor. After arrival the LLM walks in
+  with ordinary moves; growth records it. One doctrine line in `doctrine/place_travel.md` says so.
+- **Talk / use range 3 m (option A):** `speak_to` and `inspect_object` with a resolvable target
+  farther than `_STANDOFF_CM` (300 cm) do not happen yet. The body walks to the standoff point and
+  the action is parked (`_close_ins`). A bridge-only pulse (like `_pulse_walk`, no model call) checks
+  each tick; within `_STANDOFF_CM + 50` it faces the target, then performs the action and does the
+  same bookkeeping as a direct line (spoke, utterance, interactions). Gives up after 6 ticks or if
+  the target vanishes, and reports the fact. Targets with no position (mannequins, "unknown person")
+  pass straight through — nothing to measure.
+- **Facing:** before every delivered `speak_to` / `inspect_object` with a known target position the
+  speaker turns to it (`bridge.set_facing`). The listener is **not** turned (it may be walking); it
+  turns when it answers, because its own `speak_to` faces the speaker.
+- **Hearing stays 12 m** (`_HEARING_CM`): overhearing is not talking.
+- **Cockpit /map:** `/api/map` returns `tiles: [{place, name, tx, ty, x, y, size, source, footing,
+  first_by, first_at, last_at, visits}]`; the page draws each tile as a 3 m square, colour by source
+  (stood = solid teal, seed = dashed outline), a "new" glow for tiles stood on in the last 60 s, and a
+  tooltip with all fields. Legend count `tiles <stood>/<all>`.
+
+**Touch points:** `world_grid.py` (TILE_CM, `tile_of`), `place_db.py` (table, CRUD, reset),
+`route_planner.at_place`, `agent_manager.py` (`_resolve_place_endpoint`, `_owned_place_endpoint`,
+tile growth in `_observe_agent`, `_stamp_footing`, close-in pulse + tick bucket, facing),
+`web_ui/main.py` `build_map`, `templates/map.html`, `worlds/MCP_World/doctrine/place_travel.md`.
+
+**Not in scope (parked):** survey treats interiors as off-limits (`doctrine/survey.md`) — Dufus is a
+townsperson now, so left alone. Route the travel target to the nearest *stood* tile instead of the
+anchor — only if the live run shows APCs stuck outside.
+**Needs a test (later):** a tile 2 away from the place is not added; a stuck tick adds nothing; two
+owners' same-name places share one tile set; `at_place` true on a grown tile 6 m from the anchor;
+`speak_to` at 8 m walks and parks, at 2.5 m speaks at once; a close-in gives up after 6 ticks.
+
 ### #112 — Run debugger: Manim replay videos + per-call API log
 
 **Source:** user, 2026-10-02: *"analyze sim runs as manim explainer videos... a visual debugger...
