@@ -145,6 +145,15 @@ saves its full prompt + answer (`logs\api_calls\prompts\SR<n>\`, newest 5 runs) 
   place only within `_SAME_PLACE_CM` (30 m); a far same-name place gets its own tile set keyed
   `<name>@<tx>,<ty>`. Tests: `test_wake_place.py`, `test_map_query.py` (both seen failing first).
 
+- **"Too far to talk" never reached the brain — FIXED 2026-10-02.** An accepted result's `note` was
+  never shown to the model (only failures and movement have feedback). Lab `too_far_fact`, Maren in
+  view at 10 m with a goal to tell her news: **18/20 `speak_to Maren` with no feedback** — under the
+  3 m rule that is a silent loop every tick. With the fact as a Sense line: 4/20; with the exact
+  wording the sim now renders: **1/20** (19/20 walk toward her; thoughts: "she is too far to talk to;
+  I need to walk closer"). Built: `_last_action_fact` (a non-movement action the body turned into
+  nothing, kept until the next action runs) → `observation["last_action_fact"]` → `Sense: your last
+  action (speak_to Maren) did nothing — …`. Test: `test_talk_reach.py` (real act phase).
+
 **Proposed build (not started):** code picks the prompt by the wake reason the lizard brain already
 knows — *talk* (someone spoke / came close: persona + rules, who is close, what was said, people known),
 *move* (schedule travel, stuck, blocked: places, path facts, movement doctrine), *plan* (wake, schedule

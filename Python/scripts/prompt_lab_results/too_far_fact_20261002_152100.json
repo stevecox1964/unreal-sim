@@ -1,0 +1,339 @@
+{
+ "experiment": "too_far_fact",
+ "doc": "H: an accepted-but-did-nothing result (\"Maren is 72 m away \u2014 too far to\ntalk to; nothing was said\") never reaches the brain today (only failures and\nmovement do), so Dufus repeats speak_to into the void. Shown as a Sense\nline, he does something else (walks toward her or carries on).",
+ "n": 20,
+ "variants": {
+  "Maren 10 m / no result fact (today)": {
+   "approx_tokens": 4830,
+   "summary": "speak_to -> Maren: 18, walk_to: 2",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Guess what? Don's Donuts has a new flavour! It is super sweet!",
+     "thought": "I see Maren right in front of me at the village square, and I really want to tell her about the new donut flavor!",
+     "ms": 2029.0139999997336
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Guess what? Don's Donuts has a new flavour today! Isn't that wonderful?",
+     "thought": "I am at the village square and Maren is right there in front of me, so I will go over and tell her about the new donut flavor just like I planned!",
+     "ms": 2201.699400000507
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Hey! Don's has a new flavour! It's super good! Have you tried it? What do you think?",
+     "thought": "I am at the village square and see Maren nearby; my routine is to tell her about the new donut flavor, so I will speak to her now.",
+     "ms": 2412.1654000045964
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Maren! The donut shop has a new flavour!",
+     "thought": "I am at the village square and I see Maren nearby, so I will go tell her about the new donut flavor as planned.",
+     "ms": 2178.7512000009883
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Guess what? Don's got a new flavour today!",
+     "thought": "I see Maren right here in the square, and I really want to tell her about the new donut flavor!",
+     "ms": 2048.5894000012195
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and I see Maren nearby; my routine is to find her and tell her about the new donut flavor, so I will walk over to speak with her.",
+     "ms": 1984.4427999923937
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! The donut shop has a new flavour! It is super yummy!",
+     "thought": "I see Maren right in front of me at the village square, and my routine is to tell her about the new donut flavor.",
+     "ms": 2124.732700001914
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Don's Donuts has a new flavour! It is super good!",
+     "thought": "I am at the village square and I see Maren nearby; my routine is to find her and tell her about the new donut flavor.",
+     "ms": 1995.2831999980845
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and see Maren nearby, so I will go over to tell her about the new donut flavor as planned.",
+     "ms": 1852.8424999967683
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Guess what? Don's Donuts has a new flavour!",
+     "thought": "I am at the village square and Maren is right there in front of me, so I will go over and tell her about the donut flavor as planned.",
+     "ms": 2485.157299990533
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! The donut shop has a new flavour! It is very good!",
+     "thought": "I am at the village square and I see Maren nearby; my routine is to find her and tell her about the new donut flavor, so I will speak to her now.",
+     "ms": 2164.0370999957668
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Hey! The donut shop has a new flavour! Isn't that exciting?",
+     "thought": "I am at the village square and see Maren nearby, so I will go talk to her about the new donut flavor as planned.",
+     "ms": 1926.6371999983676
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Hey! The donut shop has a new flavour! It is super good!",
+     "thought": "I see Maren right in front of me at the village square, and I really want to tell her about the new donut flavor!",
+     "ms": 1900.8542000083253
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Maren! The donut shop has a new flavour. It is very spicy.",
+     "thought": "I see Maren right in front of me, and I have a secret about the donut shop to share!",
+     "ms": 2188.3346999966307
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! The donut shop has a new flavour! Isn't that great?",
+     "thought": "I see Maren right in front of me, and my routine is to tell her about the new donut flavor, so I will speak to her now.",
+     "ms": 2264.0492000064114
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! Don's Donuts has a new flavour! Isn't that wonderful?",
+     "thought": "I am at the village square and see Maren nearby, which matches my routine to find her and tell her about the donut shop's new flavor.",
+     "ms": 2628.122900001472
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Hey! The donut shop has a new flavour! Isn't that great? What do you think?",
+     "thought": "I am at the village square and Maren is right there, so I will go talk to her about the donut shop like I planned!",
+     "ms": 2392.4799999949755
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! The donut shop has a new flavour! It is very good!",
+     "thought": "I see Maren right in front of me and I have a secret about the donut shop to tell her!",
+     "ms": 1944.3494000006467
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Guess what? Don's Donuts has a new flavour! It is super yummy!",
+     "thought": "I see Maren right in front of me and I have a secret about the donut shop to share, so I will stop being idle and talk to her!",
+     "ms": 2339.8013999976683
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Hey! The donut shop has a new flavour! It is super good!",
+     "thought": "I see Maren nearby and I have a story about donuts to tell her, so I will go over and speak to her.",
+     "ms": 2019.3215000035707
+    }
+   ]
+  },
+  "Maren 10 m / result fact shown": {
+   "approx_tokens": 4865,
+   "summary": "walk_to: 15, speak_to -> Maren: 4, walk_to -> north: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby and my goal is to tell her about the new donut flavor, but she is too far away to speak.",
+     "ms": 1843.7732000020333
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren and two other people at the village square, but she is too far away to talk to right now, so I need to get closer to her to tell her about the donut flavor.",
+     "ms": 1798.4674000035739
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and see Maren nearby; I need to get closer than 10 meters to talk to her about the donut flavor.",
+     "ms": 1780.3439999988768
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby and I need to tell her about the donut flavor, but she is too far away for a conversation right now.",
+     "ms": 1727.420199997141
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk to, so I need to walk closer to her to tell her about the donut shop.",
+     "ms": 1881.7712999880314
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hi Maren! The donut shop has a new flavour!",
+     "thought": "Maren is close by and I have a message for her about the donuts, so I will try to speak to her now that I am in the village square.",
+     "ms": 1973.542499996256
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk to, so I need to walk closer to her to tell her about the donut shop.",
+     "ms": 1968.276400002651
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is nearby but too far to speak; I need to get closer to her to tell her about the donut flavor.",
+     "ms": 1770.4025999992155
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Maren! The donut shop has a new flavour. It is very good.",
+     "thought": "Maren is close enough now to talk to, and I have a story about donuts to tell her.",
+     "ms": 2184.6781999920495
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk to, so I need to walk closer to her to deliver the news about the donut flavor.",
+     "ms": 1810.1414999982808
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "north",
+     "message": null,
+     "thought": "I see Maren and two other people at the village square; I want to tell her about the new donut flavor but she is too far away, so I will walk closer to her.",
+     "ms": 1806.7518999887398
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk to, so I need to walk closer to her to deliver my message about the donut shop.",
+     "ms": 1717.8167000092799
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk, so I will walk closer to her to tell her about the donut flavor.",
+     "ms": 1957.464399994933
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! Don's has a new flavour! It is very tasty!",
+     "thought": "Maren is close enough to talk now, so I will go tell her about the new donut flavor!",
+     "ms": 2236.2649999995483
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk to, so I need to walk over to her to deliver the news about the donut flavor.",
+     "ms": 1784.8411000013584
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Don's Donuts has a new flavour! It is very good!",
+     "thought": "Maren is right there in front of me, so I can finally tell her about the donut flavor!",
+     "ms": 2060.952800005907
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is nearby but too far to talk, so I will walk towards her to get close enough for a chat.",
+     "ms": 1596.4535999955842
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk to right now, so I need to walk closer to her to deliver my news about the donut shop.",
+     "ms": 1815.8743000094546
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk to, so I need to walk closer to her to tell her about the donut flavor.",
+     "ms": 1763.2403000025079
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk, so I need to walk closer to her to deliver my news about the donut shop.",
+     "ms": 2025.3890000021784
+    }
+   ]
+  }
+ }
+}

@@ -329,10 +329,52 @@ def exp_context_stress():
     return out
 
 
+def exp_too_far_fact():
+    """H: an accepted-but-did-nothing result ("Maren is 72 m away — too far to
+    talk to; nothing was said") never reaches the brain today (only failures and
+    movement do), so Dufus repeats speak_to into the void. Shown as a Sense
+    line, he does something else (walks toward her or carries on)."""
+    scene = _scene_village_square(
+        _FIGURES, "A quiet square with a bank and a flag; two people stand to the left.")
+    scene["schedule"] = {"status": "act", "place": "village square",
+                         "intent": "find Maren and tell her the donut shop has a new flavour",
+                         "block": {"start": "10:00", "end": "12:00", "place": "village square",
+                                   "activity": "tell Maren the donut news"}}
+    memories = _MEMORIES + [{"importance": 0.7, "timestamp": "2026-10-02T19:04:00",
+                             "text": "I want to tell Maren the donut shop has a new flavour."}]
+    system, user = build_prompt("dufus", scene, memories)
+    line = ('Sense: your last action (speak_to Maren) did nothing — Maren is 72 m away, too far '
+            'to talk to (you talk from within 3 m); nothing was said.\n')
+    marker = "## Your Current State\n"
+    told = user.replace(marker, marker + line, 1)
+    assert told != user
+    out = {"absent / no result fact (today)": (system, user),
+           "absent / result fact shown": (system, told)}
+    # The realistic case: Maren in view and in the nearby list at 10 m —
+    # close enough to see, too far to talk.
+    seen10 = copy.deepcopy(scene)
+    seen10["seen"]["characters"] = [{"label": "Maren", "bearing": "center", "distance": "mid",
+                                     "distance_cm": 1000.0, "confidence": 1.0,
+                                     "source": "engine"}] + _FIGURES
+    seen10["nearby_characters"] = [{"name": "Maren", "distance_cm": 1000.0}]
+    s10, u10 = build_prompt("dufus", seen10, memories)
+    out["Maren 10 m / no result fact (today)"] = (s10, u10)
+    out["Maren 10 m / result fact shown"] = (s10, u10.replace(
+        marker, marker + line.replace("72 m", "10 m"), 1))
+    # The wording the sim really renders (observation["last_action_fact"]).
+    real = copy.deepcopy(seen10)
+    real["last_action_fact"] = {
+        "action": "speak_to", "target": "Maren",
+        "note": "Maren is 10 m away — too far to talk to (you do that from within 3 m); "
+                "nothing was said"}
+    out["Maren 10 m / real sim wording"] = build_prompt("dufus", real, memories)
+    return out
+
+
 EXPERIMENTS = {"phantom_maren": exp_phantom_maren, "survey_trim": exp_survey_trim,
                "close_maren": exp_close_maren, "talk_split": exp_talk_split,
                "roster_removal": exp_roster_removal, "no_coordinates": exp_no_coordinates,
-               "context_stress": exp_context_stress}
+               "context_stress": exp_context_stress, "too_far_fact": exp_too_far_fact}
 
 
 # ── Sampling ──────────────────────────────────────────────────────────────────

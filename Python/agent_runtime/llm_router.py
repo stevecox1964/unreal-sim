@@ -955,6 +955,12 @@ def _sense_note(observation: dict) -> str:
         plan = last_move.get("plan")
         if isinstance(plan, dict) and plan.get("why"):
             lines.append(f"Sense: {plan['why']}.")
+    # A non-movement action the body turned into nothing (#113), e.g. a
+    # speak_to from too far away. Fact only: what was asked and why nothing happened.
+    fact = observation.get("last_action_fact")
+    if isinstance(fact, dict) and fact.get("note"):
+        what = " ".join(str(x) for x in (fact.get("action"), fact.get("target")) if x)
+        lines.append(f"Sense: your last action ({what}) did nothing — {fact['note']}.")
     tried = _tried_here_text(last_move)
     if tried:
         lines.append(tried)

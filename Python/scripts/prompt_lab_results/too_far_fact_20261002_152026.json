@@ -1,0 +1,339 @@
+{
+ "experiment": "too_far_fact",
+ "doc": "H: an accepted-but-did-nothing result (\"Maren is 72 m away \u2014 too far to\ntalk to; nothing was said\") never reaches the brain today (only failures and\nmovement do), so Dufus repeats speak_to into the void. Shown as a Sense\nline, he does something else (walks toward her or carries on).",
+ "n": 20,
+ "variants": {
+  "no result fact (today)": {
+   "approx_tokens": 4821,
+   "summary": "speak_to -> unknown person: 16, wander: 1, walk_to -> north: 1, observe: 1, idle: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't it a fine morning for a walk?",
+     "thought": "I am at the village square and see two people nearby who I haven't met yet, so I will greet them to start my day of talking.",
+     "ms": 2254.0587999974377
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today?",
+     "thought": "I see two people to my left at the village square and I want to chat with them!",
+     "ms": 1796.170000001439
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Good morning! Isn't it a lovely day for a walk? I'm Dufus!",
+     "thought": "I am at the village square as scheduled, and I see two people nearby who I should greet to keep my promise of talking to everyone.",
+     "ms": 2449.346900000819
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hey! The donut shop has a new flavour!",
+     "thought": "I see two people at the bank and I want to tell them about the new donut flavor!",
+     "ms": 2068.1309000065085
+    },
+    {
+     "ok": true,
+     "type": "wander",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and see two people, but I need to find Maren to tell her about the donut flavor.",
+     "ms": 1583.2554999942658
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? The donut shop has a new flavour!",
+     "thought": "I am at the village square as scheduled, and I see two people nearby who might be Maren or just villagers; I should greet them to start my day of talking.",
+     "ms": 2058.3174000057625
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? Did you see the new donut flavour?",
+     "thought": "I am at the village square and see two people nearby who I haven't met yet; since my routine is to talk to whoever passes, I will greet them.",
+     "ms": 2395.4093999927863
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "north",
+     "message": null,
+     "thought": "I see two people at the village square who I haven't met yet, so I will walk over to them and say hello!",
+     "ms": 1679.8130000097444
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hiya! Don's got a new flavour today!",
+     "thought": "I am at the village square and see two people; I want to tell Maren about the donut shop, so I will greet them to start a conversation.",
+     "ms": 1815.2357000071788
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? Don't you just love this fine weather for walking around?",
+     "thought": "I am at the village square as scheduled and see two people nearby who might be Maren or just passersby; I should greet them to start a conversation.",
+     "ms": 2192.2141000104602
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square and see two people nearby who I haven't spoken to yet; I should greet them to follow my goal of talking to everyone.",
+     "ms": 1979.2799999995623
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square as scheduled, and I see two people nearby who might be Maren or just folks to chat with; since my routine is to loiter and talk, I will observe them to see if they are someone I know or someone I can greet.",
+     "ms": 2073.2554999995045
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Good morning! Have you seen a vegetable truck lately? Maren is waiting for me!",
+     "thought": "I am at the village square as scheduled and see two people nearby; I will greet them to fulfill my goal of talking to everyone.",
+     "ms": 1975.9357000002638
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square and see two people to my left who I haven't met yet; my goal is to talk to everyone, so I should greet them immediately.",
+     "ms": 2221.626499987906
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Did you know the donut shop has a new flavour? It is very exciting!",
+     "thought": "I am at the village square and I see two people nearby who I haven't met yet, so I will go talk to them because I like talking to people.",
+     "ms": 2005.13890000002
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi! I'm Dufus! Don's Donuts has a new flavour today! It's super sweet!",
+     "thought": "I am at the village square and see two people nearby who I haven't met yet; I will go over to say hello and tell them about the donut shop!",
+     "ms": 2156.5391999902204
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square as scheduled and see two people nearby, so I will greet them to keep my promise to talk to everyone.",
+     "ms": 1799.3297000066377
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square as scheduled, but Maren is not here yet; I see two unknown people nearby who might want to chat!",
+     "ms": 1491.2142000102904
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi! Don's Donuts has a new flavour! Have you tried it? It is very sweet!",
+     "thought": "I see two people to my left and I want to tell them about the new donut flavor, so I will speak to them.",
+     "ms": 2099.80720000749
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! How are you doing today? I just walked by and saw you standing here. It's a lovely day for a chat, isn't it?",
+     "thought": "I see two people at the village square and my goal is to talk to whoever passes, so I will greet them immediately!",
+     "ms": 2680.8937000023434
+    }
+   ]
+  },
+  "result fact shown": {
+   "approx_tokens": 4856,
+   "summary": "speak_to -> unknown person: 10, observe: 4, walk_to -> northwest: 2, idle: 1, walk_to -> left: 1, walk_to: 1, walk_to -> north: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't it a beautiful day for a walk?",
+     "thought": "I am at the village square and see two people nearby, so I should greet them to fulfill my goal of talking to everyone.",
+     "ms": 2181.2624000012875
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square as scheduled and see two people nearby who might be interesting to talk to, so I will idle and observe them.",
+     "ms": 1506.7506000050344
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! How are you doing today? The sun is shining!",
+     "thought": "I am at the village square as scheduled and see two people nearby who I should greet to fulfill my goal of talking to everyone.",
+     "ms": 1843.3841000078246
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! Did you know the donut shop has a new flavour? It is very exciting!",
+     "thought": "I am at the village square and see two people nearby; I will speak to them to fulfill my goal of talking to everyone.",
+     "ms": 1855.660800007172
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Beautiful day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square as scheduled, and I see two people nearby who I should greet and chat with since my goal is to talk to everyone.",
+     "ms": 1976.6386999981478
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "northwest",
+     "message": null,
+     "thought": "I see two people at the bank who look like they might want to chat, so I will go say hello to them!",
+     "ms": 1817.551200001617
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square as scheduled, but Maren is too far away to talk to right now. I see two people nearby who might be interesting to chat with!",
+     "ms": 1528.2923000049777
+    },
+    {
+     "ok": true,
+     "type": "idle",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square where I am supposed to be, and there are people nearby who might want to chat about the donuts!",
+     "ms": 1589.5406000054209
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "northwest",
+     "message": null,
+     "thought": "I see two people to my left in the square; I will walk over there to say hello and chat!",
+     "ms": 1574.0215000114404
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "left",
+     "message": null,
+     "thought": "I see two people to my left who might be Maren or just villagers; I should go talk to them since my goal is to loiter and chat.",
+     "ms": 2006.5127999987453
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Isn't this a lovely day for a chat?",
+     "thought": "I am at the village square as scheduled, and I see two people nearby who I can greet.",
+     "ms": 1685.3015999950003
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and see two people nearby, so I will go over to talk to them since my goal is to loiter and chat.",
+     "ms": 1727.9583000054117
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! How are you doing today? I just came from the donut shop, they have a new flavour!",
+     "thought": "I am at the village square and see two people nearby; I will speak to them since my goal is to talk to whoever passes.",
+     "ms": 2105.6554000097094
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Nice day for a walk, isn't it? I'm Dufus!",
+     "thought": "I am at the village square as scheduled, and I see two people nearby who I can greet to fulfill my goal of talking to everyone.",
+     "ms": 2156.6813999961596
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": "north",
+     "message": null,
+     "thought": "I see two people near the bank, so I will go say hello and tell them about the donut flavor!",
+     "ms": 1830.4932000028202
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hi there! The donut shop has a new flavour! Do you like it?",
+     "thought": "I am at the village square and see two people nearby, so I will greet them to keep my promise of talking to everyone.",
+     "ms": 2470.8588999928907
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello! Nice day for a walk, isn't it?",
+     "thought": "I am at the village square and see two people nearby, so I will greet them to fulfill my goal of talking to everyone.",
+     "ms": 1878.9274000009755
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and see two people nearby who I can talk to, so I will idle and observe them.",
+     "ms": 1624.9012999905972
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "unknown person",
+     "message": "Hello there! Did you know the donut shop has a new flavour? It is very sweet!",
+     "thought": "I see two people near the bank who might be villagers, and my goal is to talk to whoever passes by while I loiter here.",
+     "ms": 2050.656399995205
+    },
+    {
+     "ok": true,
+     "type": "observe",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and see two people, but I do not know their names yet so I cannot speak to them specifically; I will observe to see if they approach or if Maren appears nearby.",
+     "ms": 1908.1176000036066
+    }
+   ]
+  }
+ }
+}

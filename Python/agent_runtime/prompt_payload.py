@@ -37,7 +37,7 @@ logger = logging.getLogger("AgentRuntime")
 ALLOWED_FIELDS: dict[str, tuple[str, ...]] = {
     # Where the body is and what it is doing.
     "self": ("location", "rotation", "current_action", "ai_state", "footing",
-             "world_time", "moved_cm", "last_move"),
+             "world_time", "moved_cm", "last_move", "last_action_fact"),
     # Where that is in the world's own terms.
     "place": ("grid", "place_context", "directions", "frontier", "breadcrumbs",
               "travel", "route"),

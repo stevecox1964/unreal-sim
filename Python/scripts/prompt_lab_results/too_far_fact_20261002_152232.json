@@ -1,0 +1,173 @@
+{
+ "experiment": "too_far_fact",
+ "doc": "H: an accepted-but-did-nothing result (\"Maren is 72 m away \u2014 too far to\ntalk to; nothing was said\") never reaches the brain today (only failures and\nmovement do), so Dufus repeats speak_to into the void. Shown as a Sense\nline, he does something else (walks toward her or carries on).",
+ "n": 20,
+ "variants": {
+  "Maren 10 m / real sim wording": {
+   "approx_tokens": 4866,
+   "summary": "walk_to: 19, speak_to -> Maren: 1",
+   "samples": [
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby and I need to tell her about the new donut flavor, but she is too far away to speak to yet.",
+     "ms": 2295.4663000127766
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is standing right there in the square, and I have a juicy donut rumor to share, so I will walk over to her to chat.",
+     "ms": 1966.9880000001285
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk to; I need to walk closer to her to deliver my news about the donut shop.",
+     "ms": 1818.5768999974243
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren is nearby but too far to talk, so I need to walk closer to her.",
+     "ms": 2589.0056999924127
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is about 10 meters away, which is too far to speak to directly; I need to get closer to her to deliver the news about the donut shop.",
+     "ms": 2147.500700011733
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby and I really want to tell her about the donut flavor, so I will walk closer to her to start a chat.",
+     "ms": 1641.3749999919673
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby and remember I need to tell her about the donut flavor, so I will walk over to her to start a conversation.",
+     "ms": 1886.3315999915358
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is standing right there in the square, and I have a donut secret to share!",
+     "ms": 1747.4092000047676
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby but she is too far to talk, so I will walk closer to her to deliver the news about the donut shop.",
+     "ms": 2203.6129999905825
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is nearby but too far to speak; I need to close the distance to deliver my message about the donut flavor.",
+     "ms": 2256.870199998957
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is nearby but too far to talk; I will walk towards her to get within speaking distance.",
+     "ms": 1629.2037000093842
+    },
+    {
+     "ok": true,
+     "type": "speak_to",
+     "target": "Maren",
+     "message": "Hey Maren! The donut shop has a new flavour! Isn't that exciting? What is it?",
+     "thought": "I see Maren is close enough to talk to now, and I have a story about the donut shop to tell her!",
+     "ms": 1918.3884999947622
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I am at the village square and Maren is nearby, but she is too far away to talk to yet. I need to get closer to her to deliver my message about the donut flavor.",
+     "ms": 1841.6254999901867
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is nearby but too far to talk, so I will walk towards her to get within speaking distance.",
+     "ms": 1838.730299990857
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is nearby but too far to speak with; I need to get closer to her to tell her about the donut flavor.",
+     "ms": 1787.5513000035426
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren is only 10 meters away, which is too far to talk; I need to get closer to her to share the news about the donut shop.",
+     "ms": 1896.6024999972433
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "I see Maren nearby and I need to tell her about the new donut flavor, so I will walk towards her.",
+     "ms": 1574.6913999901153
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is nearby but too far to talk to, so I will walk towards her to get within speaking distance.",
+     "ms": 1569.0940999920713
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is 10 meters away, which is too far to speak; I need to walk closer to her to tell her about the donut shop.",
+     "ms": 1658.1968999962555
+    },
+    {
+     "ok": true,
+     "type": "walk_to",
+     "target": null,
+     "message": null,
+     "thought": "Maren is close enough now to talk, so I will approach her to tell her about the donut flavor.",
+     "ms": 1731.1695999960648
+    }
+   ]
+  }
+ }
+}

@@ -537,6 +537,7 @@ class AgentManager:
         self._last_order: dict[str, dict] = {}      # agent_id -> last movement ordered, for the achieved-vs-ordered check (#59)
         self._walk_plans: dict[str, dict] = {}      # agent_id -> grown step being walked hop by hop (#86)
         self._close_ids: dict[str, frozenset] = {}  # agent_id -> APC ids within reach last tick (#113)
+        self._last_action_fact: dict[str, dict] = {}  # agent_id -> a non-move action that did nothing, and why (#113)
         self._tried_here: dict[str, dict] = {}      # agent_id -> {at, tried: {heading: moved_cm}} while wedged on one spot (#60)
         self._stall_run: dict[str, int] = {}        # agent_id -> consecutive stalled orders (#65)
         self._walls: dict[str, list[dict]] = {}     # agent_id -> volumes the body has proved impassable (#91)
@@ -1761,6 +1762,8 @@ class AgentManager:
             agent_id, observation.get("location"), observation.get("rotation")
         )
         observation["last_move"] = self._last_move_fact(agent_id, observation.get("location"))
+        if agent_id in self._last_action_fact:
+            observation["last_action_fact"] = self._last_action_fact[agent_id]
         observation["wedge"] = self._wedge_fact(
             agent_id, observation.get("last_move"), observation.get("directions"))
         observation["frontier"] = self._frontier_fact(grid)
@@ -3124,6 +3127,19 @@ class AgentManager:
             agent.mark_spoke(self._agents_dir)
             self._record_interactions(agent_id, observation)
             self._record_utterance(agent, action, observation)
+
+        # #113: a non-movement action the body turned into nothing ("Maren is
+        # 10 m away — too far to talk to") is a fact the brain must hear next
+        # decision, or it repeats the same silent speak_to every tick (prompt
+        # lab too_far_fact: 18/20 retries without the fact, 4/20 with it).
+        # Movement has its own feedback (last_move); failures their own (errors).
+        self._last_action_fact.pop(agent_id, None)
+        if (isinstance(result, dict) and result.get("note") and result.get("action") == "idle"
+                and action.get("type") not in _MOVEMENT_ACTIONS
+                and action.get("type") not in ("idle", "observe")):
+            self._last_action_fact[agent_id] = {
+                "action": action.get("type"), "target": action.get("target"),
+                "note": str(result["note"])}
 
         self._ground_survey_narration(agent, decision, action, result, observation)
 

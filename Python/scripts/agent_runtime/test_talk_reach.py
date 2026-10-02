@@ -176,6 +176,61 @@ def test_came_close_event():
                                       fromlist=["_REACH_CM"])._REACH_CM, 350.0))
 
 
+def test_too_far_fact_reaches_the_next_decision():
+    """A speak_to the body turned into nothing must be told to the brain next
+    decision (prompt lab too_far_fact: 18/20 silent retries without the fact,
+    4/20 with it). Drives the real act phase with the cell-sweep test stubs."""
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import test_cell_sweep as cs
+
+    class Bridge(cs._StubBridge):
+        def get_character_transform(self, actor_name):
+            if actor_name == "BP_maren":
+                return {"location": {"x": 1000.0, "y": 0.0, "z": 90.0}}
+            return {"location": None}
+
+    class Apc(cs._StubAgent):
+        def __init__(self, agent_id, name):
+            super().__init__(agent_id)
+            self.display_name = name
+            self.allowed_actions = ["idle", "walk_to", "speak_to"]
+
+        def can_speak(self):
+            return True
+
+        def mark_spoke(self, agents_dir):
+            pass
+
+    with tempfile.TemporaryDirectory() as tmp:
+        mgr = cs._manager(tmp)
+        mgr.bridge = Bridge({"x": 0.0, "y": 0.0, "z": 90.0})
+        dufus, maren = Apc("dufus", "Dufus"), Apc("maren", "Maren")
+        mgr.agents = {"dufus": dufus, "maren": maren}
+        speak = {"agent_id": "dufus", "thought_summary": "tell Maren the news",
+                 "action": {"type": "speak_to", "target": "Maren", "message": "News!"},
+                 "importance": 0.5}
+        mgr._act_agent(dufus, speak, cs._obs(0.0, 0.0, schedule={"status": "idle"}))
+        fact = mgr._last_action_fact.get("dufus")
+        check("the silent speak_to is kept as a fact for the next decision",
+              fact and fact["action"] == "speak_to" and fact["target"] == "Maren"
+              and "10 m away" in fact["note"])
+        line = llm_router._sense_note({"last_action_fact": fact})
+        check("the next prompt says what was asked and why nothing happened",
+              "Sense: your last action (speak_to Maren) did nothing — Maren is 10 m away" in line)
+        check("nothing was sent to the engine as speech",
+              not any(a.get("type") == "speak_to" for a in mgr.bridge.actions))
+
+        mgr._act_agent(dufus, cs._idle_decision("dufus"), cs._obs(0.0, 0.0, schedule={"status": "idle"}))
+        check("the fact is cleared once the next action runs",
+              "dufus" not in mgr._last_action_fact)
+
+        mgr.bridge.get_character_transform = lambda name: {
+            "location": {"x": 250.0, "y": 0.0, "z": 90.0}} if name == "BP_maren" else {}
+        mgr._act_agent(dufus, speak, cs._obs(0.0, 0.0, schedule={"status": "idle"}))
+        check("a speak_to that happened leaves no 'did nothing' fact",
+              "dufus" not in mgr._last_action_fact)
+
+
 def main():
     test_in_reach_faces_then_speaks()
     test_facing_points_at_the_target()
@@ -186,6 +241,7 @@ def main():
     test_nearby_line_marks_close_enough_to_talk()
     test_speak_to_schema_forbids_going_looking()
     test_came_close_event()
+    test_too_far_fact_reaches_the_next_decision()
     print("\nAll talk-reach checks passed.")
 
 
