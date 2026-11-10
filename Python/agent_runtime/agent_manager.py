@@ -305,6 +305,8 @@ _PLACE_ROAM_MARGIN_CM = 100.0
 _PLACE_MAX_TILES = 100
 # #115: where to look for floor when a step's exact target has none.
 _NEAR_SPOT_RINGS_CM = (100.0, 200.0, 300.0)
+# #115: the longest directional step while acting at a place — one tile.
+_PLACE_STEP_CM = 300.0
 # Same-name rows within this distance are one place (one tile set); farther
 # apart they are two places that happen to share a name (#113, "home").
 _SAME_PLACE_CM = 3000.0
@@ -3154,10 +3156,12 @@ class AgentManager:
         # Movement has its own feedback (last_move); failures their own (errors).
         self._last_action_fact.pop(agent_id, None)
         if (isinstance(result, dict) and result.get("note") and result.get("action") == "idle"
-                and action.get("type") not in _MOVEMENT_ACTIONS
+                and (action.get("type") not in _MOVEMENT_ACTIONS
+                     or result.get("fact_for_brain"))
                 and action.get("type") not in ("idle", "observe")):
             self._last_action_fact[agent_id] = {
-                "action": action.get("type"), "target": action.get("target"),
+                "action": action.get("type"),
+                "target": action.get("target") or action.get("target_location"),
                 "note": str(result["note"])}
 
         self._ground_survey_narration(agent, decision, action, result, observation)
@@ -3277,7 +3281,35 @@ class AgentManager:
             return action
 
         xyz = _loc_xyz(observation.get("location"))
-        desired = self._direction_target(observation, action.get("direction") or "forward")
+        # #115 / SR71_P: this path used to aim a fixed 15 m along the heading
+        # and let only the place's tiles shorten it — no body probe at all. The
+        # radar read a wall 2.6 m to the northeast and the body still ordered
+        # 9 m northeast; the engine's pathfinder obliged by routing Dufus round
+        # the wall, through the next door, into the bank. At a place the step is
+        # what the body measures (#90), and never longer than one tile.
+        direction = action.get("direction") or "forward"
+        plan = self._plan_move(agent, observation, direction, action)
+        reach_cm = plan.get("reach_cm")
+        if reach_cm is None:
+            if plan["distance_cm"] <= 0.0:
+                return action   # the ordinary step path reports "no room" as a fact
+            step_cm = min(plan["distance_cm"], _PLACE_STEP_CM)
+        else:
+            # Indoors the 3 m outdoor standoff would keep the body off every
+            # counter and out of every aisle; keep only body clearance. Ground
+            # somebody refused, or that is not ground, still caps the step.
+            step_cm = min(float(reach_cm) - dead_end.BODY_CLEAR_CM, _PLACE_STEP_CM)
+            if plan.get("capped_by") in ("refused ground", "unwalkable ground"):
+                step_cm = min(step_cm, plan["distance_cm"])
+            if step_cm < dead_end.BODY_CLEAR_CM:
+                logger.info("[%s] place step %s: no room — body measured %.1f m free",
+                            agent.agent_id, direction, float(reach_cm) / 100.0)
+                return {"type": "idle"}
+        logger.info("[%s] place step %s: %.1f m (body measured %s; tile cap %.0f m)",
+                    agent.agent_id, direction, step_cm / 100.0,
+                    f"{plan['reach_cm'] / 100.0:.1f} m free" if plan.get("reach_cm") is not None
+                    else "nothing", _PLACE_STEP_CM / 100.0)
+        desired = self._direction_target(observation, direction, step_cm)
         end = self._resolve_place_endpoint(agent.agent_id, sched["place"])
         if xyz is None or desired is None or end is None:
             return {"type": "idle"}
@@ -5669,6 +5701,24 @@ class AgentManager:
         if end is None:
             self._routes.pop(agent_id, None)
             return self.bridge.execute_action(agent.bound_unreal_actor_name, action)
+
+        # #115 / SR71_P: once the schedule says "act" the APC has already been
+        # to the one recorded point of its place. Half of Dufus's orders were
+        # then walk_to "Don's Donuts entrance" / "… interior" — names nobody
+        # recorded, which resolve to that same road point: 0 cm, or a walk BACK
+        # to the road (he swung road <-> shop front all run). The body does not
+        # go back; it says what it knows.
+        sched = observation.get("schedule") or {}
+        if sched.get("status") == "act" and sched.get("place"):
+            bound = self._resolve_place_endpoint(agent_id, str(sched["place"]))
+            if bound is not None and bound.get("xy") == end.get("xy"):
+                self._routes.pop(agent_id, None)
+                return {"status": "accepted", "action": "idle", "fact_for_brain": True,
+                        "note": (f"the only recorded point of {bound['name']} is the spot "
+                                 f"where it was first noted, and you have already been "
+                                 f"there; '{name}' leads nowhere new. No door, counter or "
+                                 f"room of it is recorded. Only a direction step moves you "
+                                 f"toward something you see")}
 
         xyz = _loc_xyz(observation.get("location"))
         if xyz is None:

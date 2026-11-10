@@ -253,6 +253,28 @@ a building. The wrong one: the bank next door.** Footing read `building_interior
 - **Risk seen:** tile growth is name-blind — standing in the bank while bound to Don's can add bank
   floor to "Don's Donuts" (growth is 8-neighbour along the street). Limit growth before long runs.
 
+**SR72_P (2026-11-10, 5.8 min, Play) — no bank, no 15 m steps, no swing back to the road. Still
+outside: he does not aim at the door.**
+- **Root cause of the 15 m steps (user: "we should have had code for this"):** we did — the step
+  planner (#86/#90: the body's own sweep IS the step) and the radar (#92). But
+  `_bound_at_place_movement` took every direction step made while "acting at a place" and aimed it
+  a fixed 15 m, shortened only by tiles, **with no body probe at all**. SR71_P: the radar read a wall
+  2.6 m northeast; the body still ordered 9 m northeast; the engine pathfinder routed him round the
+  wall, through the next door, into the bank.
+- **Built:** (1) at a place the step = what the body measures (`_plan_move` sweep) minus body
+  clearance, never over `_PLACE_STEP_CM` (3 m, one tile); (2) `walk_to` an invented name
+  ("Don's Donuts entrance") while already acting at the place no longer walks back to the road
+  point — nothing happens and the brain gets the fact (`fact_for_brain`). No tests (user rule).
+- **Live:** every place step logged `3.0 m (body measured N m free)`. He stayed at the shop front
+  `(-3700, -1600)` on pavement. He stepped south, northwest, northeast, south — **never toward the
+  door** (about 2 m west of him, then north). 20 `STALLED` lines are mostly the invented names (now
+  harmless: 0 cm and a fact, not a walk back).
+- **Next gap — eyes to feet:** the picture shows the door "left of centre"; the model answers with
+  compass words that do not point at it. The body knows more than it says: the radar/sweep can
+  find which heading has floor that leads INSIDE (path test + footing). Candidate fact per heading:
+  "north-west: open 4.5 m, leads through an opening". Or let `walk_to` take a thing the eyes
+  listed ("the door, left") and turn its bearing into a heading in code.
+
 **The model (proposed, replaces nothing in #113):**
 - **Grid cell (30 m)** = a drawer in the map index. Never used to move.
 - **Place** = a named spot where APCs work and meet. Outline = 3 m tiles. Floor = 1 m tiles (A below).
