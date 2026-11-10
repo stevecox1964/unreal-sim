@@ -16,7 +16,7 @@
       "start": "08:00",
       "end": "09:00",
       "place": "Don's Donuts",
-      "objective": "Walk to Don's Donuts, get coffee and a donut, and talk to anyone there",
+      "objective": "Walk to Don's Donuts, order a coffee and a donut at the counter inside, and talk to anyone there",
       "completion": {
         "type": "time_or_llm_confirmed"
       }

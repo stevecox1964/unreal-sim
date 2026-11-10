@@ -144,6 +144,35 @@ def test_settled_agent_has_no_fourth_tick_model_heartbeat():
         check("cheap sampling still marks every tick", agent.marked == len(observations))
 
 
+def _agenda(completion_type):
+    return {"schema_version": 1, "tasks": [{
+        "id": "at_truck", "start": "08:00", "end": "12:00",
+        "place": "vegetable truck", "objective": "sell vegetables",
+        "completion": {"type": completion_type}}]}
+
+
+def test_arrival_does_not_sleep_a_task_only_the_model_can_finish():
+    """#116 / SR68_P: Dufus arrived at Don's and slept the whole block.
+
+    At the place with a ``time_or_llm_confirmed`` task there is work left, so
+    the stationary heartbeat must still reach the model. A ``time_block_ends``
+    task at the same spot has nothing to finish and stays asleep.
+    """
+    n = _STATIONARY_REDECIDE_TICKS * 2
+    with tempfile.TemporaryDirectory() as tmp:
+        mgr, agent, _ = _manager(tmp)
+        agent.authored_agenda = _agenda("time_block_ends")
+        check("time_block_ends task at its place sleeps every tick",
+              all(mgr._observe_agent(agent) is None for _ in range(n)))
+    with tempfile.TemporaryDirectory() as tmp:
+        mgr, agent, _ = _manager(tmp)
+        agent.authored_agenda = _agenda("time_or_llm_confirmed")
+        woke = [mgr._observe_agent(agent) is not None for _ in range(n)]
+        check("unfinished model-confirmed task wakes on the stationary heartbeat",
+              sum(woke) == 2)
+        check("...and not on every tick", woke[0] is False)
+
+
 def test_ungrounded_agent_keeps_anti_freeze_heartbeat():
     with tempfile.TemporaryDirectory() as tmp:
         mgr, agent, _ = _manager(tmp, blocks=[])
@@ -274,6 +303,7 @@ async def test_activity_label_says_sampling_for_cheap_tick():
 
 def main():
     test_settled_agent_has_no_fourth_tick_model_heartbeat()
+    test_arrival_does_not_sleep_a_task_only_the_model_can_finish()
     test_ungrounded_agent_keeps_anti_freeze_heartbeat()
     test_schedule_transition_and_displacement_resume_cognition()
     test_movement_and_nearby_arrival_resume_cognition()

@@ -95,6 +95,152 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #116 — Goals have subgoals: get there → go in → order → sit and talk → leave
+
+**Source:** user, 2026-11-10: *"'Go to Dons and get a coffee' is an overall goal, but first we need
+to get to Dons, then we order a coffee, then maybe we do something else... goals need to have
+subgoals."* And the test: *"both Maren and Dufus can meet up at Dons for a coffee and talk about
+things. Then they disperse to the rest of their day."*
+**Status:** PROPOSED 2026-11-10, not built. Order: after Dufus gets inside Don's (#115).
+**Builds on:** #36 (agenda tasks + deterministic executive, built), #113 (tiles, 3.5 m reach),
+#115 (place mode, floor tiles), #111 (plan a meetup), #68 (work that leaves a mark).
+
+**The gap today:** an agenda task is one line of text plus one completion rule. "Walk to Don's, order
+at the counter inside, talk to anyone there" is three jobs in one sentence. The executive knows only
+"arrived at the place" or "the hour ended". Nothing records that the order happened, so nothing
+tells the model what is done and what is next inside the task.
+
+**Proposed shape (extends the #36 schema; a task with no `steps` runs as today):**
+```json
+{ "id": "lunch_at_dons", "start": "12:00", "end": "13:00", "place": "Don's Donuts",
+  "objective": "Have lunch at Don's with whoever is there",
+  "steps": [
+    {"id": "get_there", "do": "Walk to Don's Donuts",          "done": {"type": "arrive_at_place"}},
+    {"id": "go_in",     "do": "Go in through the door",        "done": {"type": "footing", "is": "building_interior"}},
+    {"id": "order",     "do": "Order at the counter",          "done": {"type": "used", "target": "counter"}},
+    {"id": "talk",      "do": "Sit and talk with who is here", "done": {"type": "time_or_llm_confirmed"}}
+  ] }
+```
+- **One step is active.** The prompt's "Right now" names the step; "Today so far" lists steps done;
+  "Next" names the next step. Same three sections #36 already renders.
+- **Code closes a step from a body fact where one exists** (lizard-brain contract; #36 rule "never
+  infer completion from model narration"): `arrive_at_place` (on a place tile), `footing` (the
+  ground label under the body), `used` (an `inspect_object` / `speak_to` that the body really did
+  within reach of the named thing), `heard_reply` (a `heard:` line from another APC). Only steps
+  with no possible fact use `time_or_llm_confirmed`.
+- **The task's end time still wins.** At 13:00 the task ends whatever step is active; the unfinished
+  steps go in the ledger as not done. That is the "disperse" half of the test.
+- **Steps pick the movement mode (#115):** `get_there` = travel mode; every later step = place mode.
+- **Later, not now:** the model writes its own steps for an unauthored goal (the #111 meetup plan).
+  First slice is authored steps only.
+
+**Open decisions (user):** (1) authored steps in `agenda.json` (proposed) vs the model breaks every
+objective into steps at wake; (2) what counts as "ordered" with no clerk APC — reach the counter
+and `inspect_object` it (proposed), or speak to a mannequin clerk (#109).
+
+**Acceptance test — "coffee at Don's" (live, the user's wording):** both agendas already hold
+`lunch_at_dons` 12:00–13:00. Pass = in one run: both APCs stand on `building_interior` tiles of
+Don's; each closes `order`; ≥ 2 `heard:` lines each way while both are inside; after 13:00 Dufus is
+on a tile of the sheriff station square and Maren on a tile of the vegetable truck; zero `stuck`
+events inside the place. A run from 08:00 needs ≥ 32 real minutes (10 sim-min per real minute).
+**Offline tests:** step advance on each fact type; no double close; end time closes the task with
+steps open; a task without `steps` behaves exactly as today (mutation-check each).
+
+### #115 — Go inside shops without getting stuck: 1 m floor tiles inside a place
+
+**Source:** user, 2026-11-10: *"get the code to handle going into places / buildings which are off
+grid. i don't want the APC to get stuck and i want a smaller tile set used to help the APC navigate
+shops."*
+**Status:** PROPOSED 2026-11-10 (code read only; nothing built). No live run since SR66_P — SR67_P
+was never run, so the 19 commits of 2026-10-02 are still unproven live.
+
+**What the code does today (read 2026-11-10):**
+- Places are 3 m tiles (#113). In SR66_P nobody went inside; all stood tiles at Don's are on the road.
+- A 3 m tile is too coarse indoors: a door is ~1 m, a wall is thinner than a tile. One `stood` tile
+  can hold a walkable aisle AND a wall or counter. It proves nothing about which part is floor.
+- Tiles are write-only. Nothing uses them to move: travel still targets the anchor; the model gets no
+  "floor you have stood on" fact indoors; `_place_wander_action` walks a straight line.
+- **Three outdoor reflexes that can trap or evict an APC indoors (not yet seen live — check first):**
+  1. `_recover_footing`: `ground_under_feet` false (no navmesh under the body) → the body steps
+     out and seals a measured no-go patch (radius = step + 100 cm). If a shop floor has no navmesh,
+     this throws the APC out and seals the doorway for 30 min (`MEASURED_TTL_S`).
+  2. No-go patches are 100–300 cm radius (`dead_end.py`). One bump on a counter can seal a whole
+     shop aisle.
+  3. `_GOOD_FOOTING` = pavement / road / dirt_path. `building_interior` is not in it, so stood
+     interior floor never counts as proven ground for `open_run_cm` / open headings.
+
+**User, 2026-11-10 (rethink):** *"A grid holds places but we can also go inside places where higher
+resolution tiles are needed to nav... the Unreal nav mesh should really just be a guide and not
+complete control... We need a way to switch between using nav mesh and what we actually 'see'...
+places are where APCs can work and meet so we need more movement smarts and resolution."*
+Editor screenshot (2026-11-10): **the navmesh goes through the door of Don's Donuts and covers the
+floor inside.** So reflex 1 above is unlikely at Don's; other shops not checked.
+
+**SR68_P (2026-11-10, 5.5 min, 106 ticks, Play, qwen3.7-flash) — Dufus did NOT go inside. Two causes,
+both before any indoor code runs:** (SR67_P is void: Unreal was loaded but not in PIE, every
+`move_to` timed out.)
+1. **The place anchor of Don's Donuts is in the middle of the road** `(-5099, -711)` — a runtime
+   place Dufus named from the street ("Resolved owned place 'Don's Donuts' (dufus, runtime)"). Travel
+   put him at `(-5133, -712)`, about 15 m from the door, on a seed tile → "arrived".
+2. **Arrival put cognition to sleep.** 2 decisions in the whole run (walk_to, then one speak_to to
+   the mannequins), then 102 ticks of `state sampled (settled)` until 08:51. The new goal text and the
+   "here includes the inside" routine line never got a turn. Arrival at the place is treated as the
+   end of the task; it is only the end of step 1 (#116).
+- Also seen: Dufus stands in a T-pose in PIE (no idle animation). Not looked into.
+- **Fix order:** (a) a `Landmark_community_Don's_Donuts` actor at the counter inside (#23 ground
+  truth; outranks the runtime road anchor) — proves the navmesh route through the door; (b) the
+  settled gate must not sleep while the active task still has an unfinished step (#116 first slice).
+
+**SR69_P (2026-11-10, 5.5 min, Play) — cause 2 FIXED, Dufus still outside.** Built:
+`_task_needs_the_brain` in `agent_manager.py` — an APC at its place is not "settled" while its active
+task is `time_or_llm_confirmed` (only the model can finish it); the 4-tick stationary heartbeat
+rate-limits the calls. `time_block_ends` tasks (Maren at her truck) still sleep. Test:
+`test_event_driven_cognition.py` (mutation-checked); suite 69/69.
+- Live: Dufus made **11 decisions** in the block (SR68_P: 2). **9 were `speak_to` the mannequins,
+  1 observe, 0 moves.** He stayed at `(-5135, -712)` in the road. Once he thought "I haven't actually
+  gone inside or bought…" and then greeted a mannequin again.
+- **Next cause:** the prompt says he is AT Don's Donuts (he stands on a seed tile of the road
+  anchor), and the mannequin group 10 m away wins every turn (#109). Nothing names "go in" as the
+  job right now. That is #116's active step ("Right now: go in through the door"; done = footing
+  `building_interior`). Test the wording first with `prompt_lab.py replay` on a saved SR69_P prompt.
+
+**The model (proposed, replaces nothing in #113):**
+- **Grid cell (30 m)** = a drawer in the map index. Never used to move.
+- **Place** = a named spot where APCs work and meet. Outline = 3 m tiles. Floor = 1 m tiles (A below).
+- **Two movement modes; code switches on one body fact — "am I on a tile of my bound place?"**
+  - **Travel mode** (off the place): the engine pathfinder walks the body to the place. Proven
+    (SR61, SR65).
+  - **Place mode** (on the place): short steps, 1–3 m. The body's own measurements decide — radar
+    (#92), body-box probe (#81/#88), measured step (#90), eyes veto (#77). The navmesh is one more
+    fact ("navmesh says open"), not the order. Where the two disagree, the measurement wins and the
+    floor tile records it (also the #53 training signal).
+- Pieces already built: #77, #81/#88, #90, #92, #101. New work: the mode switch, the short step in
+  place mode, and the 1 m floor tiles.
+
+**Proposed build (order matters; each step is small):**
+- **A. Floor tiles = 1 m (`FLOOR_CM = 100`), only inside a place.** 3×3 floor tiles per 3 m tile, same
+  origin, so they align. New table `place_floor` `(place_key, fx, fy)` + `state` (`stood` | `blocked`),
+  `footing`, `by`, `at`. Body facts only: the 1 m square under the feet → `stood`; the 1 m square at
+  a measured blocker hit (probe / stuck trace) → `blocked`. The 3 m tiles stay as the place outline
+  and arrival test (#113 decisions stand).
+- **B. Indoors the body seals floor tiles, not circles.** When the APC stands on a tile of its bound
+  place, a measured seal writes one `blocked` floor tile instead of a 100–300 cm patch. The footing
+  reflex does not seal while on a place tile (it may still step clear).
+- **C. Facts to the model, per heading:** "floor N: stood 3 m / E: blocked at 1 m (counter) / S:
+  never stood". Same shape as the radar lines. No advice (lizard-brain contract).
+- **D. Way out and way back in are code:** breadth-first search over `stood` floor tiles gives the
+  hop list to the door tile (leave) and from the door to the deepest stood tile (enter). This is the
+  parked #113 item "route to the nearest stood tile". Used only when the anchor path is `partial`.
+- **E. `building_interior` on a stood tile counts as good footing** for that place only.
+- **F. /map draws floor tiles** (stood teal, blocked red) inside the 3 m outline.
+
+**Open — needs the user's Unreal:** do the shop interiors have navmesh? One `radar` /
+`ground_under_feet` reading inside Don's answers it. If no: A–D still work only if local moves do not
+need navmesh; else the level needs a navmesh volume over the shops (one-time editor step).
+**Open — authored content:** Dufus's agenda "get coffee and a donut" → "order … at the counter
+inside" takes go-inside from 8/20 to 18/20 (lab `go_inside`). Without it few runs test any of this.
+**Tests:** `test_wake_place.py` style — floor tile stood / blocked / path out; mutation-check the BFS.
+
 ### #114 — Spread the prompt load: split the decision prompt by job (talk / move / plan)
 
 **Source:** user, 2026-10-02: *"I want to spread out the prompt load... I don't want the prompt to get

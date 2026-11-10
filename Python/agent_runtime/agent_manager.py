@@ -481,6 +481,21 @@ def _offset_location(x: float, y: float, z: float, yaw_deg: float, distance: flo
             y + round(math.sin(rad) * distance, 6), z]
 
 
+def _task_needs_the_brain(directive: dict | None) -> bool:
+    """True while the active task can only be finished by the model (#116).
+
+    Arriving at the place is step one of "go to Don's and order at the counter
+    inside", not the end of it. SR68_P: Dufus reached the road in front of
+    Don's, the settled gate put cognition to sleep, and he made no further
+    decision for the whole block. A ``time_or_llm_confirmed`` task stays active
+    until the model confirms it, so while it is active there is work left and
+    the APC is not "settled". A ``time_block_ends`` task (Maren tending her
+    truck) has nothing to finish and may sleep. The stationary heartbeat
+    (``_STATIONARY_REDECIDE_TICKS``) still rate-limits the calls.
+    """
+    return ((directive or {}).get("completion") or {}).get("type") == "time_or_llm_confirmed"
+
+
 class AgentManager:
     def __init__(
         self,
@@ -1987,6 +2002,7 @@ class AgentManager:
             and mapped_block.get("place")
             and not mapped_schedule.get("transition")
             and not moving
+            and not _task_needs_the_brain(mapped_schedule)
         )
         mapped_schedule_event = bool(
             mapped_schedule
@@ -2056,6 +2072,7 @@ class AgentManager:
                 and block.get("place")
                 and not schedule.get("transition")
                 and not moving
+                and not _task_needs_the_brain(schedule)
             )
             schedule_event = bool(
                 schedule
