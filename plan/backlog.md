@@ -275,6 +275,27 @@ outside: he does not aim at the door.**
   "north-west: open 4.5 m, leads through an opening". Or let `walk_to` take a thing the eyes
   listed ("the door, left") and turn its bearing into a heading in code.
 
+**SR73_P–SR75_P (2026-11-10) — brain test: Sonnet 5 for decisions, Qwen for eyes.**
+- SR73_P is void as a brain test (ran on Qwen): `config.json` `roles` do not choose the model — the
+  router reads `LLM_MODEL` / `OPENROUTER_MODEL` from `Python/.env`. The cockpit writes both; a hand
+  edit of `config.json` alone does nothing. (Qwen result, same code: 3 m steps, no door, 26 stalls.)
+- **SR74_P (Sonnet 5, 6 min, $0.44, 46 calls):** 1 stall (Qwen: 20+). He found the shop front in
+  4 decisions and stepped at it: 3.0, 2.9, 1.3, 0.6 m, the body's free distance shrinking each
+  time. Then the code threw him 15 m back to the road, four times: `_bound_at_place_movement` sent
+  any step shorter than 1 m to the place ANCHOR. Sonnet named it: "I keep bouncing in this same spot".
+  **Fixed:** a short step is taken as measured; the body never walks back to the anchor.
+- **SR75_P (Sonnet 5, fix in):** no bounce. He walked to the shop front and stopped with the body
+  reading 0.9 m free — **nose against the WINDOW, not in the door** (image
+  `agents/dufus/observations/SR75_P_observation_20261110_170455.png`; the door is the dark opening on
+  his left). The body was right to refuse (glass, table behind it); `_floor_runs_on` (new: take the
+  full step when the navmesh has a near-straight path on) rightly did not fire.
+- **A false fact from the eyes:** through the glass the VLM labelled footing `building_interior`, so
+  the new at-place line said "You are inside Don's Donuts" and Sonnet agreed ("I'm inside the
+  doorway"), spoke to the clerk mannequin and waited for 09:00. **"Inside" must be a body fact**
+  (e.g. radar: walls on most headings / under a roof), not the VLM's ground label.
+- **Verdict on the brain:** Sonnet reads the facts and corrects itself; Qwen repeats invented names.
+  But both end at the glass. The missing piece is the body's: which heading has the OPENING.
+
 **The model (proposed, replaces nothing in #113):**
 - **Grid cell (30 m)** = a drawer in the map index. Never used to move.
 - **Place** = a named spot where APCs work and meet. Outline = 3 m tiles. Floor = 1 m tiles (A below).

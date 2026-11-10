@@ -3301,6 +3301,17 @@ class AgentManager:
             step_cm = min(float(reach_cm) - dead_end.BODY_CLEAR_CM, _PLACE_STEP_CM)
             if plan.get("capped_by") in ("refused ground", "unwalkable ground"):
                 step_cm = min(step_cm, plan["distance_cm"])
+            elif step_cm < _PLACE_STEP_CM and self._floor_runs_on(
+                    agent, observation, direction, _PLACE_STEP_CM):
+                # SR74_P: in Don's doorway the straight body sweep read 3.4,
+                # 1.8, then 1.1 m free — a door frame or a kerb — while the
+                # navmesh runs straight through the door. The sweep is what the
+                # body sees; the navmesh is the guide: when it has floor a full
+                # step along this heading by a near-straight path, take it.
+                logger.info("[%s] place step %s: body measured %.1f m free, but the "
+                            "floor runs on along this heading — taking the full step",
+                            agent.agent_id, direction, float(reach_cm) / 100.0)
+                step_cm = _PLACE_STEP_CM
             if step_cm < dead_end.BODY_CLEAR_CM:
                 logger.info("[%s] place step %s: no room — body measured %.1f m free",
                             agent.agent_id, direction, float(reach_cm) / 100.0)
@@ -3333,7 +3344,17 @@ class AgentManager:
                 last = (px, py)
             if last is not None and math.hypot(last[0] - xyz[0], last[1] - xyz[1]) >= 100.0:
                 return {"type": "walk_to", "location": [last[0], last[1], xyz[2]]}
-            return {"type": "walk_to", "location": [end["xy"][0], end["xy"][1], xyz[2]]}
+            # SR74_P: this used to send the body back to the place's anchor.
+            # Dufus stood IN Don's doorway, the body measured 0.6 m free, the
+            # step was shorter than the 1 m sampling above, and "back to the
+            # anchor" marched him 15 m to the road — four times. A short step
+            # is taken as measured when it stays on the place; otherwise the
+            # body stays where it is. It never walks back.
+            if self.world_grid.tile_of(desired[0], desired[1]) in reach:
+                return {"type": "walk_to", "location": [desired[0], desired[1], xyz[2]]}
+            logger.info("[%s] place step %s: leaves the place and its edge — staying put",
+                        agent.agent_id, direction)
+            return {"type": "idle"}
 
         cx, cy = end["xy"]
         extent = float(end.get("extent_cm") or 0.0)
@@ -5652,6 +5673,29 @@ class AgentManager:
         if result.get("fits") is True:
             return float(distance_cm)
         return float(result.get("clearance_cm", 0.0) or 0.0)
+
+    def _floor_runs_on(self, agent: Agent, observation: dict, direction: str,
+                       distance_cm: float) -> bool:
+        """True when the navmesh has floor ``distance_cm`` along this heading,
+        reached by a near-straight path (#115).
+
+        The engine's own path test from the body to that point, no movement.
+        "Near-straight" (path no longer than 1.5x the straight line) is what
+        separates a doorway from a route round a wall into the next building.
+        """
+        radar = getattr(self.bridge, "radar", None)
+        target = self._direction_target(observation, direction, distance_cm)
+        if not callable(radar) or target is None:
+            return False
+        try:
+            r = radar(agent.bound_unreal_actor_name, distance_cm=200.0,
+                      sectors=1, location=tuple(target)) or {}
+        except Exception as e:
+            logger.warning("[%s] floor-ahead probe failed: %s", agent.agent_id, e)
+            return False
+        length = float(r.get("path_length_cm") or 0.0)
+        return (r.get("path") == "full" and r.get("ground_under_feet") is not False
+                and 0.0 < length <= 1.5 * distance_cm)
 
     def _nearest_reachable(self, agent: Agent, target) -> tuple[list, float] | None:
         """The reachable floor nearest a step target that has no path (#115).
