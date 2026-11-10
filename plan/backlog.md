@@ -102,6 +102,9 @@ to get to Dons, then we order a coffee, then maybe we do something else... goals
 subgoals."* And the test: *"both Maren and Dufus can meet up at Dons for a coffee and talk about
 things. Then they disperse to the rest of their day."*
 **Status:** PROPOSED 2026-11-10, not built. Order: after Dufus gets inside Don's (#115).
+**2026-11-10 later: the authored `steps` schema below is WITHDRAWN (user: no per-APC walking
+subgoals). Kept for the record. What stays: truthful body facts (see #115 SR70_P) and the
+"coffee at Don's" acceptance test. Subgoals = short shared rules/notes for conditions, not steps.**
 **Builds on:** #36 (agenda tasks + deterministic executive, built), #113 (tiles, 3.5 m reach),
 #115 (place mode, floor tiles), #111 (plan a meetup), #68 (work that leaves a mark).
 
@@ -203,6 +206,32 @@ rate-limits the calls. `time_block_ends` tasks (Maren at her truck) still sleep.
   anchor), and the mannequin group 10 m away wins every turn (#109). Nothing names "go in" as the
   job right now. That is #116's active step ("Right now: go in through the door"; done = footing
   `building_interior`). Test the wording first with `prompt_lab.py replay` on a saved SR69_P prompt.
+
+**SR70_P (2026-11-10, 5.8 min, Play) — Dufus now TRIES to go in on every turn; he stalls 2 m from
+the door.** User, same day: *"why do we need obvious subgoals for walking into a building. I don't
+want to have to write these for each APC... Subgoals to me are simple rules and maybe notes about how
+to behave in certain conditions, not 'this is how you walk through a room'."* Agreed — **#116's
+authored `steps` are withdrawn.** The cause was not a missing subgoal. The body told a lie: the
+at-place line said "Your position confirms you are already at Don's Donuts … do NOT go looking for
+it" while he stood in the road.
+- **Built (`llm_router._schedule_note`):** for a task only the model can finish, the at-place line now
+  states where the feet are: "You are at the spot where <place> was first noted, standing on: road.
+  That is outdoors… You have not been inside." On `building_interior`: "You are inside <place>."
+  Other tasks keep the old line. No per-APC text. No tests written or run (user rule 2026-11-10).
+- **Live:** 0 mannequin greetings (SR69_P: 9). Every decision was a move toward the inside ("I am
+  outside Don's Donuts but need to go inside to order"). He walked from the road anchor to
+  `(-3665, -1599)`, facing the shop front, the open door about 2 m to his LEFT, a window and a pole
+  straight ahead (image `agents\dufus\observations\SR70_P_observation_20261110_160351.png`).
+- **New wall — the step, not the brain:** he ordered "forward" 4 m three times → target
+  `(-3665, -2029)`, a point behind the window (table / counter). The engine accepted each move and
+  moved **0.0 cm** (`STALLED`, 12 lines). He never chose forward-left. The navmesh has a way in (the
+  door); the body asked for one exact point with no path and got nothing.
+- **Next (body rule, no model, no authoring):** when a local step's target has no path, the body asks
+  the path test for the nearest reachable spot around the target (ring at 1–2 m) and walks there;
+  if none, it reports the fact with the open headings. That is "navmesh as a guide": go as near as
+  you can to where the eyes point. In place mode, also shorten the step (4 m → 1–2 m).
+- **Seen:** the place grew from 13 to 22 tiles along the street while he wandered (8-neighbour
+  growth). Growth outdoors needs a limit — e.g. grow only on `building_interior` footing.
 
 **The model (proposed, replaces nothing in #113):**
 - **Grid cell (30 m)** = a drawer in the map index. Never used to move.

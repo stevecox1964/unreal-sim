@@ -572,7 +572,8 @@ class LLMRouter:
                 heard_note=_heard_note(observation),
                 agenda_context=agenda.prompt_text(observation.get("agenda")),
                 sense_note=_sense_note(observation),
-                schedule_note=_schedule_note(observation.get("schedule")),
+                schedule_note=_schedule_note(observation.get("schedule"),
+                                             (observation.get("seen") or {}).get("footing")),
                 route_map_note=_route_map_note(observation),
                 acquaintance_lines=_acquaintance_lines(observation.get("acquaintances")),
                 known_place_lines=_known_place_lines(observation.get("known_places")),
@@ -1811,7 +1812,7 @@ def _wake_schedule_line(directive: dict | None) -> str:
     return "Nothing is scheduled right now — follow your goals."
 
 
-def _schedule_note(directive: dict | None) -> str:
+def _schedule_note(directive: dict | None, footing: str | None = None) -> str:
     """Render the sequencer directive (planner.step) for the decision prompt.
 
     Turns "what your routine says right now" into a line the LLM can act on:
@@ -1860,6 +1861,27 @@ def _schedule_note(directive: dict | None) -> str:
         # shop door "observed the interior" from the sidewalk and never went in
         # (prompt lab go_inside: 4/20 stepped in; 8/20 with this wording; Maren
         # at her truck still stays put 20/20).
+        # SR69_P: Dufus stood in the ROAD 15 m from Don's door, on the spot
+        # where the place was first named, and this line told him "you are
+        # already at Don's Donuts — do NOT go looking for it". He believed it:
+        # 9 of 11 decisions greeted mannequins, 0 moved. The body must say
+        # where the feet really are. Only for a task the model has to finish
+        # (time_or_llm_confirmed) — Maren tending her truck keeps the old line.
+        needs_brain = (directive.get("completion") or {}).get("type") == "time_or_llm_confirmed"
+        ground = str(footing or "").strip()
+        place_name = directive["place"]
+        if needs_brain and ground and ground != "building_interior":
+            return (f"{intent}\nYou are at the spot where {place_name} was "
+                    f"first noted, standing on: {ground}. That is outdoors. The "
+                    f"spot marks the place; it is not its door, counter or seats. "
+                    f"You have not been inside. Using walk_to '{place_name}' again "
+                    f"only returns you to this spot. Whatever part of your "
+                    f"activity happens inside has not been done and cannot be "
+                    f"done from here.")
+        if needs_brain and ground == "building_interior":
+            return (f"{intent}\nYou are inside {place_name}. Do the activity "
+                    f"here; short local moves (forward, left, right) take you to "
+                    f"a counter or a seat.")
         return (f"{intent}\nYour position confirms you are already at "
                 f"{directive['place']} — even if you cannot see it in frame. Do "
                 f"NOT walk_to it or go looking for it; do the activity here. Here "
