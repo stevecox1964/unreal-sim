@@ -307,6 +307,20 @@ _PLACE_MAX_TILES = 100
 _NEAR_SPOT_RINGS_CM = (100.0, 200.0, 300.0)
 # #115: the longest directional step while acting at a place — one tile.
 _PLACE_STEP_CM = 300.0
+# #115 "inside" and "opening" are body facts. A heading counts as walled when
+# the body sweep touches a fixed thing within 10 m (vehicles and people are not
+# walls). Measured live at Don's Donuts 2026-11-10: every point inside read 8
+# of 8; the pavement in front read 4 to 6. SR77_P: the door frame itself read
+# 7 of 8 (a parked pickup 5 m behind him was the open side) and Dufus was told
+# "inside" on the threshold — so inside needs all 8.
+_WALL_NEAR_CM = 1000.0
+_WALL_TOUCH_CM = 300.0
+_WALLED_IN_MIN = 8
+# An opening is looked for only behind a wall this close, at these distances
+# past the touch point. The shop floor's navmesh starts ~1.3 m behind the wall.
+_OPENING_WALL_MAX_CM = 800.0
+_OPENING_BEYOND_CM = (250.0, 400.0)
+_OPENING_SNAP_CM = 150.0
 # Same-name rows within this distance are one place (one tile set); farther
 # apart they are two places that happen to share a name (#113, "home").
 _SAME_PLACE_CM = 3000.0
@@ -485,6 +499,33 @@ def _offset_location(x: float, y: float, z: float, yaw_deg: float, distance: flo
             y + round(math.sin(rad) * distance, 6), z]
 
 
+# ASSUMED, not measured: the APC camera's horizontal field of view (Unreal's
+# default). If the camera blueprint differs, way-in headings are off by the ratio.
+_CAMERA_HFOV_DEG = 90.0
+# A doorway the eyes reported stays listed this long while the body stays put.
+_WAYS_IN_KEEP_S = 90.0
+_WAYS_IN_KEEP_CM = 100.0
+
+
+def _picture_x_to_yaw_offset(x: float) -> float:
+    """Degrees right (+) or left (-) of the body's facing for a point at
+    ``x`` (0 = left edge, 1 = right edge) across the camera picture (#115)."""
+    half = math.tan(math.radians(_CAMERA_HFOV_DEG / 2.0))
+    return math.degrees(math.atan((2.0 * float(x) - 1.0) * half))
+
+
+def _is_wall(sector: dict) -> bool:
+    """True when this radar sector touched a fixed thing within 10 m (#115)."""
+    contact = sector.get("contact")
+    reach = float(sector.get("clearance_cm", 0.0) or 0.0)
+    if not isinstance(contact, dict):
+        return False
+    # A vehicle or a person is not a wall — unless it is within 3 m (a clerk
+    # at the counter still closes that side of the room).
+    return reach < _WALL_TOUCH_CM or (
+        reach < _WALL_NEAR_CM and contact.get("actor_class") != "SkeletalMeshActor")
+
+
 def _task_needs_the_brain(directive: dict | None) -> bool:
     """True while the active task can only be finished by the model (#116).
 
@@ -561,6 +602,8 @@ class AgentManager:
         self._stall_run: dict[str, int] = {}        # agent_id -> consecutive stalled orders (#65)
         self._walls: dict[str, list[dict]] = {}     # agent_id -> volumes the body has proved impassable (#91)
         self._last_raster: dict[str, float] = {}    # agent_id -> last probe blocked_fraction, sets seal width (#91)
+        self._ways_in_seen: dict[str, dict] = {}  # agent_id -> {"xy", "at", "ways"}: the eyes' last doorways (#115)
+        self._openings_cache: dict[str, tuple] = {}  # agent_id -> (50 cm position key, openings) (#115)
         self._last_ground: dict[str, dict] = {}     # agent_id -> {ground_under_feet, nearest_ground} from the last radar (#101)
         self._footing_recoveries: dict[str, int] = {}  # agent_id -> lifetime count of footing reflex recoveries (#101)
         self._no_progress: dict[str, int] = {}      # agent_id -> consecutive "moving but didn't advance" ticks
@@ -1869,6 +1912,12 @@ class AgentManager:
         # what a trap looks like from the inside while there is still a way out.
         observation["radar"] = self._radar(agent, observation)
         self._mark_memory_stops(observation, observation["radar"])
+        # #115: "inside" is a body fact — on how many of the eight headings the
+        # body touches a wall within 10 m. Absent when the ring is not complete
+        # (not measured is not "outdoors").
+        walls = [h.get("wall") for h in observation["radar"]]
+        if len(walls) == len(_RADAR_HEADINGS) and None not in walls:
+            observation["walls_close"] = sum(walls)
         # Footing reflex (#101): SR56 stood Dufus on unwalkable ground twice — a
         # raised slab, a carport floor with a hole — and every other sense here
         # stayed silent because they all measure AIR. ground_under_feet is the
@@ -2317,6 +2366,7 @@ class AgentManager:
                 "range_cm": float(sector.get("clearance_cm", 0.0) or 0.0),
                 "clear_to_end": bool(sector.get("fits")),
                 "turn_deg": abs(offset),
+                "wall": _is_wall(sector),
             }
             # #101: how far the WALKABLE ground goes this way, which can end
             # short of the air the sweep measured (SR56's slab and carport
@@ -2551,6 +2601,7 @@ class AgentManager:
                 world_time=observation.get("world_time"), context="tick")
 
             xyz = _loc_xyz(observation.get("location"))
+            self._remember_ways_in(agent_id, observation, seen)
             if xyz and seen.get("landmarks"):
                 # Raw sightings → spatial map (for direction-preview in prompts)
                 smap = self._spatial_map(agent_id)
@@ -2605,6 +2656,16 @@ class AgentManager:
         # the scheduled place, act here, or idle. The directive grounds the
         # decision prompt; the LLM still chooses the action.
         self._attach_schedule(agent, observation)
+
+        # #115: the EYES lead to a door (seen["ways_in"]). The engine's own
+        # answer is measured here only to score the eyes in the log — it is
+        # never put in the observation, the prompt or the step.
+        at_place = observation.get("schedule") or {}
+        walls_close = observation.get("walls_close")
+        if (at_place.get("status") == "act" and at_place.get("place")
+                and _task_needs_the_brain(at_place)
+                and walls_close is not None and walls_close < _WALLED_IN_MIN):
+            self._score_eyes_on_ways_in(agent, observation)
 
         # Travel ticks get a top-down route map (#6b/WP5): the corridor between
         # here and the scheduled destination, as facts + a rendered image the
@@ -3088,6 +3149,7 @@ class AgentManager:
             return {"agent_id": agent_id, "action": "idle", "reason": "validation_failed"}
 
         action = self._bound_at_place_movement(agent, action, observation)
+        place_step_fact = action.pop("place_step_fact", None)
 
         # Rulings about ground resolve here, against the grid — they change what
         # the map offers, never where the body may go.
@@ -3163,6 +3225,8 @@ class AgentManager:
                 "action": action.get("type"),
                 "target": action.get("target") or action.get("target_location"),
                 "note": str(result["note"])}
+        if place_step_fact:
+            self._last_action_fact[agent_id] = place_step_fact
 
         self._ground_survey_narration(agent, decision, action, result, observation)
 
@@ -3288,8 +3352,18 @@ class AgentManager:
         # the wall, through the next door, into the bank. At a place the step is
         # what the body measures (#90), and never longer than one tile.
         direction = action.get("direction") or "forward"
+        # SR81_P: after walking at "the doorway under Don's awning" the prompt
+        # said only: your last order ("walk_to") moved you 2.6 m. Standing at
+        # that doorway, the brain no longer knew it was the one it had chosen.
+        said = str(direction)
+        if said.lower().startswith("way-in-"):
+            ways = (observation.get("seen") or {}).get("ways_in") or []
+            index = said[len("way-in-"):]
+            if index.isdigit() and 1 <= int(index) <= len(ways):
+                said = f"{said}: {ways[int(index) - 1]['label']}"
         plan = self._plan_move(agent, observation, direction, action)
         reach_cm = plan.get("reach_cm")
+        cap_cm = _PLACE_STEP_CM
         if reach_cm is None:
             if plan["distance_cm"] <= 0.0:
                 return action   # the ordinary step path reports "no room" as a fact
@@ -3298,28 +3372,30 @@ class AgentManager:
             # Indoors the 3 m outdoor standoff would keep the body off every
             # counter and out of every aisle; keep only body clearance. Ground
             # somebody refused, or that is not ground, still caps the step.
-            step_cm = min(float(reach_cm) - dead_end.BODY_CLEAR_CM, _PLACE_STEP_CM)
+            # SR76_P: the 3 m cap also ruled the open road 15 m from the shop
+            # (5 steps, 2 minutes). The short step is for walls. With 10 m or
+            # more measured free on this heading, take the planner's own step.
+            if float(reach_cm) >= _WALL_NEAR_CM:
+                cap_cm = max(float(plan["distance_cm"]), _PLACE_STEP_CM)
+            step_cm = min(float(reach_cm) - dead_end.BODY_CLEAR_CM, cap_cm)
             if plan.get("capped_by") in ("refused ground", "unwalkable ground"):
                 step_cm = min(step_cm, plan["distance_cm"])
-            elif step_cm < _PLACE_STEP_CM and self._floor_runs_on(
-                    agent, observation, direction, _PLACE_STEP_CM):
-                # SR74_P: in Don's doorway the straight body sweep read 3.4,
-                # 1.8, then 1.1 m free — a door frame or a kerb — while the
-                # navmesh runs straight through the door. The sweep is what the
-                # body sees; the navmesh is the guide: when it has floor a full
-                # step along this heading by a near-straight path, take it.
-                logger.info("[%s] place step %s: body measured %.1f m free, but the "
-                            "floor runs on along this heading — taking the full step",
-                            agent.agent_id, direction, float(reach_cm) / 100.0)
-                step_cm = _PLACE_STEP_CM
             if step_cm < dead_end.BODY_CLEAR_CM:
                 logger.info("[%s] place step %s: no room — body measured %.1f m free",
                             agent.agent_id, direction, float(reach_cm) / 100.0)
-                return {"type": "idle"}
-        logger.info("[%s] place step %s: %.1f m (body measured %s; tile cap %.0f m)",
+                # SR80_P: the body refused this step in silence (a fire hydrant
+                # 0.7 m ahead, below the camera) and the brain ordered the same
+                # step again. The touch is a fact the brain must hear.
+                return {"type": "idle", "place_step_fact": {
+                    "action": "walk_to", "target": direction,
+                    "note": (f"your body touches something solid "
+                             f"{float(reach_cm) / 100.0:.1f} m ahead on that exact "
+                             f"line and did not move. It may be low, below your "
+                             f"picture. The radar ranges show which headings have room")}}
+        logger.info("[%s] place step %s: %.1f m (body measured %s; step cap %.0f m)",
                     agent.agent_id, direction, step_cm / 100.0,
                     f"{plan['reach_cm'] / 100.0:.1f} m free" if plan.get("reach_cm") is not None
-                    else "nothing", _PLACE_STEP_CM / 100.0)
+                    else "nothing", cap_cm / 100.0)
         desired = self._direction_target(observation, direction, step_cm)
         end = self._resolve_place_endpoint(agent.agent_id, sched["place"])
         if xyz is None or desired is None or end is None:
@@ -3343,7 +3419,7 @@ class AgentManager:
                     break
                 last = (px, py)
             if last is not None and math.hypot(last[0] - xyz[0], last[1] - xyz[1]) >= 100.0:
-                return {"type": "walk_to", "location": [last[0], last[1], xyz[2]]}
+                return {"type": "walk_to", "location": [last[0], last[1], xyz[2]], "said": said}
             # SR74_P: this used to send the body back to the place's anchor.
             # Dufus stood IN Don's doorway, the body measured 0.6 m free, the
             # step was shorter than the 1 m sampling above, and "back to the
@@ -3351,7 +3427,7 @@ class AgentManager:
             # is taken as measured when it stays on the place; otherwise the
             # body stays where it is. It never walks back.
             if self.world_grid.tile_of(desired[0], desired[1]) in reach:
-                return {"type": "walk_to", "location": [desired[0], desired[1], xyz[2]]}
+                return {"type": "walk_to", "location": [desired[0], desired[1], xyz[2]], "said": said}
             logger.info("[%s] place step %s: leaves the place and its edge — staying put",
                         agent.agent_id, direction)
             return {"type": "idle"}
@@ -3367,7 +3443,7 @@ class AgentManager:
         # the anchor so repeated wander decisions cannot wedge on the boundary.
         if math.hypot(tx - xyz[0], ty - xyz[1]) < 100.0:
             tx, ty = cx, cy
-        return {"type": "walk_to", "location": [tx, ty, xyz[2]]}
+        return {"type": "walk_to", "location": [tx, ty, xyz[2]], "said": said}
 
     def _attach_nearby_characters(self, observations: dict[str, dict | None]) -> None:
         """Attach deterministic APC proximity facts before parallel LLM work.
@@ -5424,7 +5500,7 @@ class AgentManager:
             self._last_order.pop(agent_id, None)
             return
         xyz = _loc_xyz(observation.get("location"))
-        intent = str(action.get("direction") or action.get("target_location")
+        intent = str(action.get("said") or action.get("direction") or action.get("target_location")
                      or action.get("type") or "")
         self._last_order[agent_id] = {
             "intent": intent,
@@ -5474,6 +5550,19 @@ class AgentManager:
         if absolute is not None:
             return absolute
         yaw = _yaw_of(observation.get("rotation"))
+        if name.startswith("way-in-"):
+            # #115: a doorway the eyes listed this tick. Where it sits across
+            # the picture becomes an angle off the body's facing.
+            ways = (observation.get("seen") or {}).get("ways_in") or []
+            index = name[len("way-in-"):]
+            if not index.isdigit() or not 1 <= int(index) <= len(ways):
+                return None
+            way = ways[int(index) - 1]
+            if way.get("yaw") is not None:
+                return float(way["yaw"])    # fixed when the picture was taken
+            if yaw is None:
+                return None
+            return yaw + _picture_x_to_yaw_offset(way["x"])
         offset = _DIRECTION_YAW_OFFSET.get(name)
         if yaw is None or offset is None:
             return None
@@ -5674,28 +5763,132 @@ class AgentManager:
             return float(distance_cm)
         return float(result.get("clearance_cm", 0.0) or 0.0)
 
-    def _floor_runs_on(self, agent: Agent, observation: dict, direction: str,
-                       distance_cm: float) -> bool:
-        """True when the navmesh has floor ``distance_cm`` along this heading,
-        reached by a near-straight path (#115).
+    def _remember_ways_in(self, agent_id: str, observation: dict, seen: dict) -> None:
+        """Fix each seen doorway's world heading, and keep the last sighting
+        for a short time at the same spot (#115).
 
-        The engine's own path test from the body to that point, no movement.
-        "Near-straight" (path no longer than 1.5x the straight line) is what
-        separates a doorway from a route round a wall into the next building.
+        SR79_P: from one spot the eyes listed Don's door, then nothing, then
+        the door again. A doorway does not vanish between two pictures. The
+        memory is the eyes' own earlier report — no engine data.
         """
-        radar = getattr(self.bridge, "radar", None)
-        target = self._direction_target(observation, direction, distance_cm)
-        if not callable(radar) or target is None:
-            return False
-        try:
-            r = radar(agent.bound_unreal_actor_name, distance_cm=200.0,
-                      sectors=1, location=tuple(target)) or {}
-        except Exception as e:
-            logger.warning("[%s] floor-ahead probe failed: %s", agent.agent_id, e)
-            return False
+        if not isinstance(seen, dict) or seen.get("error"):
+            return
+        xyz = _loc_xyz(observation.get("location"))
+        facing = _yaw_of(observation.get("rotation"))
+        if xyz is None:
+            return
+        ways = seen.get("ways_in") or []
+        if ways and facing is not None:
+            for way in ways:
+                way["yaw"] = facing + _picture_x_to_yaw_offset(way["x"])
+            self._ways_in_seen[agent_id] = {
+                "xy": (xyz[0], xyz[1]), "at": time.time(),
+                "ways": [dict(w) for w in ways]}
+            return
+        kept = self._ways_in_seen.get(agent_id)
+        if not kept:
+            return
+        age = time.time() - kept["at"]
+        moved = math.hypot(xyz[0] - kept["xy"][0], xyz[1] - kept["xy"][1])
+        if age > _WAYS_IN_KEEP_S or moved > _WAYS_IN_KEEP_CM:
+            self._ways_in_seen.pop(agent_id, None)
+            return
+        seen["ways_in"] = [{**w, "remembered": True, "age_s": age} for w in kept["ways"]]
+
+    def _score_eyes_on_ways_in(self, agent: Agent, observation: dict) -> None:
+        """Log the eyes' doorways beside the engine's measured openings (#115).
+
+        Log only: the label a vision model can be scored and trained against.
+        """
+        xyz = _loc_xyz(observation.get("location"))
+        if xyz is None:
+            return
+        eyes = []
+        for i, way in enumerate((observation.get("seen") or {}).get("ways_in") or [], start=1):
+            yaw = self._direction_yaw(observation, f"way-in-{i}")
+            if yaw is not None:
+                eyes.append(f"way-in-{i} yaw {yaw % 360.0:.0f} "
+                            f"({'kept: ' if way.get('remembered') else ''}{way['label'][:60]})")
+        engine = [
+            f"yaw {math.degrees(math.atan2(o['target'][1] - xyz[1], o['target'][0] - xyz[0])) % 360.0:.0f}"
+            f" walk {o['walk_cm'] / 100.0:.1f} m"
+            for o in self._find_openings(agent, observation)]
+        logger.info("[%s] ways in at (%.0f, %.0f) — EYES: %s | ENGINE (log only): %s",
+                    agent.agent_id, xyz[0], xyz[1],
+                    "; ".join(eyes) or "none seen", "; ".join(engine) or "none measured")
+
+    def _find_openings(self, agent: Agent, observation: dict) -> list[dict]:
+        """Headings where walled floor lies behind the wall the body touches,
+        a short walk away (#115).
+
+        SR75_P: Dufus stood with his nose on Don's window; the door was 2 m to
+        one side and no sense said so. For each radar heading that touches a
+        wall within 8 m, the engine's path test is asked about a point past the
+        wall. It is an opening when that point is floor, the walk to it is
+        near-straight (so it is this building's door, not a route round the
+        block), and the point itself is walled in. Facts only.
+        Cached per 50 cm of body position — each probe is a 0.2 s round trip.
+        """
+        xyz = _loc_xyz(observation.get("location"))
+        if not callable(getattr(self.bridge, "radar", None)) or xyz is None:
+            return []
+        key = (round(xyz[0] / 50.0), round(xyz[1] / 50.0))
+        cached = self._openings_cache.get(agent.agent_id)
+        if cached and cached[0] == key:
+            return cached[1]
+        out: list[dict] = []
+        for h in observation.get("radar") or []:
+            yaw = _WORD_ABS_YAW.get(h.get("heading"))
+            if yaw is None or not h.get("wall") or h["range_cm"] >= _OPENING_WALL_MAX_CM:
+                continue
+            for beyond in _OPENING_BEYOND_CM:
+                spot = self._floor_behind(agent, xyz, yaw, h["range_cm"], beyond)
+                if spot is not None:
+                    out.append({"heading": h["heading"], "wall_cm": h["range_cm"],
+                                "walk_cm": spot[1], "target": spot[0]})
+                    break
+        self._openings_cache[agent.agent_id] = (key, out)
+        logger.info("[%s] openings at (%.0f, %.0f): %s", agent.agent_id, xyz[0], xyz[1],
+                    "; ".join(f"{o['heading']} wall {o['wall_cm'] / 100:.1f} m, walk "
+                              f"{o['walk_cm'] / 100:.1f} m to ({o['target'][0]:.0f}, "
+                              f"{o['target'][1]:.0f})" for o in out) or "none measured")
+        return out
+
+    def _floor_behind(self, agent: Agent, xyz, yaw: float, wall_cm: float,
+                      beyond_cm: float) -> tuple[list, float] | None:
+        """Walled floor ``beyond_cm`` past a wall, and the walk to it; or None."""
+        def probe(point):
+            try:
+                return self.bridge.radar(agent.bound_unreal_actor_name,
+                                         distance_cm=_WALL_NEAR_CM, sectors=8,
+                                         location=tuple(point)) or {}
+            except Exception as e:
+                logger.warning("[%s] opening probe failed: %s", agent.agent_id, e)
+                return {}
+        target = _offset_location(*xyz, yaw, wall_cm + beyond_cm)
+        r = probe(target)
+        if r.get("ground_under_feet") is False:
+            # No floor at the exact point (furniture, wall thickness): take the
+            # nearest floor, but only if it is still past the wall.
+            near = r.get("nearest_ground")
+            if not isinstance(near, dict) or float(near.get("distance_cm") or 1e9) > _OPENING_SNAP_CM:
+                return None
+            target = [float(near["x"]), float(near["y"]), xyz[2]]
+            rad = math.radians(yaw)
+            along = (target[0] - xyz[0]) * math.cos(rad) + (target[1] - xyz[1]) * math.sin(rad)
+            if along < wall_cm + 100.0:
+                return None
+            r = probe(target)
+        if r.get("path") != "full" or r.get("ground_under_feet") is not True:
+            return None
+        straight = math.hypot(target[0] - xyz[0], target[1] - xyz[1])
         length = float(r.get("path_length_cm") or 0.0)
-        return (r.get("path") == "full" and r.get("ground_under_feet") is not False
-                and 0.0 < length <= 1.5 * distance_cm)
+        if not 0.0 < length <= 1.5 * straight + 100.0:
+            return None
+        ring = r.get("ring")
+        if not isinstance(ring, list) or sum(_is_wall(s) for s in ring if isinstance(s, dict)) < _WALLED_IN_MIN:
+            return None
+        return target, length
 
     def _nearest_reachable(self, agent: Agent, target) -> tuple[list, float] | None:
         """The reachable floor nearest a step target that has no path (#115).
@@ -6976,6 +7169,7 @@ class AgentManager:
             "path_ahead": seen.get("path_ahead", ""),
             "landmarks": seen.get("landmarks") or [],
             "characters": seen.get("characters") or [],
+            "ways_in": seen.get("ways_in") or [],
         }
         if seen.get("error"):
             line["error"] = seen["error"]

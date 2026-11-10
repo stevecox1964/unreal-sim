@@ -44,8 +44,20 @@ And report the path ahead: "open" if walking on is possible, "dead_end" if
 walls, fences, hedges or buildings close it off, "blocked" if something solid
 stands immediately in front.
 
+Also report every WAY IN you can see: an open doorway, an open door, or a gap
+in a wall that a person could walk through to get inside a building. Not a
+window, not glass, not a closed wall. For each one give "x": where the middle
+of the opening sits across the picture, from 0.0 (left edge) through 0.5
+(centre) to 1.0 (right edge). Label it by what the opening itself looks like
+and what is beside it on the outside wall ("open doorway between two white
+pillars, left of the big window"). Name the business only from a sign on the
+OUTSIDE of the building at that opening — never from signs, pictures or goods
+seen through it on the inside. Look for one every time: a dark gap in a wall
+right beside you counts.
+
 Schema:
 {{
+  "ways_in":    [{{"label": "<what it is and what it leads into>", "x": 0.0, "distance": "near|mid|far", "confidence": 0.0}}],
   "landmarks":  [{{"label": "<place>", "bearing": "left|center|right", "distance": "near|mid|far", "confidence": 0.0}}],
   "characters": [{{"label": "unknown person", "bearing": "left|center|right", "distance": "near|mid|far", "confidence": 0.0}}],
   "footing": "pavement|road|dirt_path|grass|cultivated_field|water|other",
@@ -59,7 +71,7 @@ Use [] for an array with nothing to report. Confidence is 0.0-1.0."""
 
 def _empty(reason: str) -> dict:
     logger.debug("perceive: %s", reason)
-    return {"landmarks": [], "characters": [], "footing": "", "ground_ahead": "",
+    return {"landmarks": [], "characters": [], "ways_in": [], "footing": "", "ground_ahead": "",
             "path_ahead": "", "caption": "", "error": reason}
 
 
@@ -192,6 +204,7 @@ class VisionPerceiver:
 
         return {
             "landmarks": _clean(data.get("landmarks")),
+            "ways_in": _clean_ways_in(data.get("ways_in")),
             "characters": [{**c, "label": "unknown person"}
                            for c in _clean(data.get("characters"))],
             "footing": str(data.get("footing", "")),
@@ -265,6 +278,29 @@ def _media_type(raw: bytes) -> str:
     if raw[:4] == b"RIFF" and raw[8:12] == b"WEBP":
         return "image/webp"
     return "image/png"
+
+
+def _clean_ways_in(items) -> list[dict]:
+    """Doorways the eyes reported (#115). A row with no usable ``x`` is dropped:
+    without a place in the picture it cannot be turned into a heading."""
+    out: list[dict] = []
+    for it in items or []:
+        if not isinstance(it, dict):
+            continue
+        label = str(it.get("label", "")).strip()
+        try:
+            x = float(it.get("x"))
+        except (TypeError, ValueError):
+            continue
+        if not label or not 0.0 <= x <= 1.0:
+            continue
+        try:
+            conf = float(it.get("confidence", 0.5))
+        except (TypeError, ValueError):
+            conf = 0.5
+        out.append({"label": label, "x": x,
+                    "distance": str(it.get("distance", "mid")), "confidence": conf})
+    return out
 
 
 def _clean(items) -> list[dict]:

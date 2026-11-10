@@ -95,6 +95,28 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #117 — Move plan: see the target once, write the moves, play them back with no vision
+
+**Source:** user, 2026-11-10: *"Dufus sees Don's Donuts, then build a moveplan which is, move left
+2m, move right 3m, turn left 12 degrees etc. And then play the move plan with no vision or what
+ever steps. We can figure this out later."*
+**Status:** IDEA 2026-11-10, not designed, not built. Parked until the eyes-lead door work (#115)
+settles.
+**Builds on:** #115 (eyes report a `way-in-N` with its place in the picture; code turns it into a
+heading), #86/#90 (the body's measured step).
+
+**The idea:** today every step toward a door costs one picture and one brain call (SR79_P–SR81_P:
+3–5 decisions and 1–2 minutes for the last 16 m). Instead: one look, one plan — an ordered list of
+small body moves ("left 2 m, right 3 m, turn left 12°") — and the body plays the list with no
+picture and no brain call between moves.
+
+**Open questions (the user: "figure this out later"):**
+- Who writes the plan — the brain from one picture, or code from the eyes' report?
+- What stops playback — body touch (SR80_P: a fire hydrant below the camera), a person in the
+  way, a finished list? What does the brain hear when it stops early?
+- Is a plan kept and reused for the same door (per place, shared between APCs)?
+- How does it sit beside the engine pathfinder used for travel between places?
+
 ### #116 — Goals have subgoals: get there → go in → order → sit and talk → leave
 
 **Source:** user, 2026-11-10: *"'Go to Dons and get a coffee' is an overall goal, but first we need
@@ -154,7 +176,9 @@ steps open; a task without `steps` behaves exactly as today (mutation-check each
 **Source:** user, 2026-11-10: *"get the code to handle going into places / buildings which are off
 grid. i don't want the APC to get stuck and i want a smaller tile set used to help the APC navigate
 shops."*
-**Status:** PROPOSED 2026-11-10 (code read only; nothing built). No live run since SR66_P — SR67_P
+**Status 2026-11-10 (late):** entry WORKS, eyes-led — SR82_P, Dufus inside Don's. Open: the
+"inside" body fact (see SR76_P–SR82_P below). Floor tiles (A–F) not built.
+**Status (first):** PROPOSED 2026-11-10 (code read only; nothing built). No live run since SR66_P — SR67_P
 was never run, so the 19 commits of 2026-10-02 are still unproven live.
 
 **What the code does today (read 2026-11-10):**
@@ -295,6 +319,42 @@ outside: he does not aim at the door.**
   (e.g. radar: walls on most headings / under a roof), not the VLM's ground label.
 - **Verdict on the brain:** Sonnet reads the facts and corrects itself; Qwen repeats invented names.
   But both end at the glass. The missing piece is the body's: which heading has the OPENING.
+
+**SR76_P–SR82_P (2026-11-10, Sonnet 5 brain, Qwen eyes) — Dufus walks INTO Don's Donuts; the EYES
+lead him to the door.** Door measured live: `x ≈ -3800`, front wall `y ≈ -1985`, 1 m wide.
+- **SR76_P–SR77_P, engine-led (built, proven, then WITHDRAWN the same day):** `_find_openings` asks
+  the engine's path test for walled floor behind the wall the body touches. Dufus got inside
+  (SR76_P, `(-3739, -2231)`). User: *"make sure we are not hard coding using the game engine to
+  figure out navigation when we need to use images coming from the vision brain."* Agreed — a body
+  cannot know what is behind a wall. **Decision: eyes lead.** `_find_openings` stays as LOG ONLY
+  truth beside the eyes' answer (`ways in at … — EYES: … | ENGINE (log only): …`), a label to score
+  and train vision against. It is not in the observation, the prompt or the step.
+- **Eyes lead (built):** `perception.py` — the eyes report `ways_in` (open doorway / gap; `x` =
+  place across the picture, 0–1; labelled by looks, business named only from an OUTSIDE sign).
+  `agent_manager._picture_x_to_yaw_offset` turns `x` into a heading; the brain walks at it with the
+  direction word `way-in-N`. A seen way in stays listed 90 s while the body stays within 1 m
+  (`_remember_ways_in` — the eyes flickered in SR79_P). **Assumed, not measured: camera HFOV 90°.**
+- **Eyes' accuracy vs the true door bearing:** 1–3° from 8–18 m, 6–10° from 3–5 m (always to the
+  left), 3° from 2 m. Good enough: SR82_P's last two steps ran through the door on the eyes' line
+  (body felt 7.6 m, then 5.9 m free).
+- **SR82_P — PASS:** inside at `(-3789, -2158)` in 3.5 min, 11 decisions, 0 lost answers; he spoke
+  to the clerk mannequin, then the task closed. SR79_P–SR81_P failed on the causes below.
+- **Also fixed:** (1) `_load_decision_json` dropped any answer with a sentence BEFORE the JSON —
+  the "invalid JSON" on the first decision of every run, and 3 in a row at the door in SR81_P;
+  (2) a place step refused by touch now tells the brain (SR80_P: a fire hydrant 0.7 m ahead, below
+  the camera; the same order 3 times in silence) — in SR82_P the brain stepped round it;
+  (3) the last-order line names what was walked at (`way-in-1: <label>`), not just `walk_to`;
+  (4) with ≥ 10 m measured free a place step is the planner's step, not 3 m (SR76_P: 5 steps and
+  2 min to cross the road); (5) `_floor_runs_on` (navmesh "floor runs on") REMOVED — engine-led.
+- **"Inside" is a body touch fact (built, NOT right yet):** `walls_close` = radar headings that
+  touch a fixed thing within 10 m (a vehicle or person counts only within 3 m); inside = 8 of 8.
+  SR77_P: 7 of 8 called the door frame "inside". But 8 of 8 is wrong the other way — **SR82_P:
+  standing inside in line with the open door reads 7 of 8, so the prompt said "outdoors".** The
+  brain did not believe it that time. **OPEN BUG.** The numbers are also fitted to one shop.
+- **Open:** the eyes still say "ice cream shop" for Don's door now and then (a mural inside), which
+  made the brain walk away in SR79_P/SR81_P; `_nearest_reachable` (engine path test, never fired
+  live) is still in the step path; the task can close on one `observe` at the counter with no
+  order spoken (SR76_P, SR77_P) — that is #116's question of what counts as "ordered".
 
 **The model (proposed, replaces nothing in #113):**
 - **Grid cell (30 m)** = a drawer in the map index. Never used to move.

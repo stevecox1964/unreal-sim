@@ -32,7 +32,7 @@ _COMPASS_WORD = {
 _ACTION_SCHEMAS: dict[str, str] = {
     "idle":             '{"type": "idle"}',
     "wander":           '{"type": "wander"}  -- keep moving: take one step in the direction you are facing (about 15m, longer over ground already walked, shorter when something is close). Add "distance": "close|normal|far" to ask for a shorter or longer one',
-    "walk_to":          '{"type": "walk_to", "target_location": "<place name>"} to travel to a named place you know (e.g. "village square", "home"), OR {"type": "walk_to", "target_actor": "<character name>"} to walk to a known character, OR {"type": "walk_to", "direction": "north|south|east|west|northeast|northwest|southeast|southwest"} to walk ~15m along that compass heading, OR {"type": "walk_to", "direction": "forward|forward-left|forward-right|left|right|back"} to walk relative to the way your body is currently facing. Any walk with a "direction" may add "distance": "close" (a few metres, for something you can see and want to stop at), "normal" (the default, about 15m) or "far" (tens of metres, for crossing ground you are only passing through). How far you actually travel is worked out from the ground ahead: it is cut short of anything refused or in the way, and it stretches across ground APCs have already walked. You will be told the length you got',
+    "walk_to":          '{"type": "walk_to", "target_location": "<place name>"} to travel to a named place you know (e.g. "village square", "home"), OR {"type": "walk_to", "target_actor": "<character name>"} to walk to a known character, OR {"type": "walk_to", "direction": "north|south|east|west|northeast|northwest|southeast|southwest"} to walk ~15m along that compass heading, OR {"type": "walk_to", "direction": "forward|forward-left|forward-right|left|right|back"} to walk relative to the way your body is currently facing, OR {"type": "walk_to", "direction": "way-in-1"} to walk straight at a WAY IN your eyes listed this tick (use its exact name). Any walk with a "direction" may add "distance": "close" (a few metres, for something you can see and want to stop at), "normal" (the default, about 15m) or "far" (tens of metres, for crossing ground you are only passing through). How far you actually travel is worked out from the ground ahead: it is cut short of anything refused or in the way, and it stretches across ground APCs have already walked. You will be told the length you got',
     "survey_here":      '{"type": "survey_here"} to survey the cell you are standing in — captures all four compass headings over the next few ticks and adds the cell to the shared map. Only works on a cell that has no current survey, and only for the cell underfoot',
     "refuse_cell":      '{"type": "refuse_cell", "direction": "north|south|east|west|northeast|northwest|southeast|southwest", "reason": "<what you can see that makes it not worth walking into>"} to record that the cell one step that way is not ground you will walk into. It stops being offered as somewhere to survey, for you and for every other APC, until someone withdraws it. Use it when you can SEE the reason — standing crops, water, a fence, someone\'s private yard. Omit "direction" to refuse the cell you are standing in. Add "scope": "spot" to refuse only the ~9m patch of ground one step that way instead of the whole 30m cell — use the patch for one bad yard, alley or doorway inside a cell that is otherwise worth surveying; use the whole cell for corn fields, water, and ground that is bad wall to wall',
     "allow_cell":       '{"type": "allow_cell", "direction": "<compass word, or omit for here>"} to withdraw a refusal you made earlier — the cell goes back to being ordinary ground. Add "scope": "spot" to withdraw a patch refusal instead',
@@ -573,7 +573,8 @@ class LLMRouter:
                 agenda_context=agenda.prompt_text(observation.get("agenda")),
                 sense_note=_sense_note(observation),
                 schedule_note=_schedule_note(observation.get("schedule"),
-                                             (observation.get("seen") or {}).get("footing")),
+                                             (observation.get("seen") or {}).get("footing"),
+                                             observation.get("walls_close")),
                 route_map_note=_route_map_note(observation),
                 acquaintance_lines=_acquaintance_lines(observation.get("acquaintances")),
                 known_place_lines=_known_place_lines(observation.get("known_places")),
@@ -1503,6 +1504,22 @@ def _seen_text(seen: dict | None, breadcrumbs: list | None = None) -> str:
         lines.append(f"- {lm['label']} ({lm.get('bearing', '?')}, {lm.get('distance', '?')})")
     for ch in seen.get("characters") or []:
         lines.append(f"- CHARACTER: {ch['label']} ({ch.get('bearing', '?')}, {ch.get('distance', '?')})")
+    # #115: doorways come from the eyes. The name "way-in-N" is a direction
+    # word: code turns the doorway's place in the picture into the heading.
+    for i, way in enumerate(seen.get("ways_in") or [], start=1):
+        x = float(way.get("x", 0.5))
+        where = ("left edge" if x < 0.2 else "left of centre" if x < 0.4
+                 else "centre" if x <= 0.6 else "right of centre" if x <= 0.8
+                 else "right edge")
+        if way.get("remembered"):
+            # One picture without the door must not erase a door seen from
+            # this same spot a moment ago (SR79_P: the eyes flickered).
+            lines.append(f"- WAY IN \"way-in-{i}\": {way['label']} (not in this "
+                         f"picture; your eyes saw it from this same spot "
+                         f"{way['age_s']:.0f} s ago, {way.get('distance', '?')})")
+            continue
+        lines.append(f"- WAY IN \"way-in-{i}\": {way['label']} "
+                     f"({where} of your picture, {way.get('distance', '?')})")
     return "\n".join(lines) or "(nothing notable)"
 
 
@@ -1559,10 +1576,18 @@ def _load_decision_json(raw: str) -> dict:
     decision because the model kept talking is our bug, not its. Anything that
     is not a complete leading JSON object still raises.
     """
-    decoded, end = json.JSONDecoder().raw_decode(raw.strip())
+    text = raw.strip()
+    # SR76_P-SR81_P: Sonnet sometimes writes one sentence BEFORE the object
+    # ("Looks like I wandered ... {"agent_id": ...}"). Six decisions were lost
+    # to it, three in a row at Don's door. Start at the first brace.
+    start = text.find("{")
+    if start > 0:
+        logger.info("dropped %d chars of prose before the decision JSON", start)
+        text = text[start:]
+    decoded, end = json.JSONDecoder().raw_decode(text)
     if not isinstance(decoded, dict):
         raise json.JSONDecodeError("decision must be a JSON object", raw, 0)
-    trailing = raw.strip()[end:].strip()
+    trailing = text[end:].strip()
     if trailing:
         logger.info("dropped %d chars of prose after the decision JSON", len(trailing))
     return decoded
@@ -1812,7 +1837,8 @@ def _wake_schedule_line(directive: dict | None) -> str:
     return "Nothing is scheduled right now — follow your goals."
 
 
-def _schedule_note(directive: dict | None, footing: str | None = None) -> str:
+def _schedule_note(directive: dict | None, footing: str | None = None,
+                   walls_close: int | None = None) -> str:
     """Render the sequencer directive (planner.step) for the decision prompt.
 
     Turns "what your routine says right now" into a line the LLM can act on:
@@ -1870,6 +1896,26 @@ def _schedule_note(directive: dict | None, footing: str | None = None) -> str:
         needs_brain = (directive.get("completion") or {}).get("type") == "time_or_llm_confirmed"
         ground = str(footing or "").strip()
         place_name = directive["place"]
+        # SR75_P: through the window glass the eyes labelled the ground
+        # "building_interior", this line said "You are inside", and the model
+        # believed it. Inside is a body fact: walls within 10 m on all 8 radar
+        # headings (SR77_P: a door frame reads 7). The eyes' label is used only when the body
+        # did not measure.
+        if needs_brain and walls_close is not None:
+            if walls_close >= 8:
+                return (f"{intent}\nYour body touches walls within 10 m on "
+                        f"{walls_close} of 8 headings: you are inside a walled "
+                        f"space at {place_name}. Do the activity here; short "
+                        f"local moves take you to a counter or a seat.")
+            return (f"{intent}\nYou are near the spot where {place_name} was "
+                    f"first noted, standing on: {ground or 'ground not reported'}. "
+                    f"Your body touches walls within 10 m on only {walls_close} "
+                    f"of 8 headings: you are outdoors, not inside. An interior in "
+                    f"your picture is seen through glass or a doorway. The spot "
+                    f"marks the place; it is not its door, counter or seats. "
+                    f"Using walk_to '{place_name}' again only returns you to the "
+                    f"spot. Whatever part of your activity happens inside has not "
+                    f"been done and cannot be done from here.")
         if needs_brain and ground and ground != "building_interior":
             return (f"{intent}\nYou are at the spot where {place_name} was "
                     f"first noted, standing on: {ground}. That is outdoors. The "
