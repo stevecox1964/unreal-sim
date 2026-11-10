@@ -233,6 +233,26 @@ it" while he stood in the road.
 - **Seen:** the place grew from 13 to 22 tiles along the street while he wandered (8-neighbour
   growth). Growth outdoors needs a limit — e.g. grow only on `building_interior` footing.
 
+**SR71_P (2026-11-10, 5.8 min, Play; user cleared objects from the shop front) — Dufus went INSIDE
+a building. The wrong one: the bank next door.** Footing read `building_interior` at
+`(-3065, -1899)`; his thought: "I am in the bank, not Don's Donuts!"
+- **Built before the run:** `_nearest_reachable` (`agent_manager.py`) — a directional step whose
+  exact target has no path walks to the nearest reachable floor (rings of 8 points at 1/2/3 m, the
+  engine's own path test). Probed live first: the SR70_P target behind Don's window = no floor;
+  5 of 8 points 1 m round it = full path through the door. **It did not fire in SR71_P** (all 14
+  engine moves were `path: full`), so it is unproven live.
+- **Why the bank — two causes:**
+  1. **Invented place names pull him back to the road.** 11 of 22 orders were `walk_to "Don's
+     Donuts entrance"` / `"…interior"`. Those are not recorded places; they resolve to "Don's
+     Donuts" = the road anchor. Result: 0 cm ("arrived") or a walk BACK to the road (17 `STALLED`).
+     Needed: a fact — "'<name>' is not a recorded place; the only spot known for Don's Donuts is the
+     road point; move by direction toward what you see."
+  2. **Steps near a place are 15 m.** From the road anchor one NE step of 1500 cm carried him past
+     Don's door and into the bank. Needed (place mode): within the bound place or its frontier, cap
+     a directional step at ~3 m.
+- **Risk seen:** tile growth is name-blind — standing in the bank while bound to Don's can add bank
+  floor to "Don's Donuts" (growth is 8-neighbour along the street). Limit growth before long runs.
+
 **The model (proposed, replaces nothing in #113):**
 - **Grid cell (30 m)** = a drawer in the map index. Never used to move.
 - **Place** = a named spot where APCs work and meet. Outline = 3 m tiles. Floor = 1 m tiles (A below).

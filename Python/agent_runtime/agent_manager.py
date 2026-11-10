@@ -303,6 +303,8 @@ _PLACE_ROAM_MARGIN_CM = 100.0
 # A place grows tile by tile (#113); one grid cell's worth (10x10 tiles) is the
 # most a single place can claim, so a long roam cannot swallow the street.
 _PLACE_MAX_TILES = 100
+# #115: where to look for floor when a step's exact target has none.
+_NEAR_SPOT_RINGS_CM = (100.0, 200.0, 300.0)
 # Same-name rows within this distance are one place (one tile set); farther
 # apart they are two places that happen to share a name (#113, "home").
 _SAME_PLACE_CM = 3000.0
@@ -5619,6 +5621,41 @@ class AgentManager:
             return float(distance_cm)
         return float(result.get("clearance_cm", 0.0) or 0.0)
 
+    def _nearest_reachable(self, agent: Agent, target) -> tuple[list, float] | None:
+        """The reachable floor nearest a step target that has no path (#115).
+
+        Rings of 8 points at 1, 2 and 3 m round the target; each is put to the
+        engine's own path test (``radar(location=…)``, the test ``move_to``
+        runs) without moving the body. The nearest ring with a full path onto
+        walkable ground wins; inside a ring, the shortest walk. Measured in
+        SR70_P at Don's: the target behind the window had no floor, five of the
+        eight points 1 m round it did — all reached through the door.
+        Returns ``([x, y, z], gap_cm)`` or None.
+        """
+        radar = getattr(self.bridge, "radar", None)
+        if not callable(radar):
+            return None
+        for ring_cm in _NEAR_SPOT_RINGS_CM:
+            best = None
+            for k in range(8):
+                a = math.radians(k * 45.0)
+                x = target[0] + ring_cm * math.cos(a)
+                y = target[1] + ring_cm * math.sin(a)
+                try:
+                    r = radar(agent.bound_unreal_actor_name, distance_cm=200.0,
+                              sectors=1, location=(x, y, target[2])) or {}
+                except Exception as e:
+                    logger.warning("[%s] nearest-floor probe failed: %s", agent.agent_id, e)
+                    return None
+                if r.get("path") != "full" or r.get("ground_under_feet") is False:
+                    continue
+                length = float(r.get("path_length_cm") or 0.0)
+                if best is None or length < best[0]:
+                    best = (length, [x, y, target[2]])
+            if best is not None:
+                return best[1], ring_cm
+        return None
+
     def _execute_routed_walk(self, agent: Agent, action: dict, observation: dict) -> dict:
         """Send a remembered place to the existing engine pathfinder.
 
@@ -5772,6 +5809,31 @@ class AgentManager:
             if result.get("error"):
                 return {"status": "accepted", "action": "idle",
                         "note": f"walk {direction} blocked: {result.get('error')}"}
+            # #115 / SR70_P: Dufus stood 2 m from Don's open door and ordered
+            # "forward" at a point behind the shop window (a table: no floor
+            # there). The engine answered path=none, moved=False, and the body
+            # did nothing, 12 times. The navmesh is a guide, not the order: go
+            # as near as the floor allows to where the eyes pointed.
+            if result.get("moved") is False and result.get("path") == "none":
+                near = self._nearest_reachable(agent, target)
+                if near is not None:
+                    spot, gap_cm = near
+                    observation["_resolved_target"] = spot
+                    retry = self.bridge.execute_action(
+                        agent.bound_unreal_actor_name, {"type": "walk_to", "location": spot}
+                    )
+                    logger.info(
+                        "[%s] step %s: no floor at the exact spot — walking to the "
+                        "nearest reachable floor, %.1f m from it (path=%s moved=%s)",
+                        agent.agent_id, direction, gap_cm / 100.0,
+                        retry.get("path"), retry.get("moved"))
+                    if not retry.get("error"):
+                        return retry
+                else:
+                    logger.info(
+                        "[%s] step %s: no floor at the exact spot and none "
+                        "reachable within %.0f m of it", agent.agent_id, direction,
+                        _NEAR_SPOT_RINGS_CM[-1] / 100.0)
             return result
 
         # Resolve the named place and let the engine find the physical path.
