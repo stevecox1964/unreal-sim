@@ -32,11 +32,11 @@ _COMPASS_WORD = {
 _ACTION_SCHEMAS: dict[str, str] = {
     "idle":             '{"type": "idle"}',
     "wander":           '{"type": "wander"}  -- keep moving: take one step in the direction you are facing (about 15m, longer over ground already walked, shorter when something is close). Add "distance": "close|normal|far" to ask for a shorter or longer one',
-    "walk_to":          '{"type": "walk_to", "target_location": "<place name>"} to travel to a named place you know (e.g. "village square", "home"), OR {"type": "walk_to", "target_actor": "<character name>"} to walk to a known character, OR {"type": "walk_to", "direction": "north|south|east|west|northeast|northwest|southeast|southwest"} to walk ~15m along that compass heading, OR {"type": "walk_to", "direction": "forward|forward-left|forward-right|left|right|back"} to walk relative to the way your body is currently facing, OR {"type": "walk_to", "direction": "way-in-1"} to walk straight at a WAY IN your eyes listed this tick (use its exact name). Any walk with a "direction" may add "distance": "close" (a few metres, for something you can see and want to stop at), "normal" (the default, about 15m) or "far" (tens of metres, for crossing ground you are only passing through). How far you actually travel is worked out from the ground ahead: it is cut short of anything refused or in the way, and it stretches across ground APCs have already walked. You will be told the length you got',
+    "walk_to":          '{"type": "walk_to", "target_location": "<place name>"} to travel to a named place you know (e.g. "village square", "home"), OR {"type": "walk_to", "target_actor": "<character name>"} to walk to a known character, OR {"type": "walk_to", "direction": "north|south|east|west|northeast|northwest|southeast|southwest"} to walk ~15m along that compass heading, OR {"type": "walk_to", "direction": "forward|forward-left|forward-right|left|right|back"} to walk relative to the way your body is currently facing, OR {"type": "walk_to", "direction": "way-in-1"} to walk straight at a WAY IN your eyes listed this tick (use its exact name). OR {"type": "walk_to", "direction": "person-1"} to walk up to a CHARACTER your eyes listed this tick (use its exact name) — the body stops at what is between you, such as a counter. Any walk with a "direction" may add "distance": "close" (a few metres, for something you can see and want to stop at), "normal" (the default, about 15m) or "far" (tens of metres, for crossing ground you are only passing through). How far you actually travel is worked out from the ground ahead: it is cut short of anything refused or in the way, and it stretches across ground APCs have already walked. You will be told the length you got',
     "survey_here":      '{"type": "survey_here"} to survey the cell you are standing in — captures all four compass headings over the next few ticks and adds the cell to the shared map. Only works on a cell that has no current survey, and only for the cell underfoot',
     "refuse_cell":      '{"type": "refuse_cell", "direction": "north|south|east|west|northeast|northwest|southeast|southwest", "reason": "<what you can see that makes it not worth walking into>"} to record that the cell one step that way is not ground you will walk into. It stops being offered as somewhere to survey, for you and for every other APC, until someone withdraws it. Use it when you can SEE the reason — standing crops, water, a fence, someone\'s private yard. Omit "direction" to refuse the cell you are standing in. Add "scope": "spot" to refuse only the ~9m patch of ground one step that way instead of the whole 30m cell — use the patch for one bad yard, alley or doorway inside a cell that is otherwise worth surveying; use the whole cell for corn fields, water, and ground that is bad wall to wall',
     "allow_cell":       '{"type": "allow_cell", "direction": "<compass word, or omit for here>"} to withdraw a refusal you made earlier — the cell goes back to being ordinary ground. Add "scope": "spot" to withdraw a patch refusal instead',
-    "speak_to":         '{"type": "speak_to", "target": "<character name>", "message": "<text>"} -- say something out loud to someone. This is the ONLY action that produces speech: greeting, answering, asking, thanking, saying goodbye. If you intend to say anything at all this tick, the action is speak_to. "idle" and "observe" are silent. You talk from within 3 m, facing them: if they are farther, nothing is said and you are told how far they are. Do not go looking for people to talk to; answer them when they are close',
+    "speak_to":         '{"type": "speak_to", "target": "<character name>", "message": "<text>"} -- say something out loud to someone. This is the ONLY action that produces speech: greeting, answering, asking, thanking, saying goodbye. If you intend to say anything at all this tick, the action is speak_to. "idle" and "observe" are silent. You talk from within 3 m, facing them: if they are farther, nothing is said and you are told how far they are. For a person your eyes list as "person-N", use that name as the target: your body turns to face them. If they are not close, nothing is said — walk up to them first with walk_to direction "person-N". Do not go looking for people to talk to; answer them when they are close',
     "inspect_object":   '{"type": "inspect_object", "target": "<character name>"} -- look closely at someone or something. Works from within 3 m: if it is farther, nothing happens',
     "follow_character": '{"type": "follow_character", "target": "<character name>"}',
     "attack":           '{"type": "attack", "target": "<character name>"}',
@@ -1507,8 +1507,15 @@ def _seen_text(seen: dict | None, breadcrumbs: list | None = None) -> str:
         lines.append(trail)
     for lm in seen.get("landmarks") or []:
         lines.append(f"- {lm['label']} ({lm.get('bearing', '?')}, {lm.get('distance', '?')})")
-    for ch in seen.get("characters") or []:
-        lines.append(f"- CHARACTER: {ch['label']} ({ch.get('bearing', '?')}, {ch.get('distance', '?')})")
+    # #123: "person-N" is a direction word (walk up to them) and a speak_to
+    # target (the body turns to face them).
+    for i, ch in enumerate(seen.get("characters") or [], start=1):
+        reach = ("" if ch.get("close") is None
+                 else " — close enough to speak to" if ch["close"]
+                 else f" — NOT close enough to speak to: walk_to direction "
+                      f"\"person-{i}\" first")
+        lines.append(f"- CHARACTER \"person-{i}\": {ch['label']} "
+                     f"({ch.get('bearing', '?')}, {ch.get('distance', '?')}){reach}")
     # #115: doorways come from the eyes. The name "way-in-N" is a direction
     # word: code turns the doorway's place in the picture into the heading.
     for i, way in enumerate(seen.get("ways_in") or [], start=1):
@@ -1933,6 +1940,19 @@ def _schedule_note(directive: dict | None, footing: str | None = None,
                            f"that with your picture." if things else "")
                         + f" walk_to target_location \"{place_name}\" takes you "
                           f"out and through the remembered door.")
+            # #120: the author's "what you can do here" list. Inside, it is the
+            # menu the APC works from; it is not shown from the street.
+            todo = directive.get("todo") or []
+            if inside and todo:
+                menu = "\n".join(f"  {i}. {item}" for i, item in enumerate(todo, start=1))
+                return (f"{intent}\n{measured}: you are inside a roofed "
+                        f"space at {place_name}.\nWHAT YOU CAN DO IN {place_name} "
+                        f"(the list posted here):\n{menu}\nRead the list. Pick the "
+                        f"line your task needs and do that line, where it says to do "
+                        f"it: go to the thing or person it names first, then act. "
+                        f"Everything in your picture is a thing in {place_name}: a "
+                        f"sign or a picture on a wall in here does not name another "
+                        f"place." + (f" Seen in here before: {things}." if things else ""))
             if inside:
                 return (f"{intent}\n{measured}: you are inside a roofed "
                         f"space at {place_name}. Do the activity here; short "

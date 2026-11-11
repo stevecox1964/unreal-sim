@@ -34,7 +34,8 @@ What the sim does each tick, per agent:
 | **Perceive** | Capture the agent's in-game camera frame; a vision model turns it into landmarks + characters + footing (what the agent is standing on) + a caption. |
 | **Remember** | Sightings, places, and interactions are written to per-agent episodic + social memory and a shared spatial map. |
 | **Decide** | A decision LLM picks the next action from the agent's allowed action set, grounded in what it sees and remembers, its authored agenda (`agenda.json`), and deterministic facts like footing and route progress. |
-| **Act** | The action is schema-validated, then executed in Unreal (walk to a named place, speak to someone, observe, idle, ...). |
+| **Sense (body)** | Before any model runs, the body measures: a radar sweep on all 8 compass headings, the ground under the feet, and roof rays overhead ("inside" or "outdoors"). These are facts in the prompt; the engine's names never reach the model. |
+| **Act** | The action is schema-validated, then executed in Unreal (walk to a named place, walk at a doorway or a person the eyes listed, speak to someone, observe, idle, ...). The body measures every step and reports what really happened. |
 
 Decisions stream to `worlds/<level>/logs/agent_decisions.log` (completed decisions only) and
 `worlds/<level>/logs/sim_runner.log` (every tick's outcome for every agent, including skips and
@@ -52,6 +53,42 @@ exclusions truncated per run), plus the web cockpit's live feed.
 > server, no `mcp.json`, no `mcp`/`fastmcp` dependency. The sim talks to Unreal over raw TCP via
 > `agent_runtime/unreal_connection.py`, and anything driving the sim (web cockpit, Claude in dev
 > mode, curl) uses the runner's localhost HTTP API.
+
+## What an APC does at a place (state on 2026-11-11)
+
+Proven live with one APC (Dufus), one shop (Don's Donuts) and one mannequin clerk — runs
+SR83_P to SR94_P. Findings and limits: [`plan/backlog.md`](plan/backlog.md) #115, #116, #118–#123.
+
+- **Inside is a body fact (#115).** The radar command sends one ray up at the body and one at each
+  reachable spot 2 m around it. A roof over all of them = "inside". The eyes' label is not used.
+- **The eyes lead to a door (#115).** The vision model reports `ways_in` (open doorways and where
+  they sit across the picture). `walk_to` with direction `way-in-1` walks that line; a long line
+  stops 4 m short for a second look. The engine's own door answer is written to the log only, to
+  score the eyes.
+- **A place remembers its door, exit and things (#118).** When the roof fact flips, the body saves
+  the crossing on the place (`place_doors` in `world_places.db`). The next `walk_to "<place>"`
+  goes straight to the first point inside. What the eyes name while inside is saved as a thing in
+  that place (`place_things`), not as a new place. A body that goes in more than 6 m from the
+  remembered door is told it may be in another building.
+- **"I have been here before" (#122).** A spot (0.5 m) and facing (5°) the eyes already reported is
+  answered from `observations/perception_log.jsonl` with no cloud vision call. Never reused when
+  another APC is near.
+- **Walk up, turn, then speak (#113, #123).** `speak_to` works only from close up, facing the
+  target. For an APC the engine gives the distance. For a figure the engine cannot place (a
+  mannequin clerk) the eyes give `person-N` and its place in the picture: `walk_to` direction
+  `person-1` walks up to it (the body stops at the counter), and `speak_to` turns the body to face
+  it. Each CHARACTER line says "close enough to speak to" or not, before the model decides.
+- **A place has a "what you can do here" list (#120, first slice).** Authored in
+  `worlds/<level>/places.json` under `"todo"`; shown to an APC only when its body reads inside.
+- **A task's "done" needs body facts (#116).** `completion.needs` in `agenda.json` (`inside`,
+  `spoke`): the model's `task_completion` is refused while a fact is missing, and it is told which.
+- **Run scorecard (#119).** At stop, code appends one line per APC to
+  `worlds/<level>/logs/scorecard.jsonl`: seconds and decisions to get inside, steps, eye calls,
+  looks reused, failed calls, tasks done, cost.
+
+Measured on the same task ("walk to Don's, order at the counter"): first visit 229–279 s and 9–12
+decisions to get inside; with the remembered door 29–37 s and 1 decision; whole task 46 s, 3
+decisions, about $0.09 (SR94_P).
 
 ## Components
 
@@ -79,11 +116,12 @@ exclusions truncated per run), plus the web cockpit's live feed.
   - **agent_runtime/** the cognitive loop: `agent_manager` (tick orchestration), `factory`
     (shared AgentManager construction), `llm_router`, `perception` (VLM), `memory_store`,
     `social_memory` + `episodic_memory` (per-agent memory), `place_db` + `world_grid` (shared
-    spatial map), `cell_sweep` (maintenance-APC sweep), `config_store`, `unreal_bridge`
+    spatial map), `cell_sweep` (the place-cell sweep any APC can run), `places_manifest` (`places.json`),
+    `run_score` (the run scorecard), `config_store`, `unreal_bridge`
   - **scripts/** offline test suite (`run_tests.py`) + the loop harness (`loop/preflight.py`)
   - **worlds/** Level-scoped NPC data (one folder per Unreal level)
     - **`<LevelName>`/agents/`<agent_id>`/** per-NPC config files
-      - `state.json` identity, binding, tier, `role` (`npc` | `maintenance`), goal, tick settings
+      - `state.json` identity, binding, tier, goal, tick settings
       - `character.md` role, personality, backstory
       - `goals.md`  long-term and current goals
       - `rules.md` decision constraints
@@ -127,11 +165,21 @@ rescans after you move things — the tip line lists exactly which landmarks app
 near-miss labels (`Landmarlk_...`) as spelling suspects. Landmarks win over `places.json` on
 collision; moving the actor moves the place.
 
+**What an APC can do at a place** is authored in `Python/worlds/<level>/places.json`, by place
+name (no x/y needed), and shown to an APC only when its body is inside that place:
+
+```json
+{ "places": [],
+  "todo": [ { "place": "Don's Donuts",
+              "items": [ "Order a coffee or a donut: walk up to the counter, face the person behind it, and say your order",
+                         "Sit at a table and eat" ] } ] }
+```
+
 Because the engine is a plain JSON HTTP API, you can also drive it directly with curl:
 
 ```bash
 curl http://127.0.0.1:8777/status
-curl -X POST http://127.0.0.1:8777/start -d '{"tick_seconds":2}'
+curl -X POST http://127.0.0.1:8777/start -H "Content-Type: application/json" -d '{"tick_seconds":1,"mode":"play"}'
 curl http://127.0.0.1:8777/events?limit=20
 curl -X POST http://127.0.0.1:8777/stop
 ```
@@ -196,7 +244,7 @@ provider **or** a local [Ollama](https://ollama.com) model.
 #### Cloud (Haiku for both decisions and vision)
 
 Haiku 4.5 is multimodal, so one provider and one key cover **both** roles — this is the simplest
-cloud setup and the current default:
+cloud setup:
 
 ```dotenv
 LLM_PROVIDER=anthropic            # decisions: anthropic | openai | ollama
@@ -213,6 +261,21 @@ Gemini stays selectable for vision (`VISION_PROVIDER=gemini`, `GEMINI_API_KEY`,
 The OpenAI path uses the Responses HTTP API directly through `requests` instead
 of the OpenAI Python SDK, avoiding a Python 3.14 compatibility issue in the
 SDK/Pydantic stack while keeping runtime behavior the same.
+
+#### OpenRouter (what the live runs use, 2026-11)
+
+One key, any model. The SR83_P–SR94_P runs used Claude Sonnet 5 for decisions and Qwen for vision:
+
+```dotenv
+LLM_PROVIDER=openrouter
+OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_MODEL=anthropic/claude-sonnet-5
+VISION_PROVIDER=openrouter
+OPENROUTER_VISION_MODEL=qwen/qwen3.7-flash
+```
+
+The vision provider can answer 429 ("too many requests"). A failed look is logged and recorded,
+not retried; the eye memory (#122) removes most repeat calls.
 
 #### Fully local (Ollama)
 
@@ -273,7 +336,7 @@ A first-pass agentic NPC simulation layer driven by an LLM-controlled Agent Mana
 - **Validated action pipeline** â€” LLM decisions are schema-validated before any Unreal command executes
 - **Level-aware loading** â€” agents live under `Python/worlds/<LevelName>/agents/` and are loaded automatically based on the currently open Unreal level; no config field needed
 - **Web cockpit** â€” local FastAPI app (`Python/web_ui/`): drive the sim (`/sim` — start/stop/step + live decision feed), manage provider profiles (`/providers`), and edit config (`/settings`). Launch with `start_sim.bat` (alongside the sim engine). NPC scaffolding moved to the `/create-npc` skill; the legacy `npc_builder` app was removed 2026-06-28.
-- **Explore mode** â€” a second simulation mode (`start_simulation(mode="explore")`) where the avatar autonomously maps an unknown world by walking it: a VLM (Gemini or a local Ollama model) turns each camera frame into semantic landmarks, a deterministic frontier explorer chooses where to walk next, and a per-agent engine-agnostic grid/place map is written to `spatial_map.json`. No LLM in the movement loop. See [Explore Mode](#-explore-mode-vlm-spatial-mapping) below.
+- **Sim modes: `play` and `survey` (#102)** - `play` (default) runs the APCs on their agendas; `survey` maps unknown ground cell by cell. The first-version `explore` mode is retired; see [Explore Mode](#-explore-mode-vlm-spatial-mapping) for the idea it came from.
 - **Local model support (Ollama)** â€” run both the decision LLM and vision perception fully locally on an Ollama model (e.g. the multimodal `qwen3.5:4b`) with no cloud API keys. Decision and vision providers are selected independently in `Python/.env`. See [LLM configuration for NPC simulation](#llm-configuration-for-npc-simulation).
 
 ### Spatial knowledge, memory & navigation
@@ -290,7 +353,7 @@ A cognitive layer the agents build and share as they run (verified live in PIE, 
 - **Deterministic identity recognition (#44)** â€” the vision model labels every figure "unknown person"; `agent_runtime/recognition.py` reconciles that against engine-known positions (geometry, not a model guess) so an APC recognizes another APC it has already met instead of every encounter reading as a first meeting.
 - **Authored agendas + daily ledger (#36)** â€” `agenda.json` per agent is stable, user-authored schedule input (tasks, places, completion policy); `agent_runtime/agenda.py` derives runtime task state and a chronological ledger from it deterministically each tick, separate from the authored file.
 - **Behavioral guardrail facts, not code-side blocking** â€” when an agent does something a simple rule should have prevented (wandering off-path, drifting farther from a destination), the fix is a louder deterministic fact in the decision prompt (`FOOTING: <surface>`, `PROGRESS WARNING`) plus an explicit line in `rules.md`, not a validator that blocks the action. Judgment stays with the LLM; code's job is making the relevant fact impossible to miss.
-- **Maintenance/monitor APC** â€” an optional system-worker role (`"role": "maintenance"` in `state.json`) with **no personality or LLM** that sweeps unexplored grid cells (walk to cell center â†’ 360 observe â†’ drop a *community breadcrumb*) so the personality NPCs skip the costly re-sweep. *Decision + navigation logic is complete and tested; the live 360 rotation+capture in Unreal is pending.*
+- **Place-cell sweep (no dedicated maintenance role)** - the old `"role": "maintenance"` system worker was retired (#11.1). Any APC runs the sweep (walk to the stand point, look around, name the cell) when it needs a community place cell.
 - **Perception-guided exploration (#77/#78/#26, verified live SR43-SR45 2026-08-19)** — the APC's own eyes
   outrank the navmesh. Perception reports `ground_ahead` (footing the APC would stand on a few steps out)
   and `path_ahead` (`open|dead_end|blocked`); an eyes cache files those per compass word while the APC
@@ -333,6 +396,10 @@ A cognitive layer the agents build and share as they run (verified live in PIE, 
   whether they are *set*; a blank secret field is left untouched. Backed by `agent_runtime/config_store.py`.
 
 ### Offline test suite
+
+> **State 2026-11-11:** the suite has not been run or updated since the place work of #115–#123
+> (the user's rule: proof is a live run). Backlog #107 lists scripts that already failed on an
+> untouched HEAD. Do not read a green or red result here as the state of the sim.
 
 The agent-runtime logic is covered by offline tests that stub Unreal entirely (no editor, no network, no LLM call) â€” the loop-safe surface for automated/unattended development:
 
@@ -409,7 +476,7 @@ Unreal C++ plugin (UnrealMCP) â†’ Unreal Editor / PIE
 
 | Endpoint | Description |
 |------|-------------|
-| `POST /start` | Start the autonomous agent loop (`tick_seconds`, `active_agents`, `mode`) |
+| `POST /start` | Start the autonomous agent loop (`tick_seconds`, `active_agents`, `mode`: `play` (default) or `survey`). Each start puts every APC back on its start transform. |
 | `POST /stop` | Stop the loop |
 | `POST /pause` / `POST /resume` | Pause or resume without losing state |
 | `GET /status` | Live status of the running sim |
@@ -423,7 +490,7 @@ Unreal C++ plugin (UnrealMCP) â†’ Unreal Editor / PIE
 With Unreal running in PIE and the runner up (`start_sim.bat`):
 
 ```bash
-curl -X POST http://127.0.0.1:8777/start -d '{"tick_seconds":10,"active_agents":["dufus"]}'
+curl -X POST http://127.0.0.1:8777/start -H "Content-Type: application/json" -d '{"tick_seconds":1,"mode":"play","active_agents":["dufus"]}'
 curl http://127.0.0.1:8777/events?limit=10
 curl -X POST http://127.0.0.1:8777/stop
 ```
@@ -443,6 +510,10 @@ Expected: Dufus binds to his actor in MCP_World; each tick the agent captures a 
 ## ðŸ§­ Explore Mode (VLM spatial mapping)
 
 > **Status: Working in PIE** â€” verified end-to-end 2026-06-07 (an avatar walked the town's west edge and built a labeled map).
+
+> **State 2026-11-11:** `explore` is no longer a sim mode. The runner accepts `play` and `survey`
+> (#102); any other word falls back to `play` with a warning. Mapping an unknown world is now the
+> `survey` mode. This section describes the first version and is kept for the idea.
 
 A second simulation mode where the avatar **discovers a world by looking at it and walking it**, rather than acting on pre-authored knowledge. The thesis: distil Unreal's thousands of engine actors into an *engine-agnostic* representation â€” metric coordinates + vision-derived semantic labels + a nav graph â€” so the same pipeline would drive a real robot with a camera.
 

@@ -95,6 +95,40 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #123 — Walk up, turn to face, then speak — for a person the engine cannot place (all APCs)
+
+**Source:** user, 2026-11-11: *"Dufus is not at the counter and not looking at the person he is
+talking to. This is not just for Dufus but all APCs need to behave this way."*
+**Status:** BUILT 2026-11-11, proven live on one clerk (SR92_P–SR94_P).
+**The gap:** #113 made `speak_to` an APC happen within 3 m, facing them. A mannequin has no engine
+position, so that rule passed it straight through: SR91_P, Dufus "ordered" from the door, 4 m from
+the counter, facing the wrong way.
+**Built (body rules, no per-APC code):**
+- Eyes (`perception.py`): each character carries `x`, its place across the picture.
+- `person-N` = the N-th CHARACTER line of this tick. It is a direction word
+  (`walk_to` direction `person-1` walks the whole measured line; the body stops at what it
+  touches — the counter) and a `speak_to` target.
+- `agent_manager._speak_to_seen_person`: close = the eyes say "near", or "mid" and the body
+  touches something solid within 3.5 m on that line. Close → turn to face, then speak. Not close →
+  nothing said, and the brain is told why.
+- `_mark_people_close`: the same fact, read off the radar, is on every CHARACTER line BEFORE the
+  brain decides ("close enough to speak to" / "NOT close enough … walk_to direction person-N first").
+- **Live:** SR92_P refused the speech from the door, then walk 3.4 m → turn (yaw 275) → speak; the
+  picture after the turn shows the clerk centred behind the till. SR94_P with the pre-decision
+  fact: 3 decisions, no refused speech, task done in 46 s.
+**Limits:** the eyes' near/mid/far wobbles (same spot read "near" then "mid"); "any other name"
+means the closest person in the picture; an old remembered look (#122) has no `x` and uses
+left/center/right; `inspect_object` on a thing is not covered; one clerk, one shop.
+
+**#120 first slice BUILT 2026-11-11 (option A, user: "go A"):** the list lives in
+`worlds/<level>/places.json` under `"todo"`: `[{"place": "<name>", "items": ["…"]}]`
+(`places_manifest.load_todo`). An APC whose scheduled place has a list sees it only when its body
+reads inside: "WHAT YOU CAN DO IN <place>". Don's Donuts has 3 lines. SR93_P/SR94_P: the list was
+in the prompt and the order was made at the counter. **Not built:** the list on `Landmark_BP`
+(option B); a stand point per line; closing the task from a list line (it still closes on
+`needs: inside + spoke`, #116). **Not shown yet:** that the list alone changes behaviour — SR93_P
+still tried to speak from the door until the "close" fact (#123) was added.
+
 ### #122 — "I have been here before": a spot and facing already seen is not sent to the eyes again
 
 **Source:** user, 2026-11-11: *"the 429 needs to be handled by, don't take a picture of a xy degree

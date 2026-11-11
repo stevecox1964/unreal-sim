@@ -521,6 +521,34 @@ def _picture_x_to_yaw_offset(x: float) -> float:
     return math.degrees(math.atan((2.0 * float(x) - 1.0) * half))
 
 
+def _seen_person(seen: dict | None, name: str) -> tuple[int, dict] | None:
+    """(number, row) of the person the eyes listed that ``name`` means (#123).
+
+    ``person-N`` is the N-th CHARACTER line of this tick's picture. Any other
+    name for someone the engine cannot place ("unknown person", "the clerk")
+    means the closest person in the picture.
+    """
+    people = (seen or {}).get("characters") or []
+    name = str(name or "").strip().lower()
+    if name.startswith("person-"):
+        index = name[len("person-"):]
+        if index.isdigit() and 1 <= int(index) <= len(people):
+            return int(index), people[int(index) - 1]
+        return None
+    order = {"near": 0, "mid": 1, "far": 2}
+    ranked = sorted(enumerate(people, start=1),
+                    key=lambda p: order.get(str(p[1].get("distance")), 1))
+    return ranked[0] if ranked else None
+
+
+def _person_x(person: dict) -> float:
+    """Where a seen person sits across the picture, 0 (left) to 1 (right). The
+    eyes' ``x`` when given; else the middle of their left / center / right."""
+    if person.get("x") is not None:
+        return float(person["x"])
+    return {"left": 0.2, "right": 0.8}.get(str(person.get("bearing")), 0.5)
+
+
 def _eyes_key(line: dict) -> tuple | None:
     """Spot (0.5 m) and facing (5 degrees) of one perception-log line, or None
     when it has no measured yaw, no position, or an error (#122)."""
@@ -627,6 +655,7 @@ class AgentManager:
         self._door_state: dict[str, tuple] = {}     # agent_id -> (inside, (x, y)) at the last observation (#118)
         self._far_from_door: dict[str, float] = {}  # agent_id -> cm from the remembered door when it went in elsewhere (#118)
         self._eyes_seen: dict[str, dict] = {}       # agent_id -> {(spot, facing): perception-log line} (#122)
+        self._place_todo: dict[str, list[str]] = {} # place name (casefold) -> the author's "what you can do here" list (#120)
         self._task_spoke: dict[str, set] = {}       # agent_id -> task ids with a delivered speak_to at the place (#116)
         self._completion_withheld: dict[str, dict] = {}  # agent_id -> fact for the brain: why "done" was refused (#116)
         self._footing_recoveries: dict[str, int] = {}  # agent_id -> lifetime count of footing reflex recoveries (#101)
@@ -769,6 +798,11 @@ class AgentManager:
             if scanned["suspects"]:
                 logger.error(f"landmark suspects ignored: {scanned['suspects']}")
             manifest = places_manifest.load_manifest(self._agents_dir.parent / "places.json")
+            # #120: the author's "what you can do here" lists, by place name.
+            self._place_todo = places_manifest.load_todo(self._agents_dir.parent / "places.json")
+            if self._place_todo:
+                logger.info("todo lists (places.json): %s", {
+                    name: len(items) for name, items in self._place_todo.items()})
             if not landmarks:
                 logger.info(f"landmarks: 0 (level) — no Landmark_* actors found, "
                            f"places.json: {len(manifest)}")
@@ -2671,6 +2705,9 @@ class AgentManager:
                     yaw=_yaw_of(observation.get("rotation")),
                     grid=observation.get("grid"),
                     world_time=observation.get("world_time"), context="tick")
+            # After the log line is written: "close" is this tick's body
+            # fact, not part of what the eyes reported.
+            self._mark_people_close(observation, seen)
 
             xyz = _loc_xyz(observation.get("location"))
             self._remember_ways_in(agent_id, observation, seen)
@@ -3388,7 +3425,8 @@ class AgentManager:
         # whose facts are not true; the brain is told which one is missing.
         needs = (right_now.get("completion") or {}).get("needs") or []
         spoke = (task_id in self._task_spoke.get(agent.agent_id, set())
-                 or action.get("type") == "speak_to")
+                 or (action.get("type") == "speak_to"
+                     and result.get("action") != "idle"))   # refused = not said
         missing = []
         if "inside" in needs and observation.get("inside") is not True:
             missing.append("your body does not read inside a roofed space")
@@ -3491,6 +3529,10 @@ class AgentManager:
                 cap_cm = max(float(reach_cm), _PLACE_STEP_CM)
                 if float(reach_cm) > _WAY_IN_LOOK_AGAIN_CM + _PLACE_STEP_CM:
                     cap_cm = float(reach_cm) - _WAY_IN_LOOK_AGAIN_CM
+            # #123: walking up to a person is walked whole — the body stops at
+            # what it touches (the counter in front of a clerk).
+            elif str(direction).lower().startswith("person-"):
+                cap_cm = max(float(reach_cm), _PLACE_STEP_CM)
             elif float(reach_cm) >= _WALL_NEAR_CM:
                 cap_cm = max(float(plan["distance_cm"]), _PLACE_STEP_CM)
             step_cm = min(float(reach_cm) - dead_end.BODY_CLEAR_CM, cap_cm)
@@ -3639,6 +3681,10 @@ class AgentManager:
         sched = observation.get("schedule") or {}
         if not sched.get("place"):
             return
+        # #120: the author's list for this place rides the directive too.
+        todo = self._place_todo.get(str(sched["place"]).strip().casefold())
+        if todo:
+            sched["todo"] = todo
         end = self._resolve_place_endpoint(agent_id, str(sched["place"]))
         if end is None or not end.get("tiles"):
             return
@@ -5762,6 +5808,13 @@ class AgentManager:
             if yaw is None:
                 return None
             return yaw + _picture_x_to_yaw_offset(way["x"])
+        if name.startswith("person-"):
+            # #123: a person the eyes listed this tick — the line to walk up
+            # to them, or to turn and face them.
+            found = _seen_person(observation.get("seen"), name)
+            if found is None or yaw is None:
+                return None
+            return yaw + _picture_x_to_yaw_offset(_person_x(found[1]))
         offset = _DIRECTION_YAW_OFFSET.get(name)
         if yaw is None or offset is None:
             return None
@@ -6405,6 +6458,8 @@ class AgentManager:
         me = _loc_xyz(observation.get("location"))
         target = str(action.get("target") or "")
         tgt = self._target_xyz(target) if me is not None else None
+        if tgt is None and action.get("type") == "speak_to":
+            return self._speak_to_seen_person(agent, action, observation)
         if tgt is None:
             return self.bridge.execute_action(actor, action)
         dist = math.hypot(tgt[0] - me[0], tgt[1] - me[1])
@@ -6419,6 +6474,74 @@ class AgentManager:
                 "note": f"{name} is {dist / 100:.0f} m away — too far to {verb} "
                         f"(you do that from within {_STANDOFF_CM / 100:.0f} m); "
                         f"nothing was said"}
+
+    def _mark_people_close(self, observation: dict, seen: dict) -> None:
+        """Tell the brain, before it decides, which seen people are close
+        enough to talk to (#123).
+
+        SR93_P: with the to-do list in the prompt Dufus still "ordered" from
+        the door first — the picture said "counter, near" and he believed he
+        was at it. Same rule the body applies when it speaks, read off this
+        tick's radar (no engine call here): the eyes say "near", or they say
+        "mid" and the radar heading nearest that person's line touches
+        something solid within reach.
+        """
+        yaw = _yaw_of(observation.get("rotation"))
+        ranges = {h.get("heading"): h.get("range_cm") for h in observation.get("radar") or []}
+        for person in seen.get("characters") or []:
+            how_far = str(person.get("distance") or "mid")
+            close = how_far == "near"
+            if not close and how_far == "mid" and yaw is not None:
+                line = yaw + _picture_x_to_yaw_offset(_person_x(person))
+                letter = min(_COMPASS_ABS_YAW, key=lambda k: abs(
+                    (_COMPASS_ABS_YAW[k] - line + 180.0) % 360.0 - 180.0))
+                reach = ranges.get(_COMPASS_LETTER_WORD[letter])
+                close = reach is not None and float(reach) <= _REACH_CM
+            person["close"] = close
+
+    def _speak_to_seen_person(self, agent: Agent, action: dict, observation: dict) -> dict:
+        """speak_to someone the engine cannot place — a mannequin clerk (#123).
+
+        The same rule as for an APC (#113: close, and facing them), measured
+        with what this body has: the eyes say where the person is in the
+        picture and how far; the body measures the free line toward them.
+        Close = the eyes say "near", or they say "mid" and the body touches
+        something solid within reach on that line (the counter between them).
+        Close: turn to face, then speak. Not close: nothing is said and the
+        brain is told why. SR91_P: Dufus "ordered" from the door, 4 m from the
+        counter, not facing the clerk.
+        """
+        actor = agent.bound_unreal_actor_name
+        yaw = _yaw_of(observation.get("rotation"))
+        me = _loc_xyz(observation.get("location"))
+        found = _seen_person(observation.get("seen"), action.get("target"))
+        if found is None or yaw is None or me is None:
+            if (observation.get("seen") or {}).get("error") or "seen" not in observation:
+                # No picture this tick: not measured is not "nobody there".
+                return self.bridge.execute_action(actor, action)
+            logger.info("[%s] speak_to %r: the eyes list no person — nothing said",
+                        agent.agent_id, action.get("target"))
+            return {"status": "accepted", "action": "idle",
+                    "note": "your eyes list no person in this picture; nothing was said"}
+        number, person = found
+        line_yaw = yaw + _picture_x_to_yaw_offset(_person_x(person))
+        how_far = str(person.get("distance") or "mid")
+        reach = self._look_along(agent, observation, line_yaw, _REACH_CM + 100.0)
+        close = how_far == "near" or (
+            how_far == "mid" and reach is not None and reach <= _REACH_CM)
+        if not close:
+            logger.info("[%s] person-%d is %s in the picture, body line %s — too far "
+                        "to talk to; nothing said", agent.agent_id, number, how_far,
+                        "not measured" if reach is None else f"{reach / 100.0:.1f} m free")
+            return {"status": "accepted", "action": "idle",
+                    "note": (f"person-{number} is {how_far} in your picture — too far "
+                             f"to talk to (you do that from close up, facing them). "
+                             f"walk_to with direction \"person-{number}\" walks you up "
+                             f"to them; nothing was said")}
+        self.bridge.set_facing(actor, list(me), line_yaw)
+        logger.info("[%s] turned to face person-%d (yaw %.0f), then spoke",
+                    agent.agent_id, number, line_yaw % 360.0)
+        return self.bridge.execute_action(actor, action)
 
     def _execute_sweep_observe(self, agent: Agent, action: dict, observation: dict) -> dict:
         """Execute one sweep observation: turn in place to the absolute yaw,

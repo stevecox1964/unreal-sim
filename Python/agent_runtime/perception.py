@@ -55,11 +55,14 @@ OUTSIDE of the building at that opening — never from signs, pictures or goods
 seen through it on the inside. Look for one every time: a dark gap in a wall
 right beside you counts.
 
+For each character give "x" too: where the middle of the person sits across
+the picture, 0.0 (left edge) to 1.0 (right edge).
+
 Schema:
 {{
   "ways_in":    [{{"label": "<what it is and what it leads into>", "x": 0.0, "distance": "near|mid|far", "confidence": 0.0}}],
   "landmarks":  [{{"label": "<place>", "bearing": "left|center|right", "distance": "near|mid|far", "confidence": 0.0}}],
-  "characters": [{{"label": "unknown person", "bearing": "left|center|right", "distance": "near|mid|far", "confidence": 0.0}}],
+  "characters": [{{"label": "unknown person", "x": 0.0, "bearing": "left|center|right", "distance": "near|mid|far", "confidence": 0.0}}],
   "footing": "pavement|road|dirt_path|grass|cultivated_field|water|other",
   "ground_ahead": "pavement|road|dirt_path|grass|cultivated_field|water|building_interior|other",
   "path_ahead": "open|dead_end|blocked",
@@ -316,10 +319,19 @@ def _clean(items) -> list[dict]:
             conf = float(it.get("confidence", 0.5))
         except (TypeError, ValueError):
             conf = 0.5
-        out.append({
+        row = {
             "label": label,
             "bearing": str(it.get("bearing", "center")),
             "distance": str(it.get("distance", "mid")),
             "confidence": conf,
-        })
+        }
+        # #123: where the thing sits across the picture, when the eyes gave it
+        # — a person's "x" is what the body turns to face.
+        try:
+            x = float(it.get("x"))
+            if 0.0 <= x <= 1.0:
+                row["x"] = x
+        except (TypeError, ValueError):
+            pass
+        out.append(row)
     return out

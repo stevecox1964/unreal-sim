@@ -90,6 +90,42 @@ def load_manifest(path: Path) -> list[dict]:
     return entries
 
 
+def load_todo(path: Path) -> dict[str, list[str]]:
+    """The author's "what you can do here" lists (#120), keyed by the place
+    name, lower-cased. From the optional top-level ``todo`` of ``places.json``::
+
+        {"places": [...],
+         "todo": [{"place": "Don's Donuts",
+                   "items": ["order a coffee at the counter", "sit at a table"]}]}
+
+    A list needs no x/y: it hangs on a place by name, authored or discovered.
+    A bad entry is logged and skipped; a missing file or key is ``{}``.
+    """
+    if not path.exists():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception as e:
+        logger.error(f"places manifest {path}: unparseable JSON ({e}) — no todo lists")
+        return {}
+    raw = data.get("todo", []) if isinstance(data, dict) else []
+    if not isinstance(raw, list):
+        logger.error(f"places manifest {path}: 'todo' must be a list — ignored")
+        return {}
+    out: dict[str, list[str]] = {}
+    for i, entry in enumerate(raw):
+        place = str(entry.get("place") or "").strip() if isinstance(entry, dict) else ""
+        items = entry.get("items") if isinstance(entry, dict) else None
+        if not place or not isinstance(items, list):
+            logger.error(f"places manifest {path}: todo entry {i} needs a place "
+                         f"name and a list of items — skipped")
+            continue
+        clean = [str(item).strip() for item in items if str(item or "").strip()]
+        if clean:
+            out[place.casefold()] = clean
+    return out
+
+
 def apply_manifest(place_db: PlaceDB, grid: WorldGrid, entries: list[dict]) -> dict:
     """Write authored entries into PlaceDB, converging on the manifest.
 
