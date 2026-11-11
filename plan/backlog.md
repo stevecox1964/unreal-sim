@@ -95,6 +95,136 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #122 — "I have been here before": a spot and facing already seen is not sent to the eyes again
+
+**Source:** user, 2026-11-11: *"the 429 needs to be handled by, don't take a picture of a xy degree
+position we have been to time and time again … We should be reusing images we already took and not
+making visual cloud calls."* / *"It's a 'I have been here before' backlog item."*
+**Status:** BUILT 2026-11-11, **not proven live yet.** (The user recalls an earlier request for
+this; Claude did not find one in this file.)
+**Why:** SR86_P — 18 eye calls for one walk to Don's, 3 of them refused by the provider (429, "too
+many requests"), 1 lost to a cut-off answer. A refused look reads as "the eyes saw no way in".
+
+**Built:** `agent_manager._eyes_memory` — before a cloud eye call, look up what the eyes reported
+the last time this body stood within 0.5 m of this spot facing within 5°. The memory is the
+perception log the eyes already write (`observations/perception_log.jsonl`, #79), which now also
+records the measured `yaw`; it works across runs. A hit means no cloud call; the prompt says the
+picture is a remembered one and that people may have moved. Never reused when another APC is
+near. A reused look is not written to the log again (no duplicates in the training set).
+Scorecard (#119): `eyes_reused`, `eye_calls`, `eye_calls_failed`.
+**Limits:** log lines written before today have no `yaw`, so the memory starts empty; one bad
+answer for a spot is reused until that line is replaced; mannequins and parked cars are treated
+as fixed; a failed call (429) is still not retried or filled from a near spot.
+
+**Live results 2026-11-11, SR84_P–SR90_P (Dufus → Don's Donuts, "morning_donut"; #115 long step,
+#118, #119, #122 together).** Numbers are from `Python\worlds\MCP_World\logs\scorecard.jsonl`.
+
+| Run | What was new | s to inside | decisions to inside | cloud eye calls (failed) | looks reused | cost $ |
+|---|---|---|---|---|---|---|
+| SR86_P | scorecard only | 229 | 9 | 18 (4) | – | 0.23 |
+| SR87_P | door + things are saved | 279 | 12 | not counted | – | 0.29 |
+| SR88_P | saved door is used | 31 | 1 | not counted | – | 0.07 |
+| SR89_P | + eye memory (fills) | 29 | 1 | 3 (2) | 1 | 0.09 |
+| SR90_P | + eye memory (reuses SR89_P) | 34 | 1 | 1 (0) | 3 | 0.09 |
+
+- **#115 long step:** SR84_P one 19.2 m step at `way-in-1` ended at the shop WINDOW 1.1 m beside
+  the door (eyes 5° off; the picture showed glass, the door out of view). Now a long way-in step
+  stops 4 m short for a second look (`_WAY_IN_LOOK_AGAIN_CM`): SR85_P door seen → inside in 2
+  steps, 46 s.
+- **#118 PROVEN for door + things** (one shop, one APC). Door = first inside point
+  `(-3819, -2137)`. 8 things saved for Don's; names given inside were not saved as places. Bug
+  found and fixed: SR88_P wrote the walk's start point (61 m off) over the door's outdoors point —
+  a remembered door is now kept as first measured (the row was corrected by hand).
+  **Not exercised:** the "went in N m from the remembered door" guard (no wrong entry happened);
+  the exit record; a second APC; a second building.
+- **#119 PROVEN.** **#122 PROVEN** for one spot (the inside point, 3 of 4 looks reused in SR90_P).
+- **Still open:** the task closed on `observe` with no order spoken in SR89_P (#116); Qwen 429s
+  are not retried; the first visit to a place can still save a neighbour's door (#120 fixes it).
+
+### #121 — A done task is remembered as a routine and played back with little brain or eyes
+
+**Source:** user, 2026-11-11: *"We need to get the system to know where it has been and record
+that as much as possible so next time Dufus goes to get coffee, the sequence of events just plays
+out and LLM/visual is minimal."*
+**Status:** IDEA 2026-11-11. Step 1 (the door) is built in #118; the rest is not designed.
+**Builds on:** #118 (door, exit, things), #117 (move plan), #116 (subgoals), #119 (the scorecard
+measures it: decisions, eye calls and cost per task must go DOWN on the second visit).
+
+**The idea:** when a task closes, code saves what the body did to close it, as an ordered list on
+the place + task: walk to the door's inside point → walk to the spot where the order was spoken →
+speak to the clerk. The next time the same task comes up, the body plays the list. No picture and
+no brain call between moves that go as recorded.
+**Decided by the user, 2026-11-11 — the brain reviews the playback; it is not a robot replay:**
+*"I don't want to just 'replay' memories like a robot, I want the LLM to review the playback and
+know it will be in auto pilot for the next few sequences of actions, since those actions have
+already played out before."* So: ONE brain call at the start. The prompt shows the remembered
+routine (the moves, when they last worked, how many times) and today's facts (time, who is near,
+the task). The brain answers: play it all, play the first N moves, or do something else. During
+autopilot the body plays the approved moves with no brain call and no picture. At the end, or at
+the first move that goes wrong, the brain gets one summary ("moves 1–3 went as remembered; move 4
+stopped 2 m short, something solid ahead") and takes over. This is the same idea as the eye
+memory (#122), applied to decisions: do not pay again for an answer you already have.
+**What must stay live (Claude's note):** body touch every move (a new car, a person in the way);
+the roof fact at the door; the words spoken (the brain still writes the line). Any move that does
+not end where the record says → stop playback, one picture, one brain call, and the record is
+marked stale. A routine is a habit, not a rail.
+**Open:** saved per APC or shared; how many clean runs before a routine is trusted; how the
+recorded moves are keyed (world xy, or tiles of the place).
+
+### #120 — A place carries a "what you can do here" list, written by the world author
+
+**Source:** user, 2026-11-11 (brainstorm): *"places should have a 'menu' or 'todo' list that gets
+set by the world builder. Maybe this is what landmarks do. So on a new world build, the world
+author would not use landmarks, but build out a 'place' and say what can be done. This way Dufus
+can go to a place and read off a list of this todo, like order coffee etc."*
+**Status:** IDEA 2026-11-11, not designed, not built.
+**Builds on:** landmarks (`Landmark_BP` actors are the ground truth for authored places, #23),
+#116 (subgoals; "what counts as ordered"), #118 (a place remembers its door and its things).
+
+**The idea:** the author drops a place in the level and types a short list on it: "order a donut",
+"order coffee", "sit at a table". An APC that is inside the place gets that list in its prompt and
+picks from it. The task closes when a listed thing is done, not on one `observe` (the #116 bug).
+**Claude's note (not decided):** do not build a second system beside landmarks. Give `Landmark_BP`
+one more editable field (the list), so a landmark IS the authored place. The author still only
+drags, drops and types — no Unreal knowledge.
+**Open:** is the list only words for the brain, or does each line name where to stand and who to
+speak to; can an APC learn a new line by itself and save it (#118); who can see the list — any APC
+inside, or only one that has read the menu board with its eyes.
+
+### #119 — Run scorecard: one saved line of numbers per run, so a loop can check its own progress
+
+**Source:** user, 2026-11-11: *"We should also be saving debug info evals. So I can set you on a
+loop, and you can check your progress."*
+**Status:** IDEA 2026-11-11, not built.
+**Builds on:** #112 (per-call API log), the `ways in at … EYES | ENGINE (log only)` line (#115).
+
+**The idea:** at the end of each run, code (not a model) writes one line to a scorecard file. A
+later run, or Claude on a loop, reads the file and sees whether the numbers got better.
+**First numbers (all are in the log today):** run id; seconds and decisions until the body first
+reads "inside" at the task's place; place steps taken; steps the body refused; lost brain answers;
+how many looks had a way in seen by the eyes vs by the engine, and the heading error between them;
+did the task close, and on what action.
+**Open:** where the file lives; which numbers gate "better"; one scenario (Dufus → Don's) or many.
+
+### #118 — A place remembers its door, its exit and its things; the next visit looks them up
+
+**Source:** user, 2026-11-11: *"A 'place' is where we save memories like, this is the front door at
+xy, this is the exit at xy, these are the things in this place. This way, when we run again, we
+just look up memories which tell us what to do."*
+**Status:** IDEA 2026-11-11, not built.
+**Builds on:** #115 (the roof fact says inside / outdoors), #113 (places are tiles), #117 (answers
+its question "is a plan kept and reused for the same door").
+
+**The idea:** the body writes facts on the place record at the moment they happen.
+- **Door:** the tick the roof fact flips outdoors → inside, save the last outdoors point and the
+  first inside point (world xy) as "door". Flip inside → outdoors saves "exit".
+- **Things:** what the eyes name while the body is inside is saved as "things in this place", not
+  as new places (the "ice cream" mural, SR79_P/SR81_P).
+- **Next visit:** the prompt lists "you went in through a door at (x, y) before"; `walk_to` that
+  door is one order. This is the APC's own memory of its own walk, not the engine finding a door,
+  so it keeps the "eyes lead" decision of 2026-11-10.
+**Open:** shared between APCs or per APC; what if the door is shut or blocked on a later day.
+
 ### #117 — Move plan: see the target once, write the moves, play them back with no vision
 
 **Source:** user, 2026-11-10: *"Dufus sees Don's Donuts, then build a moveplan which is, move left
@@ -355,6 +485,20 @@ lead him to the door.** Door measured live: `x ≈ -3800`, front wall `y ≈ -19
   made the brain walk away in SR79_P/SR81_P; `_nearest_reachable` (engine path test, never fired
   live) is still in the step path; the task can close on one `observe` at the counter with no
   order spoken (SR76_P, SR77_P) — that is #116's question of what counts as "ordered".
+
+**SR83_P (2026-11-11) — "inside" is now a ROOF fact; the wall count is retired.**
+- **Why the wall count could not work:** SR82_P, one spot inside read 6 of 8 (the open door behind
+  him, a mannequin to one side) and the pavement also read 6 of 8. No number separates them.
+- **Built:** the radar command (`UnrealMCPCharacterCommands.cpp`) sends one ray up at the body and
+  one at each spot 2 m away on the four world axes that the body can reach in a straight line;
+  result `roof_rays` / `roof_hits`. `agent_manager`: `observation["inside"]` = every ray found a
+  roof. `llm_router._inside_fact` words it. The wall count is the fallback only for a plugin build
+  with no roof rays (one warning). **Needs the plugin compiled.**
+- **SR83_P — PASS:** inside in 5 min. Road and pavement 0 of 4–5; `(-3674, -1707)` 1 of 4; under
+  the awning 0.3 m from the front wall `(-3752, -1954)` 3 of 5 → "outdoors"; inside 3 of 3 →
+  "inside". Not yet read: a spot exactly in the door frame; any other building.
+- **Seen in the same run:** four 3 m steps at `way-in-1` with 9.7 / 9.1 / 7.6 m measured free; a
+  19 m walk south to the Sheriff's door and back (the eyes saw no way in at Don's on 4 looks).
 
 **The model (proposed, replaces nothing in #113):**
 - **Grid cell (30 m)** = a drawer in the map index. Never used to move.

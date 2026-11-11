@@ -30,6 +30,7 @@ from . import place_visuals
 from . import recognition
 from . import route_map
 from . import route_planner
+from . import run_score
 from . import sim_run
 from . import stand_point
 from . import survey_mission
@@ -307,6 +308,12 @@ _PLACE_MAX_TILES = 100
 _NEAR_SPOT_RINGS_CM = (100.0, 200.0, 300.0)
 # #115: the longest directional step while acting at a place — one tile.
 _PLACE_STEP_CM = 300.0
+# #115: a long step at a way in stops this far short of what the body measured.
+_WAY_IN_LOOK_AGAIN_CM = 400.0
+# #118: a crossing farther than this from the remembered door's inside point is
+# not that door (SR85_P and SR86_P: the first inside points at Don's were
+# 0.6 m apart). The number is a first guess, fitted to one shop.
+_SAME_DOOR_CM = 600.0
 # #115 "inside" and "opening" are body facts. A heading counts as walled when
 # the body sweep touches a fixed thing within 10 m (vehicles and people are not
 # walls). Measured live at Don's Donuts 2026-11-10: every point inside read 8
@@ -514,6 +521,16 @@ def _picture_x_to_yaw_offset(x: float) -> float:
     return math.degrees(math.atan((2.0 * float(x) - 1.0) * half))
 
 
+def _eyes_key(line: dict) -> tuple | None:
+    """Spot (0.5 m) and facing (5 degrees) of one perception-log line, or None
+    when it has no measured yaw, no position, or an error (#122)."""
+    at, yaw = line.get("at"), line.get("yaw")
+    if not at or yaw is None or line.get("error"):
+        return None
+    return (round(float(at[0]) / 50.0), round(float(at[1]) / 50.0),
+            round((float(yaw) % 360.0) / 5.0) % 72)
+
+
 def _is_wall(sector: dict) -> bool:
     """True when this radar sector touched a fixed thing within 10 m (#115)."""
     contact = sector.get("contact")
@@ -605,6 +622,11 @@ class AgentManager:
         self._ways_in_seen: dict[str, dict] = {}  # agent_id -> {"xy", "at", "ways"}: the eyes' last doorways (#115)
         self._openings_cache: dict[str, tuple] = {}  # agent_id -> (50 cm position key, openings) (#115)
         self._last_ground: dict[str, dict] = {}     # agent_id -> {ground_under_feet, nearest_ground} from the last radar (#101)
+        self._roof_warned = False                   # #115: one warning when the plugin has no roof rays
+        self._was_inside: dict[str, bool] = {}      # agent_id -> last "inside" body fact (#119)
+        self._door_state: dict[str, tuple] = {}     # agent_id -> (inside, (x, y)) at the last observation (#118)
+        self._far_from_door: dict[str, float] = {}  # agent_id -> cm from the remembered door when it went in elsewhere (#118)
+        self._eyes_seen: dict[str, dict] = {}       # agent_id -> {(spot, facing): perception-log line} (#122)
         self._footing_recoveries: dict[str, int] = {}  # agent_id -> lifetime count of footing reflex recoveries (#101)
         self._no_progress: dict[str, int] = {}      # agent_id -> consecutive "moving but didn't advance" ticks
         self._last_grid_place: dict[str, tuple] = {}  # agent_id -> (grid, place), reported even when LLM skipped
@@ -886,7 +908,19 @@ class AgentManager:
         else:
             logger.info("=== SIMULATION STOP === (was not running)")
         self._started_at = None
+        self._was_inside.clear()
+        self._door_state.clear()
+        self._far_from_door.clear()
         if self._run_log_handler is not None:
+            if was_running:
+                # #119: one line of numbers per APC, counted from this run's log.
+                self._run_log_handler.flush()
+                try:
+                    for row in run_score.write_scorecard(
+                            Path(self._run_log_handler.baseFilename).parent):
+                        logger.info("SCORE %s", json.dumps(row))
+                except Exception as e:
+                    logger.error(f"Run scorecard (#119) not written: {e}")
             logging.root.removeHandler(self._run_log_handler)
             self._run_log_handler.close()
             self._run_log_handler = None
@@ -1918,6 +1952,21 @@ class AgentManager:
         walls = [h.get("wall") for h in observation["radar"]]
         if len(walls) == len(_RADAR_HEADINGS) and None not in walls:
             observation["walls_close"] = sum(walls)
+        # SR82_P: the wall count cannot tell a shop from its pavement (both
+        # read 6 of 8). Inside = a roof over the body and over every spot 2 m
+        # around it that the body can reach. The wall count is the fallback
+        # only when the plugin did not measure the roof.
+        if observation.get("roof_rays"):
+            observation["inside"] = observation["roof_hits"] == observation["roof_rays"]
+        elif "walls_close" in observation:
+            observation["inside"] = observation["walls_close"] >= _WALLED_IN_MIN
+        # #119: the moment the fact flips is a line the run scorecard reads.
+        if "inside" in observation and observation["inside"] != self._was_inside.get(agent_id):
+            self._was_inside[agent_id] = observation["inside"]
+            if here is not None:
+                logger.info("[%s] body reads %s at (%.0f, %.0f)", agent_id,
+                            "INSIDE" if observation["inside"] else "OUTDOORS",
+                            here[0], here[1])
         # Footing reflex (#101): SR56 stood Dufus on unwalkable ground twice — a
         # raised slab, a carport floor with a hole — and every other sense here
         # stayed silent because they all measure AIR. ground_under_feet is the
@@ -2348,11 +2397,24 @@ class AgentManager:
         # #101: the ground-column facts live at result level (ground_under_feet,
         # nearest_ground), not per sector, and an un-rebuilt plugin simply omits
         # them — absence means "not measured", never "not walkable" (rule 12).
+        ground_facts: dict = {}
         if "ground_under_feet" in result:
-            ground_facts: dict = {"ground_under_feet": bool(result["ground_under_feet"])}
+            ground_facts["ground_under_feet"] = bool(result["ground_under_feet"])
             nearest = result.get("nearest_ground")
             if isinstance(nearest, dict):
                 ground_facts["nearest_ground"] = nearest
+        # #115: the roof rays (straight up at the body and 2 m around it). An
+        # un-rebuilt plugin omits them — "not measured", never "no roof".
+        if result.get("roof_rays"):
+            ground_facts["roof_rays"] = int(result["roof_rays"])
+            ground_facts["roof_hits"] = int(result.get("roof_hits") or 0)
+        elif not self._roof_warned:
+            self._roof_warned = True
+            logger.warning(
+                "roof rays (#115) not in the radar answer — 'inside' falls back "
+                "to the wall count, which is known wrong. Rebuild the UnrealMCP "
+                "plugin.")
+        if ground_facts:
             self._last_ground[agent.agent_id] = ground_facts
         else:
             self._last_ground.pop(agent.agent_id, None)
@@ -2581,10 +2643,15 @@ class AgentManager:
         agent_id = agent.agent_id
 
         if observation.get("image_path"):
-            with api_call_log.for_agent(agent_id):
-                seen = self.perceiver.perceive(
-                    observation["image_path"], observation["known_characters"]
-                )
+            # #122: a spot and facing these eyes already reported is not sent
+            # to the cloud again (SR86_P: 3 of 18 eye calls came back 429).
+            seen = self._eyes_memory(agent_id, observation)
+            reused = seen is not None
+            if not reused:
+                with api_call_log.for_agent(agent_id):
+                    seen = self.perceiver.perceive(
+                        observation["image_path"], observation["known_characters"]
+                    )
             if seen.get("error"):
                 logger.warning(f"[{agent_id}] perception failed: {seen['error']}")
             observation["seen"] = seen
@@ -2592,13 +2659,14 @@ class AgentManager:
                 agent_id, observation.get("grid"), seen, observation.get("location"))
             self._note_eyes(agent_id, observation.get("location"),
                             _yaw_of(observation.get("rotation")), seen)
-            self._save_perception_evidence(agent_id, observation, seen)
-            self._record_perception_pair(
-                agent_id, observation.get("image_path"), seen,
-                location=observation.get("location"),
-                yaw=_yaw_of(observation.get("rotation")),
-                grid=observation.get("grid"),
-                world_time=observation.get("world_time"), context="tick")
+            if not reused:
+                self._save_perception_evidence(agent_id, observation, seen)
+                self._record_perception_pair(
+                    agent_id, observation.get("image_path"), seen,
+                    location=observation.get("location"),
+                    yaw=_yaw_of(observation.get("rotation")),
+                    grid=observation.get("grid"),
+                    world_time=observation.get("world_time"), context="tick")
 
             xyz = _loc_xyz(observation.get("location"))
             self._remember_ways_in(agent_id, observation, seen)
@@ -2656,15 +2724,15 @@ class AgentManager:
         # the scheduled place, act here, or idle. The directive grounds the
         # decision prompt; the LLM still chooses the action.
         self._attach_schedule(agent, observation)
+        self._remember_door(agent, observation)
 
         # #115: the EYES lead to a door (seen["ways_in"]). The engine's own
         # answer is measured here only to score the eyes in the log — it is
         # never put in the observation, the prompt or the step.
         at_place = observation.get("schedule") or {}
-        walls_close = observation.get("walls_close")
         if (at_place.get("status") == "act" and at_place.get("place")
                 and _task_needs_the_brain(at_place)
-                and walls_close is not None and walls_close < _WALLED_IN_MIN):
+                and observation.get("inside") is False):
             self._score_eyes_on_ways_in(agent, observation)
 
         # Travel ticks get a top-down route map (#6b/WP5): the corridor between
@@ -3202,8 +3270,17 @@ class AgentManager:
             movement_trace(observation, action), action.get("type"), str(status),
         ))
 
-        # Name the place if the LLM provided one.
-        self._record_place(agent_id, observation.get("location"), decision.get("place"))
+        # Name the place if the LLM provided one. #118: not while the body is
+        # inside the place it came to — a name given in there is a thing in the
+        # room ("ice cream"), and it must not become a place of its own.
+        acting = observation.get("schedule") or {}
+        if (observation.get("inside") is True and acting.get("status") == "act"
+                and acting.get("place")):
+            if decision.get("place"):
+                logger.info("[%s] inside '%s' — the name '%s' is not saved as a place",
+                            agent_id, acting["place"], decision.get("place"))
+        else:
+            self._record_place(agent_id, observation.get("location"), decision.get("place"))
 
         # #45: a line the engine did not deliver was never said — nobody hears it.
         if action.get("type") == "speak_to" and str(status).lower() in ("success", "true"):
@@ -3375,7 +3452,18 @@ class AgentManager:
             # SR76_P: the 3 m cap also ruled the open road 15 m from the shop
             # (5 steps, 2 minutes). The short step is for walls. With 10 m or
             # more measured free on this heading, take the planner's own step.
-            if float(reach_cm) >= _WALL_NEAR_CM:
+            # SR83_P: four 3 m steps at way-in-1 with 9.7, 9.1, 7.6 m measured
+            # free — one picture and one brain call each. A way in is a line
+            # the eyes chose and the body measured: walk all of it.
+            # SR84_P: one 19.2 m step on the eyes' line (5 degrees off) ended at
+            # the shop WINDOW 1.1 m beside the door, facing glass, door out of
+            # the picture. A long way-in step stops 4 m short for a second look
+            # (the eyes are 0.5 m off from there); a short one is walked whole.
+            if str(direction).lower().startswith("way-in-"):
+                cap_cm = max(float(reach_cm), _PLACE_STEP_CM)
+                if float(reach_cm) > _WAY_IN_LOOK_AGAIN_CM + _PLACE_STEP_CM:
+                    cap_cm = float(reach_cm) - _WAY_IN_LOOK_AGAIN_CM
+            elif float(reach_cm) >= _WALL_NEAR_CM:
                 cap_cm = max(float(plan["distance_cm"]), _PLACE_STEP_CM)
             step_cm = min(float(reach_cm) - dead_end.BODY_CLEAR_CM, cap_cm)
             if plan.get("capped_by") in ("refused ground", "unwalkable ground"):
@@ -3500,6 +3588,89 @@ class AgentManager:
                     {"cell": cell, "xy": center, "extent_cm": PLACE_EXTENT_CM,
                      "kind": "community", "name": place.get("name") or name})
         return None
+
+    def _remember_door(self, agent: Agent, observation: dict) -> None:
+        """Save where the body crossed into (or out of) its scheduled place (#118).
+
+        A body fact: the roof sense flipped between two observations. The last
+        point outdoors and the first point inside are written on the place, and
+        the remembered door rides the schedule directive so the prompt and the
+        named walk can use it. Only a crossing on the place's tiles or their
+        edge counts — walking into the bank next door is not Don's door.
+        Known limit: place tiles grow along a street and are name-blind, so a
+        neighbour's door CAN be saved; the next crossing overwrites it.
+        """
+        agent_id = agent.agent_id
+        xyz = _loc_xyz(observation.get("location"))
+        inside = observation.get("inside")
+        if xyz is None or inside is None or self.place_db is None:
+            return
+        here = (xyz[0], xyz[1])
+        was = self._door_state.get(agent_id)
+        self._door_state[agent_id] = (inside, here)
+        sched = observation.get("schedule") or {}
+        if not sched.get("place"):
+            return
+        end = self._resolve_place_endpoint(agent_id, str(sched["place"]))
+        if end is None or not end.get("tiles"):
+            return
+        edge = {(tx + i, ty + j) for tx, ty in end["tiles"]
+                for i in (-1, 0, 1) for j in (-1, 0, 1)}
+        on_place = tuple(self.world_grid.tile_of(*here)) in edge
+        # What the eyes name while the body is inside the place is a thing IN
+        # the place (SR79_P/SR81_P: the "ice cream" mural in Don's was taken
+        # for an ice cream shop).
+        # "I am in the bank but I think it is Don's": a body that went in far
+        # from the remembered door may be in the building next door. It is told
+        # the distance (a fact), and nothing it sees there is saved on this
+        # place. Known limit: on the FIRST visit there is no door to compare.
+        known = self.place_db.get_door(end["tile_key"])
+        if was is not None and was[0] != inside:
+            self._far_from_door.pop(agent_id, None)
+            if inside and known is not None:
+                gap = math.hypot(here[0] - known["in_x"], here[1] - known["in_y"])
+                if gap > _SAME_DOOR_CM:
+                    self._far_from_door[agent_id] = gap
+        far = self._far_from_door.get(agent_id)
+        if inside and far is not None:
+            sched["far_from_door_m"] = round(far / 100.0, 1)
+            logger.info("[%s] inside %.1f m from the remembered door of '%s' — "
+                        "maybe another building; nothing saved on the place",
+                        agent_id, far / 100.0, end["name"])
+            sched["door"] = known
+            things = self.place_db.get_things(end["tile_key"])
+            if things:
+                sched["things"] = things
+            return
+        if inside and on_place:
+            self.place_db.save_things(end["tile_key"], [
+                lm.get("label") for lm in (observation.get("seen") or {}).get("landmarks") or []])
+        things = self.place_db.get_things(end["tile_key"])
+        if things:
+            sched["things"] = things
+        if was is not None and was[0] != inside:
+            if inside and known is not None:
+                # SR88_P: a walk to the remembered door has no look on the way,
+                # so "the last point outdoors" was the start of the walk, 61 m
+                # off, and it was written over the true one. A door that is
+                # already remembered is kept as first measured.
+                logger.info("[%s] place '%s': went in by the remembered door",
+                            agent_id, end["name"])
+            elif on_place:
+                out_xy, in_xy = (was[1], here) if inside else (here, was[1])
+                kind = "door" if inside else "exit"
+                self.place_db.save_door(end["tile_key"], end["name"], kind,
+                                        out_xy, in_xy, agent_id)
+                logger.info("[%s] place '%s': %s saved — outdoors (%.0f, %.0f), "
+                            "inside (%.0f, %.0f)", agent_id, end["name"], kind,
+                            out_xy[0], out_xy[1], in_xy[0], in_xy[1])
+            else:
+                logger.info("[%s] crossed %s at (%.0f, %.0f) — not on place '%s', "
+                            "no door saved", agent_id, "in" if inside else "out",
+                            here[0], here[1], end["name"])
+        door = self.place_db.get_door(end["tile_key"])
+        if door is not None:
+            sched["door"] = door
 
     def _grow_place(self, agent_id: str, observation: dict, name, stuck: bool) -> None:
         """Record the tile under this APC's feet on the place it is bound to (#113).
@@ -5946,6 +6117,20 @@ class AgentManager:
         # to the road (he swung road <-> shop front all run). The body does not
         # go back; it says what it knows.
         sched = observation.get("schedule") or {}
+        # #118: a place this body has walked into before is walked into again —
+        # straight to the first point it stood on inside. Its own memory of its
+        # own walk; the engine only finds the path, as for every named walk.
+        door = self.place_db.get_door(end["tile_key"]) if end.get("tile_key") else None
+        here = _loc_xyz(observation.get("location"))
+        if door is not None and here is not None and (
+                observation.get("inside") is not True or agent_id in self._far_from_door):
+            self._routes.pop(agent_id, None)
+            target = [door["in_x"], door["in_y"], here[2]]
+            observation["_resolved_target"] = target
+            logger.info("[%s] walking to the remembered door of '%s': inside point "
+                        "(%.0f, %.0f)", agent_id, end["name"], target[0], target[1])
+            return self.bridge.execute_action(agent.bound_unreal_actor_name,
+                                              {**action, "location": target})
         if sched.get("status") == "act" and sched.get("place"):
             bound = self._resolve_place_endpoint(agent_id, str(sched["place"]))
             if bound is not None and bound.get("xy") == end.get("xy"):
@@ -7160,6 +7345,7 @@ class AgentManager:
             "image": Path(image_path).name,
             "context": context,
             "heading": yaw_to_compass(float(yaw)) if yaw is not None else None,
+            "yaw": round(float(yaw), 1) if yaw is not None else None,
             "at": [round(xyz[0], 1), round(xyz[1], 1)] if xyz else None,
             "cell": _cell_label(grid) if grid else None,
             "model": seen.get("model"),
@@ -7180,6 +7366,48 @@ class AgentManager:
                 f.write(json.dumps(line) + "\n")
         except Exception as e:
             logger.warning(f"[{agent_id}] could not record perception pair: {e}")
+        if context == "tick" and agent_id in self._eyes_seen:
+            key = _eyes_key(line)
+            if key is not None:
+                self._eyes_seen[agent_id][key] = line
+
+    def _eyes_memory(self, agent_id: str, observation: dict) -> dict | None:
+        """What these eyes reported the last time the body stood on this spot
+        facing this way, or None (#122).
+
+        The memory is the perception log the eyes already write (#79) — every
+        tick line that has a measured yaw and no error. Same spot = within
+        0.5 m; same facing = within 5 degrees. Never reused when another APC
+        is near (people move; walls do not), and the brain is told the picture
+        is a remembered one.
+        """
+        xyz = _loc_xyz(observation.get("location"))
+        yaw = _yaw_of(observation.get("rotation"))
+        if xyz is None or yaw is None or not self._agents_dir:
+            return None
+        if agent_id not in self._eyes_seen:
+            lines: dict[tuple, dict] = {}
+            path = self._agents_dir / agent_id / "observations" / "perception_log.jsonl"
+            try:
+                for raw in path.read_text(encoding="utf-8").splitlines():
+                    line = json.loads(raw)
+                    key = _eyes_key(line)
+                    if key is not None and line.get("context") == "tick":
+                        lines[key] = line
+            except (OSError, ValueError) as e:
+                logger.info("[%s] eyes memory starts empty: %s", agent_id, e)
+            self._eyes_seen[agent_id] = lines
+        if observation.get("nearby_characters"):
+            return None
+        line = self._eyes_seen[agent_id].get(
+            _eyes_key({"at": [xyz[0], xyz[1]], "yaw": yaw}))
+        if line is None:
+            return None
+        logger.info("[%s] eyes: reused the picture of (%.0f, %.0f) yaw %.0f from %s — "
+                    "no cloud call", agent_id, xyz[0], xyz[1], yaw, line.get("sim_run"))
+        return {key: copy.deepcopy(line.get(key)) for key in (
+            "caption", "footing", "ground_ahead", "path_ahead", "landmarks",
+            "characters", "ways_in", "model")} | {"reused_from": line.get("sim_run")}
 
     def _save_perception_evidence(self, agent_id: str, observation: dict, seen: dict) -> None:
         """Persist the latest structured VLM output so live misses are inspectable."""

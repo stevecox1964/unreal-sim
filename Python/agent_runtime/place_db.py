@@ -197,6 +197,34 @@ CREATE TABLE IF NOT EXISTS place_tiles (
     visits    INTEGER NOT NULL DEFAULT 0,
     PRIMARY KEY (place_key, tx, ty)
 );
+
+-- #118: where a body crossed between outdoors and inside at a place. A body
+-- fact (the roof sense flipped), never the engine's or the LLM's. kind: door =
+-- went in, exit = came out. One row per place and kind; the last crossing wins.
+CREATE TABLE IF NOT EXISTS place_doors (
+    place_key TEXT    NOT NULL,   -- the place's tile-set key
+    name      TEXT    NOT NULL,
+    kind      TEXT    NOT NULL,   -- door | exit
+    out_x     REAL    NOT NULL,   -- last point measured outdoors
+    out_y     REAL    NOT NULL,
+    in_x      REAL    NOT NULL,   -- first point measured inside
+    in_y      REAL    NOT NULL,
+    by_agent  TEXT,
+    last_at   TEXT,               -- wall-clock UTC
+    uses      INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (place_key, kind)
+);
+
+-- #118: what the eyes named while a body stood INSIDE this place. These are
+-- things in the place (a counter, a mural), never places of their own.
+CREATE TABLE IF NOT EXISTS place_things (
+    place_key TEXT    NOT NULL,
+    label_key TEXT    NOT NULL,   -- lower-cased label
+    label     TEXT    NOT NULL,
+    seen      INTEGER NOT NULL DEFAULT 1,
+    last_at   TEXT,               -- wall-clock UTC
+    PRIMARY KEY (place_key, label_key)
+);
 """
 
 _MAX_LABELS_PER_DIRECTION = 5
@@ -365,7 +393,8 @@ class PlaceDB:
             image_paths = [r[0] for r in conn.execute("SELECT image_path FROM place_images")]
             tables = ("agent_visual_history", "place_images", "place_cells",
                       "place_observations", "agent_visits", "owned_place_cells",
-                      "cell_ground", "cell_refusals", "no_go_patches", "place_tiles")
+                      "cell_ground", "cell_refusals", "no_go_patches", "place_tiles",
+                      "place_doors", "place_things")
             counts = {
                 table: conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
                 for table in tables
@@ -1198,6 +1227,52 @@ class PlaceDB:
                 (key, name.strip(), int(tx), int(ty), agent_id, now, now),
             )
         return True
+
+    def save_door(self, place_key: str, name: str, kind: str,
+                  out_xy: tuple[float, float], in_xy: tuple[float, float],
+                  agent_id: str) -> None:
+        """A body crossed between outdoors and inside at this place (#118)."""
+        with self._lock, self._connect() as conn:
+            conn.execute(
+                "INSERT INTO place_doors (place_key, name, kind, out_x, out_y, in_x, in_y, "
+                "  by_agent, last_at, uses) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1) "
+                "ON CONFLICT(place_key, kind) DO UPDATE SET out_x=excluded.out_x, "
+                "  out_y=excluded.out_y, in_x=excluded.in_x, in_y=excluded.in_y, "
+                "  by_agent=excluded.by_agent, last_at=excluded.last_at, uses=uses+1",
+                (place_key, name.strip(), kind, float(out_xy[0]), float(out_xy[1]),
+                 float(in_xy[0]), float(in_xy[1]), agent_id, _iso_now()),
+            )
+
+    def get_door(self, place_key: str, kind: str = "door") -> dict | None:
+        """The remembered crossing of this place, or None (#118)."""
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT place_key, name, kind, out_x, out_y, in_x, in_y, by_agent, "
+                "last_at, uses FROM place_doors WHERE place_key=? AND kind=?",
+                (place_key, kind),
+            ).fetchone()
+        return dict(row) if row else None
+
+    def save_things(self, place_key: str, labels: list[str]) -> None:
+        """The eyes named these while a body stood inside this place (#118)."""
+        rows = [(place_key, label.strip().lower(), label.strip(), _iso_now())
+                for label in labels if str(label or "").strip()]
+        if not rows:
+            return
+        with self._lock, self._connect() as conn:
+            conn.executemany(
+                "INSERT INTO place_things (place_key, label_key, label, last_at) "
+                "VALUES (?, ?, ?, ?) ON CONFLICT(place_key, label_key) DO UPDATE SET "
+                "  seen=seen+1, last_at=excluded.last_at", rows)
+
+    def get_things(self, place_key: str, limit: int = 8) -> list[str]:
+        """The things most often seen inside this place, most seen first (#118)."""
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT label FROM place_things WHERE place_key=? "
+                "ORDER BY seen DESC, last_at DESC LIMIT ?", (place_key, int(limit)),
+            ).fetchall()
+        return [r[0] for r in rows]
 
     def set_tile_footing(self, tx: int, ty: int, footing: str) -> None:
         """Stamp the perceived ground label on every place's tile at (tx, ty)."""

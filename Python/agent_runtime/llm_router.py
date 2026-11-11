@@ -574,7 +574,7 @@ class LLMRouter:
                 sense_note=_sense_note(observation),
                 schedule_note=_schedule_note(observation.get("schedule"),
                                              (observation.get("seen") or {}).get("footing"),
-                                             observation.get("walls_close")),
+                                             _inside_fact(observation)),
                 route_map_note=_route_map_note(observation),
                 acquaintance_lines=_acquaintance_lines(observation.get("acquaintances")),
                 known_place_lines=_known_place_lines(observation.get("known_places")),
@@ -1488,6 +1488,11 @@ def _seen_text(seen: dict | None, breadcrumbs: list | None = None) -> str:
     if seen.get("error"):
         return f"(your vision failed this tick: {seen['error']})"
     lines = []
+    if seen.get("reused_from"):
+        # #122: no new picture was read — the body stood here, facing this
+        # way, before. Walls do not move; people do.
+        lines.append("(REMEMBERED: this is what your eyes reported the last time "
+                     "you stood on this spot facing this way. People may have moved.)")
     if seen.get("caption"):
         lines.append(seen["caption"])
     if seen.get("footing"):
@@ -1837,8 +1842,22 @@ def _wake_schedule_line(directive: dict | None) -> str:
     return "Nothing is scheduled right now — follow your goals."
 
 
+def _inside_fact(observation: dict) -> tuple[bool, str] | None:
+    """(inside?, what the body measured) for the prompt, or None when the body
+    did not measure (#115). The roof rays lead; the wall count is the fallback
+    for a plugin build without them."""
+    inside = observation.get("inside")
+    if inside is None:
+        return None
+    if observation.get("roof_rays"):
+        return inside, (f"Your body finds a roof over {observation['roof_hits']} of "
+                        f"{observation['roof_rays']} spots (overhead and 2 m around you)")
+    return inside, (f"Your body touches walls within 10 m on "
+                    f"{observation.get('walls_close')} of 8 headings")
+
+
 def _schedule_note(directive: dict | None, footing: str | None = None,
-                   walls_close: int | None = None) -> str:
+                   inside_fact: tuple[bool, str] | None = None) -> str:
     """Render the sequencer directive (planner.step) for the decision prompt.
 
     Turns "what your routine says right now" into a line the LLM can act on:
@@ -1901,16 +1920,43 @@ def _schedule_note(directive: dict | None, footing: str | None = None,
         # believed it. Inside is a body fact: walls within 10 m on all 8 radar
         # headings (SR77_P: a door frame reads 7). The eyes' label is used only when the body
         # did not measure.
-        if needs_brain and walls_close is not None:
-            if walls_close >= 8:
-                return (f"{intent}\nYour body touches walls within 10 m on "
-                        f"{walls_close} of 8 headings: you are inside a walled "
+        if needs_brain and inside_fact is not None:
+            inside, measured = inside_fact
+            # #118: things the eyes named inside this place on earlier looks.
+            things = "; ".join(directive.get("things") or [])
+            far = directive.get("far_from_door_m")
+            if inside and far is not None:
+                return (f"{intent}\n{measured}: you are inside a roofed space. "
+                        f"You went in {far} m from the remembered door of "
+                        f"{place_name}: this may be a different building."
+                        + (f" Seen inside {place_name} before: {things}. Compare "
+                           f"that with your picture." if things else "")
+                        + f" walk_to target_location \"{place_name}\" takes you "
+                          f"out and through the remembered door.")
+            if inside:
+                return (f"{intent}\n{measured}: you are inside a roofed "
                         f"space at {place_name}. Do the activity here; short "
-                        f"local moves take you to a counter or a seat.")
+                        f"local moves take you to a counter or a seat. Everything "
+                        f"in your picture is a thing in {place_name}: a sign or a "
+                        f"picture on a wall in here does not name another place."
+                        + (f" Seen in here before: {things}." if things else ""))
+            if things:
+                intent = (f"{intent}\nSeen INSIDE {place_name} before: {things}. A "
+                          f"doorway or window that shows these leads into "
+                          f"{place_name}, whatever word is written on them.")
+            # #118: a door this body (or another) walked through before.
+            door = directive.get("door")
+            if door:
+                return (f"{intent}\n{measured}: you are outdoors, not inside. "
+                        f"A body has walked into {place_name} before: its door is "
+                        f"remembered, the first step inside is at "
+                        f"({door['in_x']:.0f}, {door['in_y']:.0f}). walk_to "
+                        f"target_location \"{place_name}\" takes you through that "
+                        f"door. Whatever part of your activity happens inside has "
+                        f"not been done and cannot be done from here.")
             return (f"{intent}\nYou are near the spot where {place_name} was "
                     f"first noted, standing on: {ground or 'ground not reported'}. "
-                    f"Your body touches walls within 10 m on only {walls_close} "
-                    f"of 8 headings: you are outdoors, not inside. An interior in "
+                    f"{measured}: you are outdoors, not inside. An interior in "
                     f"your picture is seen through glass or a doorway. The spot "
                     f"marks the place; it is not its door, counter or seats. "
                     f"Using walk_to '{place_name}' again only returns you to the "

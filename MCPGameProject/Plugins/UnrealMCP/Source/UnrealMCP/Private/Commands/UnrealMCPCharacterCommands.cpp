@@ -612,6 +612,43 @@ TSharedPtr<FJsonObject> FUnrealMCPCharacterCommands::HandleGetCharacterRadar(con
         }
     }
 
+    // #115: "is there a roof over me" is a body touch fact the ring cannot give
+    // (SR82_P: a spot inside a shop and a spot on the pavement both touched
+    // walls on 6 of 8 headings). One ray straight up at the body, and one at
+    // each spot 2 m away on the four world axes that the body can reach in a
+    // straight line — a spot behind a wall is not sampled, so standing next to
+    // an inside wall does not read the sky on its far side.
+    {
+        const float RoofReachCm = 1500.0f;
+        const float RoofSpreadCm = 200.0f;
+        const FVector RoofOffsets[5] = {
+            FVector::ZeroVector,
+            FVector(RoofSpreadCm, 0.0f, 0.0f), FVector(-RoofSpreadCm, 0.0f, 0.0f),
+            FVector(0.0f, RoofSpreadCm, 0.0f), FVector(0.0f, -RoofSpreadCm, 0.0f) };
+        FCollisionQueryParams RoofParams(TEXT("RadarRoof"), /*bTraceComplex=*/false, Actor);
+        int32 RoofRays = 0;
+        int32 RoofHits = 0;
+        for (const FVector& RoofOffset : RoofOffsets)
+        {
+            const FVector From = Base + RoofOffset;
+            FHitResult Side;
+            if (!RoofOffset.IsZero() && World->LineTraceSingleByChannel(
+                    Side, Base, From, ECC_Visibility, RoofParams))
+            {
+                continue;
+            }
+            ++RoofRays;
+            FHitResult Up;
+            if (World->LineTraceSingleByChannel(
+                    Up, From, From + FVector::UpVector * RoofReachCm, ECC_Visibility, RoofParams))
+            {
+                ++RoofHits;
+            }
+        }
+        Result->SetNumberField(TEXT("roof_rays"), RoofRays);
+        Result->SetNumberField(TEXT("roof_hits"), RoofHits);
+    }
+
     TArray<TSharedPtr<FJsonValue>> Ring;
     const double Span = 360.0 / (double)Sectors;
     const float GroundStepCm = 50.0f;
