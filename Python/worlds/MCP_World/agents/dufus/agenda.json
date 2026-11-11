@@ -18,7 +18,8 @@
       "place": "Don's Donuts",
       "objective": "Walk to Don's Donuts, order a coffee and a donut at the counter inside, and talk to anyone there",
       "completion": {
-        "type": "time_or_llm_confirmed"
+        "type": "time_or_llm_confirmed",
+        "needs": ["inside", "spoke"]
       }
     },
     {

@@ -627,6 +627,8 @@ class AgentManager:
         self._door_state: dict[str, tuple] = {}     # agent_id -> (inside, (x, y)) at the last observation (#118)
         self._far_from_door: dict[str, float] = {}  # agent_id -> cm from the remembered door when it went in elsewhere (#118)
         self._eyes_seen: dict[str, dict] = {}       # agent_id -> {(spot, facing): perception-log line} (#122)
+        self._task_spoke: dict[str, set] = {}       # agent_id -> task ids with a delivered speak_to at the place (#116)
+        self._completion_withheld: dict[str, dict] = {}  # agent_id -> fact for the brain: why "done" was refused (#116)
         self._footing_recoveries: dict[str, int] = {}  # agent_id -> lifetime count of footing reflex recoveries (#101)
         self._no_progress: dict[str, int] = {}      # agent_id -> consecutive "moving but didn't advance" ticks
         self._last_grid_place: dict[str, tuple] = {}  # agent_id -> (grid, place), reported even when LLM skipped
@@ -911,6 +913,8 @@ class AgentManager:
         self._was_inside.clear()
         self._door_state.clear()
         self._far_from_door.clear()
+        self._task_spoke.clear()
+        self._completion_withheld.clear()
         if self._run_log_handler is not None:
             if was_running:
                 # #119: one line of numbers per APC, counted from this run's log.
@@ -3285,6 +3289,10 @@ class AgentManager:
         # #45: a line the engine did not deliver was never said — nobody hears it.
         if action.get("type") == "speak_to" and str(status).lower() in ("success", "true"):
             agent.mark_spoke(self._agents_dir)
+            # #116: a delivered line at the task's place counts for "spoke".
+            now_task = (observation.get("agenda") or {}).get("right_now") or {}
+            if now_task.get("task_id") and now_task.get("arrival_verdict") == "at_place":
+                self._task_spoke.setdefault(agent_id, set()).add(now_task["task_id"])
             self._record_interactions(agent_id, observation)
             self._record_utterance(agent, action, observation)
 
@@ -3304,6 +3312,9 @@ class AgentManager:
                 "note": str(result["note"])}
         if place_step_fact:
             self._last_action_fact[agent_id] = place_step_fact
+        withheld = self._completion_withheld.pop(agent_id, None)
+        if withheld and agent_id not in self._last_action_fact:
+            self._last_action_fact[agent_id] = withheld
 
         self._ground_survey_narration(agent, decision, action, result, observation)
 
@@ -3372,6 +3383,23 @@ class AgentManager:
                 "[%s] task %s completion withheld because action did not succeed",
                 agent.agent_id, task_id,
             )
+            return False
+        # #116: the author's body facts. The model's word does not close a task
+        # whose facts are not true; the brain is told which one is missing.
+        needs = (right_now.get("completion") or {}).get("needs") or []
+        spoke = (task_id in self._task_spoke.get(agent.agent_id, set())
+                 or action.get("type") == "speak_to")
+        missing = []
+        if "inside" in needs and observation.get("inside") is not True:
+            missing.append("your body does not read inside a roofed space")
+        if "spoke" in needs and not spoke:
+            missing.append("your body has not spoken to anyone here during this task")
+        if missing:
+            logger.info("[%s] task %s completion withheld — %s",
+                        agent.agent_id, task_id, "; ".join(missing))
+            self._completion_withheld[agent.agent_id] = {
+                "action": "task_completion", "target": task_id,
+                "note": "the task is NOT done: " + "; ".join(missing)}
             return False
 
         world_time = str(observation.get("world_time") or self.world_clock.now_text())

@@ -25,6 +25,9 @@ from . import planner
 
 
 SCHEMA_VERSION = 1
+# #116: "inside" = the body's roof fact reads inside; "spoke" = the body
+# delivered a speak_to at the task's place during this task.
+COMPLETION_NEEDS = frozenset({"inside", "spoke"})
 COMPLETION_POLICIES = frozenset({
     "arrive_at_place",
     "time_block_ends",
@@ -98,13 +101,23 @@ def validate_document(raw: dict) -> dict:
             policy = "time_block_ends"
         if policy == "arrive_at_place" and not values.get("place"):
             errors.append(f"{prefix}.place is required for arrive_at_place")
+        # #116: body facts the author says must be true before the model's
+        # "done" is accepted (SR89_P: "order a coffee" closed on one observe).
+        needs = completion.get("needs", []) if isinstance(completion, dict) else []
+        if (not isinstance(needs, list) or set(needs) - COMPLETION_NEEDS
+                or (needs and policy != "time_or_llm_confirmed")):
+            errors.append(
+                f"{prefix}.completion.needs must be a list from "
+                + ", ".join(sorted(COMPLETION_NEEDS))
+                + " on a time_or_llm_confirmed task")
+            needs = []
         clean.append({
             "id": task_id,
             "start": values.get("start", ""),
             "end": values.get("end", ""),
             "place": values.get("place", ""),
             "objective": values.get("objective", ""),
-            "completion": {"type": policy},
+            "completion": {"type": policy, **({"needs": list(needs)} if needs else {})},
         })
 
     if not errors:
@@ -349,6 +362,12 @@ def prompt_text(facts: dict | None) -> str:
                       + (f" at {right.get('place')}" if right.get("place") else "")
                       + f". Arrival: {right.get('arrival_verdict', 'unknown')}."
                       + f" Completion: {(right.get('completion') or {}).get('type', 'unknown')}.")
+        needs = (right.get("completion") or {}).get("needs") or []
+        if needs:
+            words = {"inside": "your body reads inside a roofed space",
+                     "spoke": "your body has spoken to someone here during this task"}
+            right_line += (" It can be confirmed done only when: "
+                           + "; and ".join(words[n] for n in needs) + ".")
         route = right.get("route")
         if isinstance(route, dict):
             if route.get("to_place"):

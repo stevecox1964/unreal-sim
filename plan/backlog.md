@@ -257,6 +257,14 @@ things. Then they disperse to the rest of their day."*
 **2026-11-10 later: the authored `steps` schema below is WITHDRAWN (user: no per-APC walking
 subgoals). Kept for the record. What stays: truthful body facts (see #115 SR70_P) and the
 "coffee at Don's" acceptance test. Subgoals = short shared rules/notes for conditions, not steps.**
+**2026-11-11 — first slice BUILT: a task's "done" needs body facts.** `completion.needs` (list from
+`inside`, `spoke`) on a `time_or_llm_confirmed` task (`agenda.py`). `inside` = the roof fact (#115);
+`spoke` = the body delivered a `speak_to` at the task's place during this task. The model's
+`task_completion` is refused while a fact is missing, and the brain is told which one
+(`agent_manager._apply_task_completion_confirmation`). Set on Dufus's `morning_donut` only.
+SR91_P: the task closed on a `speak_to` inside Don's, 42 s, 2 decisions, $0.05. **Not exercised
+live:** the refusal (no run tried to close it early). `spoke` does not check the words, and a
+mannequin clerk counts. Not steps, not subgoals — those stay withdrawn.
 **Builds on:** #36 (agenda tasks + deterministic executive, built), #113 (tiles, 3.5 m reach),
 #115 (place mode, floor tiles), #111 (plan a meetup), #68 (work that leaves a mark).
 
