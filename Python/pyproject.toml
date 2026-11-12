@@ -29,3 +29,8 @@ build-backend = "setuptools.build_meta"
 # build/install it into the venv (setuptools flat-layout discovery chokes on
 # the multiple top-level dirs: agent_runtime, web_ui, worlds, ...).
 package = false
+
+[dependency-groups]
+dev = [
+    "playwright>=1.65.1",
+]

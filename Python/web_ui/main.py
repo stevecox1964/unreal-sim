@@ -626,7 +626,9 @@ async def api_places_list(level: str = None):
     if raw is None:
         return JSONResponse({"ok": False, "error": "places.json is unparseable — "
                              "fix it by hand before authoring here"}, status_code=500)
-    return JSONResponse({"level": level, "places": raw["places"]})
+    todo = raw.get("todo")
+    return JSONResponse({"level": level, "places": raw["places"],
+                         "todo": todo if isinstance(todo, list) else []})
 
 
 @app.post("/api/places")
@@ -714,6 +716,81 @@ async def api_places_delete(level: str = None, name: str = ""):
     _places_path(level).write_text(json.dumps(raw, indent=2), encoding="utf-8")
     return JSONResponse({"ok": True, "level": level, "removed": removed,
                          "applied": _apply_places(level)})
+
+
+@app.post("/api/places/todo")
+async def api_places_todo(request: Request):
+    """Set one place's "what you can do here" list (#120) in places.json.
+
+    Body: ``{level, place, items: [str]}``. Same place name = replace; an
+    empty ``items`` removes the list. The sim reads the lists at run start.
+    """
+    body = await _maybe_json(request)
+    level = _resolve_level(body.get("level"))
+    if not level:
+        return JSONResponse({"ok": False, "error": "no world selected"}, status_code=400)
+    place = str(body.get("place") or "").strip()
+    if not place:
+        return JSONResponse({"ok": False, "error": "a list needs a place name"},
+                            status_code=400)
+    items = body.get("items")
+    if not isinstance(items, list):
+        return JSONResponse({"ok": False, "error": "items must be a list"}, status_code=400)
+    clean = [str(item).strip() for item in items if str(item or "").strip()]
+
+    raw = _read_places_raw(level)
+    if raw is None or not isinstance(raw.get("todo", []), list):
+        return JSONResponse({"ok": False, "error": "places.json is unparseable — "
+                             "fix it by hand before authoring here"}, status_code=500)
+    todo = raw.setdefault("todo", [])
+    needle = _norm_place_name(place)
+    idx = next((i for i, t in enumerate(todo)
+                if isinstance(t, dict) and _norm_place_name(t.get("place")) == needle), None)
+    if clean:
+        entry = {"place": place, "items": clean}
+        if idx is None:
+            todo.append(entry)
+        else:
+            todo[idx] = entry
+    elif idx is None:
+        return JSONResponse({"ok": False, "error": f"no list for '{place}'"},
+                            status_code=404)
+    else:
+        todo.pop(idx)
+    _places_path(level).write_text(json.dumps(raw, indent=2), encoding="utf-8")
+    return JSONResponse({"ok": True, "level": level, "place": place,
+                         "items": clean, "replaced": idx is not None})
+
+
+@app.get("/places", response_class=HTMLResponse)
+async def places_page(request: Request, level: str = None):
+    """Editor page for places.json: the places and their "what you can do here" lists."""
+    worlds = list_worlds()
+    level = _resolve_level(level)
+    data = build_map(level) if level else None
+    frame, known = None, []
+    if data and data["has_bounds"]:
+        # Same frame the /map page draws in: the image's world rect.
+        frame = data["image_bounds"] or data["bounds"]
+        size, ox, oy = data["cell_size"], data["origin_x"], data["origin_y"]
+        # Places the world DB already knows (landmarks, runtime names): shown
+        # on the map for reference and offered as list names. Not editable here.
+        known = [{"name": c["name"], "x": ox + (c["col"] + 0.5) * size,
+                  "y": oy + (c["row"] + 0.5) * size}
+                 for c in data["cells"] if c.get("name")]
+        known += [{"name": o["name"], "owner": o["owner"],
+                   "x": ox + (o["col"] + 0.5) * size + (o["dx"] or 0),
+                   "y": oy + (o["row"] + 0.5) * size + (o["dy"] or 0)}
+                  for o in data["owned"]]
+    return templates.TemplateResponse(request, "places.html", {
+        "request": request,
+        "worlds": worlds,
+        "level": level,
+        "frame": frame,
+        "known": known,
+        "image_url": data["image_url"] if data else None,
+        "agents": list_agents(level) if level else [],
+    })
 
 
 @app.get("/api/map/agents")

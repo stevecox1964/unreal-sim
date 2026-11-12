@@ -304,6 +304,22 @@ def advance(document: dict, runtime: dict | None, *, day: str, source: str,
         if active_state is not None:
             _transition(execution, active_state, task_by_id[active_state["task_id"]],
                         "active", world_time, {"type": "prior_task_completed"})
+    if active_state is None:
+        # #125: the agenda is a list of things to do in order. A task the APC
+        # itself finished before its block ended (the model confirmed it, or
+        # the body arrived) hands over to the next task now. SR95_P: with the
+        # clock as the only start, Dufus and Maren said "hi" 20 times in Don's
+        # while they waited for 09:30.
+        states = execution["tasks"]
+        for prior, following in zip(states, states[1:]):
+            if (following["status"] == "pending" and prior["status"] == "completed"
+                    and (prior.get("evidence") or {}).get("type")
+                    in {"llm_confirmed", "arrived_at_place"}
+                    and minute < planner.to_minutes(task_by_id[following["task_id"]]["start"])):
+                _transition(execution, following, task_by_id[following["task_id"]],
+                            "active", world_time, {"type": "prior_task_completed_early"})
+                active_state = following
+                break
 
     active_task = (copy.deepcopy(task_by_id[active_state["task_id"]])
                    if active_state is not None else None)

@@ -95,6 +95,114 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #125 — Agenda says where and why; the place says what you can do there (no subgoals)
+
+**Source:** user, 2026-11-12: *"APCs have agendas, go here, when they get here, they read the
+places for what they can do … so maybe the subgoal is irrelevant."* Then: *"I want to see Dufus and
+Maren moving around and going to Don's, the bank to get money, meet up at vegetable truck and buy
+things."*
+**Model:** two levels. An agenda task = a place + one short "why" sentence. The place's list
+(#120, `places.json` `"todo"`) = what an APC can do there. The APC picks the line that fits its
+task and role. A task still ends by the clock or by body facts (`needs`); list lines are not
+tracked as done.
+**Built 2026-11-12:**
+- `llm_router` (at-place directive): a task whose `needs` has no `"inside"` reads the list as
+  soon as the body is at the place ("WHAT YOU CAN DO AT …") — the truck has no roof. A task that
+  needs `"inside"` keeps the old rule: no list from the street.
+- `agent_manager._remember_door`: the list is found with `_place_key`, so "the vegetable truck"
+  and "vegetable truck" are one place.
+- Agendas (`agents/dufus|maren/agenda.json`): short "why" sentences. Dufus 08:00 Don's → 08:40
+  American Bank → 09:30 the vegetable truck (buy, `needs: spoke`). Maren 08:00 American Bank →
+  08:40 Don's → 09:30 the vegetable truck (sell). Lists added for "American Bank" and
+  "the vegetable truck".
+- "American Bank" resolves by wording to Dufus's own runtime place "American Bank building
+  interior" (-3070, -1900). No authored bank place, no remembered bank door yet.
+**Score (pass = all true in one run):** (1) Dufus completes `morning_donut`, `get_money`,
+`buy_vegetables`; (2) Maren completes `get_change`, `morning_coffee` and is at the truck after
+09:30; (3) Dufus and Maren speak to each other at the truck; (4) the pictures agree with 1–3.
+
+| Run | Dufus tasks done | Maren tasks done | Spoke at truck | Notes |
+| --- | --- | --- | --- | --- |
+| SR95_P (16 min, $1.10) | `morning_donut` TRUE (in by the remembered door, walked up, turned, ordered, 3 min); `get_money` **FALSE** (closed while he stood at Don's counter); `buy_vegetables` TRUE (asked Maren for carrots and tomatoes) | `get_change` NOT done (could not enter the bank); `morning_coffee` done (she spoke to Dufus, not the clerk) | YES, both ways | Score 1 of 4. See findings below. |
+| SR96_P (2.4 min, stopped by Claude) | `morning_donut` TRUE in 2 min | `get_change` NOT done | — | Maren got INTO the bank lobby (picture: tellers, ceiling) by the engine path, then lost it. See below. |
+| SR97_P (2.2 min, stopped by the user: "stop sim") | none yet (inside Don's, about to walk up) | `get_change` NOT done | — | The `spot_m` fact was in Maren's prompt (prompts `00007`, `00011`); she did not use it. See below. |
+| SR98_P (38 s, stopped by the user: credits) | none | none | — | First run after the user deleted the mannequin `pose_standing_5` from the bank door. Stopped before either APC arrived: no result. |
+
+**SR97_P findings (open — next step):**
+- The engine walk to the bank spot ends at (-2001, -2110) in all three runs: 1.1 m inside the
+  door, body against the mannequin `pose_standing_5` (-2030, -2171), "wall 0.0 m" to the west
+  (most likely the open door leaf — my reading, not measured), open only east 3.5 m and south 3.1 m.
+  The walk path does not go round the mannequin.
+- There the eyes say "inside the lobby" (true) and the roof fact says not inside (2 of 3 rays).
+  With the two in conflict the brain believed its eyes: `idle` + "done" (refused), then a step
+  south, back out. It did not order the named walk again although the prompt said to.
+- **Not tried yet:** move the authored spot to the east side of the lobby so the path bends away
+  from the mannequin. Engine radar, measured from a distance: (-1850, -2350) reads roof 5/5,
+  ground, full walk path, 8 of 8 headings free.
+- Early handover (`prior_task_completed_early`) and the door-gap guard are NOT yet seen live:
+  no run got past its first task after they were added.
+
+**SR96_P findings:** the body was called "at the bank" at the edge of the bank's tiles, 6 m short
+of the authored spot; the brain re-decided there and the walk ended beside the door. One step
+inside the door the roof fact read 2 of 3 (not inside); on the porch it read inside; the porch was
+saved as the bank's "door" and the next named walk went to the porch. **Fix (code):** an authored
+place IS its spot. `_owned_place_endpoint` carries `source`; for `authored` no door is learned or
+used; a task that needs `inside`, on the tiles but more than `_AUTHORED_SPOT_CM` (1.5 m) from the
+spot and not inside, is told the distance (`spot_m`) and its named walk goes on to the spot.
+Known limit kept: tiles still grow name-blind (the bank's tiles now reach the pavement).
+
+**SR95_P findings (pictures + log):**
+- **False `get_money`.** "American Bank" resolved to Dufus's own runtime place "American Bank
+  building interior" (-3070, -1900). That spot is on the pavement: he named it through the bank
+  window. Its tiles then grew (name-blind, #113) onto the tile at Don's counter, so the arrival
+  verdict read `at_place` and the roof fact read inside. Fix (data): `places.json` now has
+  "American Bank" at (-2350, -2600), the floor in front of `Counter_18`, measured with the engine
+  radar from a distance (roof 4/4, ground, full walk path). **Stopgap:** the entry has
+  `"owner": "dufus"` only because a community entry has no exact spot (it names a 30 m cell) —
+  see #124. The bad runtime row is still in the DB.
+- **Maren could not enter the bank.** The eyes named the big front window "open doorway" five
+  times; the body measured 0.6 m free each time (correct). The real door is `doorShop_02`
+  (-2060, -2000), at the east end. An exact indoor target lets the engine walk the path.
+- **Waiting = chatter.** Both done by 08:36; next block 09:30. 20 `speak_to` "hi" lines in Don's.
+  Fix (code, `agenda.advance`): a task the APC finished early (`llm_confirmed` /
+  `arrived_at_place`) hands over to the next task at once (`prior_task_completed_early`).
+- **Door memory took a 57 m walk for a doorway.** Maren's roof fact flipped between a look inside
+  Don's and a look at her truck; saved as the truck's "exit" with its inside point in Don's. Fix
+  (code, `_remember_door`): the two points must be within `_SAME_DOOR_CM`. Bad row deleted.
+- **Maren stood 28 cm from her truck and said "off course at Four Ways Crossing".** The eyes
+  call failed (Qwen 429, not retried) and the only place name she had was the district's.
+  NOT fixed.
+- **`command_character_say` for Maren timed out 5 times** (Unreal gave no answer in time); the
+  same command for Dufus never did. NOT fixed; engine side.
+
+### #124 — Clean up the Places page so add / edit / delete of a place is easy
+
+**Source:** user, 2026-11-12: *"make a backlog item to clean up the places page so I can
+add/edit delete places better."* Also: *"I guess this is sort of broken with the design right now.
+community places versus authored places versus places APC make themselves."*
+**Status:** OPEN, parked. A first page was BUILT 2026-11-12 (not committed at the time of writing).
+**What is there now:** `/places` (`web_ui/templates/places.html`, routes in `web_ui/main.py`:
+`places_page`, `GET/POST/DELETE /api/places`, `POST /api/places/todo`). One editor: "Choose a
+place" or click a dot → name, owner, X, Y, size and the "what an APC can do here" list (#120) →
+Save. Purple dot = `places.json` says something about the place. Grey dot = a name from the world
+DB (APC-made or a landmark); hidden behind a checkbox.
+**Known rough points (from the session, not yet a design):**
+- Three kinds of place look alike on the page: `places.json`, Unreal landmarks, APC-made names.
+  For the last two the page writes the list only; the user cannot move, rename or delete them.
+  The user chose "hide", not "delete", for APC-made names (2026-11-12).
+- The dropdown lists every APC-made name (about 60 survey names in MCP_World).
+- The map has no zoom or pan (`map.html` has both, inline; not shared).
+- `_apply_places` (`web_ui/main.py`) re-applies `places.json` only, so each save from the page
+  clears the landmark rows in PlaceDB until the next run start or "Sync world" on `/map`.
+- Owner vs "community" is not explained on the page.
+- `places.json` is rewritten in place (a reader can see a half-written file) and is in
+  `.git/info/exclude` on this machine.
+**Done (my reading — confirm with the user before work starts):** the user adds, moves, renames
+and deletes a place, and edits its list, without a question about which kind of place it is.
+**Tests:** `Python/scripts/agent_runtime/test_places_page.py` (real browser via the `playwright`
+dev dependency, temp world). It encodes the present page; a redesign must rewrite it. Tests are
+OFF again as of 2026-11-12.
+
 ### #123 — Walk up, turn to face, then speak — for a person the engine cannot place (all APCs)
 
 **Source:** user, 2026-11-11: *"Dufus is not at the counter and not looking at the person he is

@@ -314,6 +314,9 @@ _WAY_IN_LOOK_AGAIN_CM = 400.0
 # not that door (SR85_P and SR86_P: the first inside points at Don's were
 # 0.6 m apart). The number is a first guess, fitted to one shop.
 _SAME_DOOR_CM = 600.0
+# #125: an authored place IS its spot (a landmark, a places.json entry). A body
+# on the place's tiles but farther than this from the spot has not got there.
+_AUTHORED_SPOT_CM = 150.0
 # #115 "inside" and "opening" are body facts. A heading counts as walled when
 # the body sweep touches a fixed thing within 10 m (vehicles and people are not
 # walls). Measured live at Don's Donuts 2026-11-10: every point inside read 8
@@ -2936,6 +2939,10 @@ class AgentManager:
             return directive
 
         block = agenda.to_schedule({"tasks": [task]})[0]
+        # #125: a task the agenda started early (the task before it was done
+        # early) is the block right now, whatever its written start says.
+        if planner.to_minutes(block["start"]) > minute:
+            block["start"] = "%02d:%02d" % divmod(minute, 60)
         place_context = observation.get("place_context") or {}
         place_names = observation.get("place") or []
         current_place = place_context.get("name") or (place_names[0] if place_names else None)
@@ -3682,7 +3689,11 @@ class AgentManager:
         if not sched.get("place"):
             return
         # #120: the author's list for this place rides the directive too.
-        todo = self._place_todo.get(str(sched["place"]).strip().casefold())
+        # #125: "the vegetable truck" and "vegetable truck" are one place — the
+        # same wording rule the place resolver uses (_place_key).
+        want = _place_key(sched["place"])
+        todo = next((items for name, items in self._place_todo.items()
+                     if _place_key(name) == want), None)
         if todo:
             sched["todo"] = todo
         end = self._resolve_place_endpoint(agent_id, str(sched["place"]))
@@ -3698,6 +3709,20 @@ class AgentManager:
         # from the remembered door may be in the building next door. It is told
         # the distance (a fact), and nothing it sees there is saved on this
         # place. Known limit: on the FIRST visit there is no door to compare.
+        # #125 / SR96_P: the author put the bank's spot on the floor in front of
+        # the counter. The body was called "at the bank" at the edge of its
+        # tiles, 6 m short, then saved the porch as the bank's "door" and walked
+        # to the porch. An authored spot is ground truth: no door is learned or
+        # used for it, and a task that needs "inside" is told how far the spot is.
+        if end.get("source") == "authored":
+            things = self.place_db.get_things(end["tile_key"])
+            if things:
+                sched["things"] = things
+            gap = math.hypot(here[0] - end["xy"][0], here[1] - end["xy"][1])
+            needs = (sched.get("completion") or {}).get("needs") or []
+            if inside is not True and "inside" in needs and gap > _AUTHORED_SPOT_CM:
+                sched["spot_m"] = round(gap / 100.0, 1)
+            return
         known = self.place_db.get_door(end["tile_key"])
         if was is not None and was[0] != inside:
             self._far_from_door.pop(agent_id, None)
@@ -3730,6 +3755,14 @@ class AgentManager:
                 # already remembered is kept as first measured.
                 logger.info("[%s] place '%s': went in by the remembered door",
                             agent_id, end["name"])
+            elif math.hypot(here[0] - was[1][0], here[1] - was[1][1]) > _SAME_DOOR_CM:
+                # SR95_P: Maren walked 57 m in one tick, from inside Don's to
+                # her truck, and that jump was saved as the truck's "exit" with
+                # its inside point in Don's. A doorway is one step wide.
+                logger.info("[%s] roof fact changed over %.1f m — a walk, not a "
+                            "doorway; no door saved on '%s'", agent_id,
+                            math.hypot(here[0] - was[1][0], here[1] - was[1][1]) / 100.0,
+                            end["name"])
             elif on_place:
                 out_xy, in_xy = (was[1], here) if inside else (here, was[1])
                 kind = "door" if inside else "exit"
@@ -3832,7 +3865,8 @@ class AgentManager:
         return {"cell": (owned["col"], owned["row"]),
                 "xy": (center[0] + owned["dx"], center[1] + owned["dy"]),
                 "extent_cm": float(owned.get("extent_cm") or PLACE_EXTENT_CM),
-                "kind": "owned", "name": owned["name"]}
+                "kind": "owned", "name": owned["name"],
+                "source": owned.get("source") or "runtime"}
 
     def _resolve_place_target(self, agent_id: str, name: str, observation: dict) -> list[float] | None:
         """Resolve a place name to a walk target ``[x, y, z]``, or None.
@@ -6201,8 +6235,16 @@ class AgentManager:
         # #118: a place this body has walked into before is walked into again —
         # straight to the first point it stood on inside. Its own memory of its
         # own walk; the engine only finds the path, as for every named walk.
-        door = self.place_db.get_door(end["tile_key"]) if end.get("tile_key") else None
         here = _loc_xyz(observation.get("location"))
+        authored = end.get("source") == "authored"
+        # #125: on the tiles of an authored place but not at its spot, and the
+        # task needs "inside": the walk goes on to the spot.
+        short_of_spot = bool(
+            authored and here is not None and observation.get("inside") is not True
+            and "inside" in ((sched.get("completion") or {}).get("needs") or [])
+            and math.hypot(here[0] - end["xy"][0], here[1] - end["xy"][1]) > _AUTHORED_SPOT_CM)
+        door = (self.place_db.get_door(end["tile_key"])
+                if end.get("tile_key") and not authored else None)
         if door is not None and here is not None and (
                 observation.get("inside") is not True or agent_id in self._far_from_door):
             self._routes.pop(agent_id, None)
@@ -6214,7 +6256,7 @@ class AgentManager:
                                               {**action, "location": target})
         if sched.get("status") == "act" and sched.get("place"):
             bound = self._resolve_place_endpoint(agent_id, str(sched["place"]))
-            if bound is not None and bound.get("xy") == end.get("xy"):
+            if bound is not None and bound.get("xy") == end.get("xy") and not short_of_spot:
                 self._routes.pop(agent_id, None)
                 return {"status": "accepted", "action": "idle", "fact_for_brain": True,
                         "note": (f"the only recorded point of {bound['name']} is the spot "
@@ -6226,7 +6268,7 @@ class AgentManager:
         xyz = _loc_xyz(observation.get("location"))
         if xyz is None:
             return {"status": "error", "error": f"cannot approach {name}: position unavailable"}
-        if route_planner.at_place(end, (xyz[0], xyz[1])):
+        if route_planner.at_place(end, (xyz[0], xyz[1])) and not short_of_spot:
             self._routes.pop(agent_id, None)
             return {"status": "accepted", "action": "idle", "note": f"arrived at {name}"}
 

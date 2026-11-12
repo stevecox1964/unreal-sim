@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% block title %}Places — Unreal World Sim{% endblock %}
+
+{% block content %}
+<h2>Places</h2>
+
+{% if worlds %}
+<form method="get" action="/places" style="margin-bottom:1rem;">
+  <label for="level">World</label>
+  <select id="level" name="level" onchange="this.form.submit()">
+    {% for w in worlds %}
+      <option value="{{ w }}" {% if w == level %}selected{% endif %}>{{ w }}</option>
+    {% endfor %}
+  </select>
+</form>
+{% endif %}
+
+{% if not level %}
+  <p>No world selected — create a world under <code>Python/worlds/</code>.</p>
+{% else %}
+  <p class="breadcrumb">This page edits <code>worlds/{{ level }}/places.json</code>.
+     Start a new run to load the changes.</p>
+  <p id="msg" style="min-height:1.4em;"></p>
+
+  {% if frame %}
+    <div id="map" style="position:relative; overflow:hidden; cursor:crosshair; border:1px solid #8b95a1;">
+      {% if image_url %}
+        <img src="{{ image_url }}" alt="top-down world capture" style="display:block; width:100%;">
+      {% else %}
+        <div style="width:100%; background:#f4f6f8;
+                    aspect-ratio:{{ frame.max_x - frame.min_x }} / {{ frame.max_y - frame.min_y }};"></div>
+      {% endif %}
+      <div id="marks" style="position:absolute; inset:0; pointer-events:none;"></div>
+    </div>
+    <p style="color:#666; margin-top:.25rem;">Click a dot to edit it. Click the map to set X and Y.
+       <label style="font-weight:normal; display:inline; margin-left:.75rem;">
+         <input type="checkbox" id="show-known"> Show grey dots
+       </label><br>
+       <span class="swatch authored"></span> in places.json
+       <span class="swatch known"></span> found by the APCs, or a landmark in Unreal
+       <span class="swatch pick"></span> the position in the editor</p>
+  {% else %}
+    <p><strong>{{ level }}</strong> has no grid. Go to the <a href="/map?level={{ level }}">Map</a>
+       page and generate the grid first. You cannot save a new place without it.</p>
+  {% endif %}
+
+  {# One editor for every kind of place. A place found by the APCs keeps its
+     own position (their memory); only the list is written for it. #}
+  <label>Choose a place <select id="pick"></select></label>
+  <div class="grid">
+    <label>Name <input id="p-name" placeholder="the vegetable truck"></label>
+    <label>Owner
+      <select id="p-owner">
+        <option value="">community</option>
+        {% for a in agents %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>X (cm) <input id="p-x" type="number" step="any"></label>
+    <label>Y (cm) <input id="p-y" type="number" step="any"></label>
+    <label>Size (cm) <input id="p-size" type="number" value="900" min="100" step="100"></label>
+  </div>
+  <label>What an APC can do here (one per line)
+    <textarea id="p-items" rows="4"></textarea>
+  </label>
+  <p id="hint" style="color:#666;"></p>
+  <button type="button" id="p-save">Save</button>
+  <button type="button" id="p-delete" class="danger" hidden>Delete</button>
+  <button type="button" id="p-clear" class="secondary outline">Clear</button>
+
+  <h3>In places.json</h3>
+  <table>
+    <thead><tr><th>Name</th><th>Owner</th><th>X</th><th>Y</th><th>What an APC can do here</th><th></th></tr></thead>
+    <tbody id="place-rows"></tbody>
+  </table>
+
+  <style>
+    button.small { padding:.15rem .6rem; font-size:.85rem; margin:0 .25rem 0 0; }
+    .swatch { display:inline-block; width:10px; height:10px; border-radius:50%; margin:0 .25rem 0 .75rem; }
+    .swatch.authored, #marks .dot.authored { background:#6f42c1; }
+    .swatch.known, #marks .dot.known { background:#8b95a1; }
+    .swatch.pick, #marks .dot.pick { background:#e63946; }
+    #marks .dot { position:absolute; width:10px; height:10px; margin:-5px 0 0 -5px;
+                  border-radius:50%; border:2px solid #fff; box-shadow:0 0 3px rgba(0,0,0,.6); }
+    #marks .dot.click { pointer-events:auto; cursor:pointer; }
+    #marks .name { position:absolute; margin:5px 0 0 8px; color:#fff; font:600 11px/1 system-ui;
+                   white-space:nowrap; text-shadow:0 0 3px #000, 0 0 3px #000; }
+  </style>
+
+  <script>
+    const level = {{ level|tojson }};
+    const frame = {{ frame|tojson }};   // world rect (cm) the map image covers, or null
+    const known = {{ known|tojson }};   // places the world DB knows: APC-made + landmarks
+    const $ = id => document.getElementById(id);
+    const norm = s => String(s || "").trim().split(/\s+/).join(" ").toLowerCase();
+    const JSON_POST = { method: "POST", headers: { "Content-Type": "application/json" } };
+    const FIELDS = ["p-name", "p-owner", "p-x", "p-y", "p-size"];
+    const HINT_NEW = "New place: type a name, then click the map.";
+    const HINT_MINE = "This place is in places.json. You set its position.";
+    const HINT_THEIRS = "The APCs found this place, or it is a landmark in Unreal. Its position " +
+      "stays as it is. Type what an APC can do here, then press Save. The dot turns purple.";
+
+    let places = [], todo = [];   // places.json as loaded
+    let cur = null;               // the entry in the editor, or null for a new place
+    let pick = null;              // {x, y} of the editor's X/Y, shown on the map
+
+    // One entry per place name. `place` = its places.json position (ours),
+    // `list` = its "what you can do here" list (ours), `known` = the position
+    // the world DB has (the APCs' or a landmark's — not ours to move).
+    function entries() {
+      const all = new Map();
+      const get = name => {
+        const key = norm(name);
+        if (!all.has(key)) all.set(key, { key, name, place: null, list: null, known: null });
+        return all.get(key);
+      };
+      for (const p of places) get(p.name).place = p;
+      for (const t of todo) get(t.place).list = t.items || [];
+      for (const k of known) { const e = get(k.name); if (!e.known) e.known = k; }
+      return all;
+    }
+    const authored = e => !!(e.place || e.list);          // purple: places.json says something
+    const locked = e => !!(e && !e.place && e.known);     // position is not ours
+
+    function say(text, bad) {
+      $("msg").textContent = text;
+      $("msg").className = bad ? "flash-error" : "flash-success";
+    }
+
+    async function call(url, opts) {
+      try { return await (await fetch(url, opts)).json(); }
+      catch (e) { return { ok: false, error: "the web app did not answer" }; }
+    }
+    const postPlace = body => call("/api/places", { ...JSON_POST, body: JSON.stringify(body) });
+    const postList = (place, items) =>
+      call("/api/places/todo", { ...JSON_POST, body: JSON.stringify({ level, place, items }) });
+    const deletePlace = name =>
+      call(`/api/places?level=${encodeURIComponent(level)}&name=${encodeURIComponent(name)}`,
+           { method: "DELETE" });
+
+    function cell(tr, text) {
+      const td = document.createElement("td");
+      td.textContent = text;
+      tr.appendChild(td);
+      return td;
+    }
+
+    function button(parent, text, onClick, cls) {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.textContent = text;
+      b.className = "small " + (cls || "secondary");
+      b.addEventListener("click", onClick);
+      parent.appendChild(b);
+    }
+
+    // ── Map (same world→pixel map as /map) ────────────────────────────────────
+    // A name is hidden until its place is chosen; hover shows it as a tooltip.
+    function mark(el, cls, x, y, label, onClick) {
+      const left = (100 * (x - frame.min_x) / (frame.max_x - frame.min_x)) + "%";
+      const top = (100 * (y - frame.min_y) / (frame.max_y - frame.min_y)) + "%";
+      const dot = document.createElement("div");
+      dot.className = "dot " + cls + (onClick ? " click" : "");
+      dot.style.left = left; dot.style.top = top;
+      dot.title = label;
+      if (onClick) dot.addEventListener("click", e => { e.stopPropagation(); onClick(); });
+      el.appendChild(dot);
+      if (!label || !cur || norm(label) !== cur.key) return;
+      const name = document.createElement("div");
+      name.className = "name";
+      name.style.left = left; name.style.top = top;
+      name.textContent = label;
+      el.appendChild(name);
+    }
+
+    function drawMap() {
+      if (!frame) return;
+      const el = $("marks");
+      el.innerHTML = "";
+      for (const e of entries().values()) {
+        const pos = e.place || e.known;
+        if (!pos) continue;
+        const chosen = cur && cur.key === e.key;
+        if (authored(e)) mark(el, "authored", pos.x, pos.y, e.name, () => choose(e.key));
+        // A grey dot is hidden, except the one for the place in the editor.
+        else if (chosen || $("show-known").checked) mark(el, "known", pos.x, pos.y, e.name, () => choose(e.key));
+      }
+      if (pick) mark(el, "pick", pick.x, pick.y, "");
+    }
+
+    function readPick() {
+      const x = parseFloat($("p-x").value), y = parseFloat($("p-y").value);
+      pick = Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
+      drawMap();
+    }
+
+    if (frame) {
+      $("map").addEventListener("click", e => {
+        if (locked(cur)) { say(HINT_THEIRS, true); return; }
+        const r = $("map").getBoundingClientRect();
+        $("p-x").value = Math.round(frame.min_x + (e.clientX - r.left) / r.width * (frame.max_x - frame.min_x));
+        $("p-y").value = Math.round(frame.min_y + (e.clientY - r.top) / r.height * (frame.max_y - frame.min_y));
+        readPick();
+      });
+      $("show-known").addEventListener("change", drawMap);
+    }
+    $("p-x").addEventListener("input", readPick);
+    $("p-y").addEventListener("input", readPick);
+
+    // ── Editor ────────────────────────────────────────────────────────────────
+    function choose(key) {
+      const e = entries().get(key);
+      if (!e) { clearForm(); return; }
+      cur = e;
+      const pos = e.place || e.known || {};
+      $("p-name").value = e.name;
+      $("p-owner").value = pos.owner || "";
+      $("p-x").value = pos.x === undefined ? "" : (e.place ? pos.x : Math.round(pos.x));
+      $("p-y").value = pos.y === undefined ? "" : (e.place ? pos.y : Math.round(pos.y));
+      $("p-size").value = (e.place && e.place.extent_cm) || 900;
+      $("p-items").value = (e.list || []).join("\n");
+      for (const id of FIELDS) $(id).disabled = locked(e);
+      $("p-delete").hidden = !authored(e);
+      $("pick").value = key;
+      $("hint").textContent = locked(e) ? HINT_THEIRS : HINT_MINE;
+      readPick();
+    }
+
+    function clearForm() {
+      cur = null;
+      for (const id of FIELDS) { $(id).disabled = false; $(id).value = ""; }
+      $("p-size").value = 900;
+      $("p-items").value = "";
+      $("p-delete").hidden = true;
+      $("pick").value = "";
+      $("hint").textContent = HINT_NEW;
+      readPick();
+    }
+
+    async function save() {
+      const name = $("p-name").value.trim();
+      const items = $("p-items").value.split("\n").map(s => s.trim()).filter(Boolean);
+      const was = cur;
+      if (!name) { say("Save failed: a place needs a name.", true); return; }
+      if (locked(was) && !items.length && !was.list) {
+        say("Nothing to save. Type what an APC can do here.", true);
+        return;
+      }
+      // The position is written only when it is ours: a place already in
+      // places.json, or a new one. A list alone needs no position.
+      const hasXY = $("p-x").value !== "" || $("p-y").value !== "";
+      if (!locked(was) && ((was && was.place) || hasXY || !items.length)) {
+        const body = { level, name, x: $("p-x").value, y: $("p-y").value,
+                       owner: $("p-owner").value || null,
+                       extent_cm: $("p-size").value || null };
+        // Keep an explicit community flag the entry already had.
+        if (was && was.place && was.place.community !== undefined) body.community = was.place.community;
+        const r = await postPlace(body);
+        if (!r.ok) { say(`Save failed: ${r.error}`, true); return; }
+      }
+      // Same name = same place on the server, so a new name needs the old one removed.
+      const renamed = was && was.key !== norm(name);
+      const problems = [];
+      const step = r => { if (!r.ok) problems.push(r.error); };
+      if (items.length) step(await postList(name, items));
+      if (was && was.list && (renamed || !items.length)) step(await postList(was.name, []));
+      if (was && was.place && renamed) step(await deletePlace(was.name));
+      clearForm();
+      if (problems.length) say(`Saved '${name}', but: ${problems.join("; ")}`, true);
+      else say(`Saved '${name}'.`);
+      load();
+    }
+
+    async function remove(e) {
+      if (!confirm(`Delete '${e.name}' from places.json?`)) return;
+      const problems = [];
+      const step = r => { if (!r.ok) problems.push(r.error); };
+      if (e.place) step(await deletePlace(e.name));
+      if (e.list) step(await postList(e.name, []));
+      if (cur && cur.key === e.key) clearForm();
+      if (problems.length) say(`Delete failed: ${problems.join("; ")}`, true);
+      else say(`Deleted '${e.name}'.`);
+      load();
+    }
+
+    // ── Lists drawn from the data ─────────────────────────────────────────────
+    function draw() {
+      const all = [...entries().values()].sort((a, b) => a.name.localeCompare(b.name));
+
+      const sel = $("pick");
+      sel.innerHTML = "";
+      sel.appendChild(new Option("New place…", ""));
+      for (const [label, mine] of [["In places.json (purple)", true],
+                                   ["Found by the APCs, or a landmark in Unreal (grey)", false]]) {
+        const group = document.createElement("optgroup");
+        group.label = label;
+        for (const e of all) if (authored(e) === mine) group.appendChild(new Option(e.name, e.key));
+        if (group.children.length) sel.appendChild(group);
+      }
+      sel.value = cur ? cur.key : "";
+
+      const tb = $("place-rows");
+      tb.innerHTML = "";
+      for (const e of all.filter(authored)) {
+        const tr = tb.appendChild(document.createElement("tr"));
+        const pos = e.place || e.known;
+        cell(tr, e.name);
+        cell(tr, e.place ? (e.place.owner || "community") : "found by the APCs");
+        cell(tr, pos ? Math.round(pos.x) : "");
+        cell(tr, pos ? Math.round(pos.y) : "");
+        const ol = cell(tr, "").appendChild(document.createElement("ol"));
+        ol.style.margin = "0";
+        for (const item of e.list || []) ol.appendChild(document.createElement("li")).textContent = item;
+        const td = cell(tr, "");
+        button(td, "Edit", () => choose(e.key));
+        button(td, "Delete", () => remove(e), "danger");
+      }
+      if (!tb.children.length) {
+        const td = cell(tb.appendChild(document.createElement("tr")), "Nothing in places.json yet.");
+        td.colSpan = 6;
+        td.style.color = "#666";
+      }
+      drawMap();
+    }
+
+    async function load() {
+      const data = await call(`/api/places?level=${encodeURIComponent(level)}`);
+      if (data.ok === false) { say(data.error, true); return; }
+      places = (data.places || []).filter(p => p && typeof p === "object");
+      todo = (data.todo || []).filter(t => t && typeof t === "object");
+      draw();
+    }
+
+    $("pick").addEventListener("change", () => choose($("pick").value));
+    $("p-save").addEventListener("click", save);
+    $("p-delete").addEventListener("click", () => cur && remove(cur));
+    $("p-clear").addEventListener("click", clearForm);
+    $("hint").textContent = HINT_NEW;
+    load();
+  </script>
+{% endif %}
+{% endblock %}

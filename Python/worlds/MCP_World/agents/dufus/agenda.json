@@ -6,7 +6,7 @@
       "start": "07:00",
       "end": "08:00",
       "place": "home",
-      "objective": "Wake up at home, eat, and get ready to go out",
+      "objective": "Wake up at home and get ready to go out",
       "completion": {
         "type": "time_block_ends"
       }
@@ -14,30 +14,49 @@
     {
       "id": "morning_donut",
       "start": "08:00",
-      "end": "09:00",
+      "end": "08:40",
       "place": "Don's Donuts",
-      "objective": "Walk to Don's Donuts, order a coffee and a donut at the counter inside, and talk to anyone there",
+      "objective": "Go to Don's Donuts for breakfast",
       "completion": {
         "type": "time_or_llm_confirmed",
-        "needs": ["inside", "spoke"]
+        "needs": [
+          "inside",
+          "spoke"
+        ]
+      }
+    },
+    {
+      "id": "get_money",
+      "start": "08:40",
+      "end": "09:30",
+      "place": "American Bank",
+      "objective": "Go to the bank and get money to buy vegetables",
+      "completion": {
+        "type": "time_or_llm_confirmed",
+        "needs": [
+          "inside"
+        ]
+      }
+    },
+    {
+      "id": "buy_vegetables",
+      "start": "09:30",
+      "end": "10:30",
+      "place": "the vegetable truck",
+      "objective": "Meet Maren at her vegetable truck and buy vegetables from her",
+      "completion": {
+        "type": "time_or_llm_confirmed",
+        "needs": [
+          "spoke"
+        ]
       }
     },
     {
       "id": "square_morning",
-      "start": "09:00",
-      "end": "10:00",
+      "start": "10:30",
+      "end": "12:00",
       "place": "village square",
       "objective": "Hang around the village square and see who comes by",
-      "completion": {
-        "type": "time_block_ends"
-      }
-    },
-    {
-      "id": "visit_maren",
-      "start": "10:00",
-      "end": "12:00",
-      "place": "the vegetable truck",
-      "objective": "Walk to the vegetable truck and keep Maren company while she works",
       "completion": {
         "type": "time_block_ends"
       }
@@ -47,9 +66,13 @@
       "start": "12:00",
       "end": "13:00",
       "place": "Don's Donuts",
-      "objective": "Walk to Don's Donuts and eat lunch",
+      "objective": "Go to Don's Donuts for lunch",
       "completion": {
-        "type": "time_or_llm_confirmed"
+        "type": "time_or_llm_confirmed",
+        "needs": [
+          "inside",
+          "spoke"
+        ]
       }
     },
     {

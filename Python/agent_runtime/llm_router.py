@@ -1927,6 +1927,26 @@ def _schedule_note(directive: dict | None, footing: str | None = None,
         # believed it. Inside is a body fact: walls within 10 m on all 8 radar
         # headings (SR77_P: a door frame reads 7). The eyes' label is used only when the body
         # did not measure.
+        # #125: a place with no roof (a truck, a square) has a list too. A task
+        # that does not ask for the "inside" body fact reads the list as soon as
+        # the body is at the place. A task that asks for "inside" keeps the
+        # rule below: no list from the street (SR93_P ordered from the door).
+        spot_m = directive.get("spot_m")
+        if spot_m is not None:
+            # #125 / SR96_P: an authored place is its spot (see _remember_door).
+            return (f"{intent}\nYour body is at the edge of {place_name} and does not "
+                    f"read inside a roofed space. The spot the world's author marked "
+                    f"for {place_name} is {spot_m} m from you. walk_to target_location "
+                    f"\"{place_name}\" takes you to that spot. Your activity is done "
+                    f"there, not here.")
+        at_todo = directive.get("todo") or []
+        if at_todo and "inside" not in ((directive.get("completion") or {}).get("needs") or []):
+            menu = "\n".join(f"  {i}. {item}" for i, item in enumerate(at_todo, start=1))
+            return (f"{intent}\nYour position confirms you are at {place_name}.\n"
+                    f"WHAT YOU CAN DO AT {place_name} (the list posted here):\n{menu}\n"
+                    f"Read the list. Pick the line that fits your task and your role "
+                    f"here, and do that line where it says to do it: go to the thing "
+                    f"or person it names first, then act.")
         if needs_brain and inside_fact is not None:
             inside, measured = inside_fact
             # #118: things the eyes named inside this place on earlier looks.
