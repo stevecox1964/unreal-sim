@@ -4,6 +4,8 @@ Rolling list of outstanding work — add items as they come up, check off or
 delete them as they land. Not session-scoped; this is the durable home for
 approved scope and priority. Handoffs are chronological session state.
 Newest grooming: **2026-09-22** — Play phase ladder: APCs live in town, walk, and talk.
+Newest items: **2026-11-15** — #126 detour (built), #127 turn first, #128 mannequin clerk,
+#129 day done → home and sleep, #130 sense obstacles early.
 
 ## Active view — groomed 2026-09-22: APCs live in town, walk their day, talk to each other
 
@@ -95,6 +97,85 @@ user: "somewhat satisfied".**
 The next live run is **SR66** on OpenRouter, ≥ 15 minutes: at 10:00 does Dufus hear Maren and
 answer, and does she answer back?
 
+### #130 — Sense the obstacle early, before the body is in a bind
+
+**Source:** user, 2026-11-15: *"Maren gets past the corner mannequins but it takes too long. There
+is a pole close by as well so maybe the does not fit logic does not work best and should kick in
+way before APCs get into a bind."*
+**Status:** OPEN, not designed.
+**Evidence (SR104_P):** Maren left Don's for the Pawn Shop at 11:06:12. She touched
+`pose_thinking_7` at 11:06:18 (`fits=False`, 0 cm). The detour (#126) started only at 11:07:03:
+45 s and 3 paid decisions later. Two false no-go seals were written on the way (west, 1.3 m then
+2.3 m). Why late: the detour starts only when the last order "moved nowhere". The walk that ran into
+the mannequins had moved her from Don's, so it was not a stall. The next two orders were direction
+steps that the move plan refused (no order sent), so they did not count as stalls either.
+`utility_pole_5` stands 0.7 m from the same spot (radar, SR100_P), which makes the gap narrow.
+**Direction:** a named walk looks ahead along its first metres (body sweep, the same radar ring) and
+plans the way round before contact. A `fits=False` contact during travel starts the detour at once.
+Facts only to the model; the body owns the walk round.
+**Note:** after SR104_P the user deleted the corner mannequins from the level (2026-11-15). The pole
+is still there, and so are other mannequins (Don's counter, Don's door `pose_standing_25/26`).
+**Done when:** in a live run a named walk that meets an object the navmesh does not know goes round
+it with no `STALLED` line and no new no-go patch.
+
+### #129 — Day done: when every agenda task is finished, go home and sleep
+
+**Source:** user, 2026-11-15: *"add an all task done or something so the APCs go home or back to
+where ever and sleep."*
+**Status:** OPEN, not designed.
+**Today:** with early handover (#125) an APC can finish its whole list in minutes. After the last
+task the agenda reads "No agenda task is active; all eligible agenda work is terminal" and the APC
+wanders (SR103_P: Maren went to her truck, then "wedged" at the truck for minutes).
+**Direction:** an explicit end of day. When nothing is left, the APC walks to its home (authored
+`home` place / landmark) and sleeps: no decisions, no eyes, until the next day starts. The last
+agenda entry (`return_home`) already names home; the gap is "finished early" → go now, then sleep.
+**Done when:** a live run shows each APC finish its list, walk home, and stop calling the model.
+
+### #128 — A clerk that never answers is a mannequin: say so, end the task, move on
+
+**Source:** user, 2026-11-15: *"Dufus gets stuck in Dons and does not talk to clerk which is ok
+since it's a mannequin, but we need to ID that and end task and move on."*
+**Status:** OPEN, not designed. Builds on #109 (APCs learn who is fake by talking).
+**Evidence:** SR103_P and SR104_P: Dufus is inside Don's in about 25 s every run, then never finishes
+`morning_donut` (`needs: inside, spoke`). He speaks to Maren from 12–21 m ("too far, nothing said")
+or faces the wall; the figure behind the counter is a mannequin and never answers.
+**Direction:** keep the facts-only contract (#109). The body records "you spoke to the figure behind
+the counter at 08:03 and 08:05; no reply". The model may then decide it is not a real person. A
+spoken line that got no answer still counts as `spoke` for the task, so the task can end and the
+next one starts. No code-side "is fake" flag.
+**Done when:** a live run shows Dufus speak to the clerk once or twice, get no answer, finish
+`morning_donut`, and walk on to the bank.
+
+### #127 — Turn to face the way first, then walk
+
+**Source:** user, 2026-11-15: *"making the APCs turn first in the direction they are getting ready
+to walk to."*
+**Status:** OPEN, not designed.
+**Why:** the eyes and the forward body sweep look where the body faces. A body that sets off in
+another direction walks blind for its first metres (SR103_P: Dufus faced Don's west wall while
+his orders pointed east). Turning first gives the eyes and the sweep the line of travel (#130).
+**Direction:** before a walk order, turn the body to the heading of the first leg (`set_facing`
+exists for the survey look-round), then take the picture / sweep, then walk.
+**Done when:** in a live run every walk starts with the body facing its first leg.
+
+### #126 — Detour: look round a thing the navmesh does not know, and walk round it
+
+**Source:** user, 2026-11-15: *"there are 3D objects and people that don't show on the nav mesh
+which is why we can't rely on the 3D engine being used. We need to look and see then make a move
+plan around obstacles."*
+**Status:** BUILT 2026-11-15, proven live (SR103_P, SR104_P). Not tested offline (tests are off).
+**Built:** `Python/agent_runtime/detour.py` + `AgentManager._start_detour` / `_pulse_detour`. When the
+last order moved the body nowhere, the body measures the ground round it with the engine radar at
+points (its own capsule, 8 headings) and picks two short hops: out on whatever side is open, then
+4 m past toward the goal. The hops are walked with no model call (walk phase); at the end the named
+walk goes on. No way round measured clear → the model's own step goes ahead, as before.
+Also: a direction step is no longer replaced by the scheduled walk when the body's own facts say it
+does not fit or its last order moved it nowhere; refusing the same patch twice gives the model the
+fact "this changes nothing and does not move you".
+**Live:** SR103_P and SR104_P — Maren round the bank-corner mannequins (`pose_thinking_6/7`) on the
+first try both runs, then Pawn Shop done; Dufus round `donutsCounter_4` in Don's. Too slow to start:
+see #130.
+
 ### #125 — Agenda says where and why; the place says what you can do there (no subgoals)
 
 **Source:** user, 2026-11-12: *"APCs have agendas, go here, when they get here, they read the
@@ -127,6 +208,17 @@ tracked as done.
 | SR96_P (2.4 min, stopped by Claude) | `morning_donut` TRUE in 2 min | `get_change` NOT done | — | Maren got INTO the bank lobby (picture: tellers, ceiling) by the engine path, then lost it. See below. |
 | SR97_P (2.2 min, stopped by the user: "stop sim") | none yet (inside Don's, about to walk up) | `get_change` NOT done | — | The `spot_m` fact was in Maren's prompt (prompts `00007`, `00011`); she did not use it. See below. |
 | SR98_P (38 s, stopped by the user: credits) | none | none | — | First run after the user deleted the mannequin `pose_standing_5` from the bank door. Stopped before either APC arrived: no result. |
+| SR99_P (3.4 min) | `morning_donut` TRUE (in by the remembered door) | `get_change` TRUE in 32 s (bank lobby in the picture) | — | Bank entered for the first time. Both then stood in Don's doorway. |
+| SR100_P (6.5 min) | **`morning_donut`, `get_money`, `visit_pawn_shop` all TRUE** in 4 min | `get_change`, `morning_coffee` TRUE; then wedged on two mannequins at the bank corner | — | Agendas 2026-11-15: 2 h blocks, Pawn Shop added; Don's got an authored spot. |
+| SR101_P (5 min) | none (wedged in a Don's corner) | `get_change`, `morning_coffee` TRUE; wedged at the corner again | — | Step-away fix alone did not free her. |
+| SR102_P (3.1 min) | none | `get_change`, `morning_coffee` TRUE; first detour found no way round | — | Detour v1 only stepped straight back. |
+| SR103_P (5.8 min) | none (detour round the counter worked; then a refuse loop at the west wall) | **all three TRUE**: detour round the corner mannequins, Pawn Shop in 2.7 min | — | Detour v2 (any open side). |
+| SR104_P (3 min, stopped by the user) | none (talks to Maren from 12–21 m; never the clerk) | **all three TRUE**, detour again | — | Entering Don's and the bank works every run. Open: #128, #130. |
+
+**2026-11-15 summary:** both APCs enter Don's and the American Bank every run. Maren does
+bank → Don's → Pawn Shop. Dufus's open problem is not movement: he never finishes Don's because the
+clerk is a mannequin (#128). The 2026-11-15 agenda (Pawn Shop for both, early handover, 2 h
+blocks) means a short run covers the whole morning; the clock is unchanged.
 
 **SR97_P findings (open — next step):**
 - The engine walk to the bank spot ends at (-2001, -2110) in all three runs: 1.1 m inside the

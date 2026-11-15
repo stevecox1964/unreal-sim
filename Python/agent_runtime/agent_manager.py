@@ -20,6 +20,7 @@ from . import interruptions
 from .perception import VisionPerceiver
 from . import cell_sweep
 from . import dead_end
+from . import detour
 from .cell_sweep import filter_survey_claims
 from .landmarks import merge_entries, scan_landmarks
 from . import map_capture
@@ -317,6 +318,15 @@ _SAME_DOOR_CM = 600.0
 # #125: an authored place IS its spot (a landmark, a places.json entry). A body
 # on the place's tiles but farther than this from the spot has not got there.
 _AUTHORED_SPOT_CM = 150.0
+# SR100_P detour (agent_runtime/detour.py): how far each radar probe reaches,
+# when a hop counts as reached, how many pulses a detour may take, and how far
+# the body must move before it may try again where no way round measured clear.
+_DETOUR_PROBE_CM = 700.0
+_DETOUR_ARRIVE_CM = 100.0
+_DETOUR_MAX_TICKS = 12
+_DETOUR_RETRY_CM = 150.0
+# A goal this close is not worth a detour: the body is nearly there.
+_DETOUR_NEAR_GOAL_CM = 500.0
 # #115 "inside" and "opening" are body facts. A heading counts as walled when
 # the body sweep touches a fixed thing within 10 m (vehicles and people are not
 # walls). Measured live at Don's Donuts 2026-11-10: every point inside read 8
@@ -644,6 +654,9 @@ class AgentManager:
         self._breadcrumbs: dict[str, list[dict]] = {}  # agent_id -> recent legs walked (#58)
         self._last_order: dict[str, dict] = {}      # agent_id -> last movement ordered, for the achieved-vs-ordered check (#59)
         self._walk_plans: dict[str, dict] = {}      # agent_id -> grown step being walked hop by hop (#86)
+        self._detours: dict[str, dict] = {}         # agent_id -> measured hops round a thing the navmesh missed (SR100_P)
+        self._detour_failed: dict[str, tuple] = {}  # agent_id -> (x, y) where no way round measured clear
+        self._last_refusal: dict[str, tuple] = {}   # agent_id -> (x, y) of the last patch it refused (SR103_P)
         self._close_ids: dict[str, frozenset] = {}  # agent_id -> APC ids within reach last tick (#113)
         self._last_action_fact: dict[str, dict] = {}  # agent_id -> a non-move action that did nothing, and why (#113)
         self._tried_here: dict[str, dict] = {}      # agent_id -> {at, tried: {heading: moved_cm}} while wedged on one spot (#60)
@@ -759,6 +772,8 @@ class AgentManager:
         self._breadcrumbs.clear()
         self._last_order.clear()
         self._walk_plans.clear()
+        self._detours.clear()
+        self._detour_failed.clear()
         self._close_ids.clear()
         self._tried_here.clear()
         self._stall_run.clear()
@@ -1717,7 +1732,10 @@ class AgentManager:
         # Walk phase (sequential — same single bridge socket).
         for agent in walking:
             self._set_activity(agent, "walking")
-            results.append(self._pulse_walk(agent))
+            if agent.agent_id in self._detours:
+                results.append(self._pulse_detour(agent))
+            else:
+                results.append(self._pulse_walk(agent))
 
         # Mission phase (#96, sequential — same single bridge socket).
         for agent in missioning:
@@ -3271,6 +3289,9 @@ class AgentManager:
         # the map offers, never where the body may go.
         verdict = self._apply_cell_verdict(agent, action, observation)
         if verdict is not None:
+            if verdict.pop("_repeat", False) and not place_step_fact:
+                place_step_fact = {"action": "refuse_cell", "target": None,
+                                   "note": verdict.get("_note", "")}
             action = verdict
 
         action, pending = self._resolve_survey_here(agent, action, observation)
@@ -4332,6 +4353,18 @@ class AgentManager:
                 return {"type": "idle", "_note": "no position to rule on"}
             where = f"({target[0]:.0f}, {target[1]:.0f})"
             if kind == "refuse_cell":
+                # SR103_P: Dufus faced Don's west wall and refused the same
+                # patch four times in a row; each refusal was an idle, so he
+                # never turned round. Say so — a fact, not a block.
+                prior = self._last_refusal.get(agent_id)
+                if prior and math.hypot(prior[0] - target[0], prior[1] - target[1]) < 200.0:
+                    logger.info("[%s] refused the same patch %s again — nothing new; the "
+                                "body did not move", agent_id, where)
+                    return {"type": "idle", "_repeat": True,
+                            "_note": ("you already refused this same ground; refusing it "
+                                      "again changes nothing and does not move your body. "
+                                      "Only a walk moves you — turn and walk another way")}
+                self._last_refusal[agent_id] = (target[0], target[1])
                 reason = str(action.get("reason") or "").strip()
                 self.place_db.refuse_patch(agent_id, target[0], target[1], reason,
                                            str(observation.get("world_time") or ""))
@@ -5656,8 +5689,161 @@ class AgentManager:
             _STEP_DISTANCE / 100.0)
 
     def _has_active_walk(self, agent: Agent) -> bool:
-        """Whether this APC is part-way through a grown step (#86)."""
-        return agent.agent_id in self._walk_plans
+        """Whether this APC is part-way through a grown step (#86) or a detour."""
+        return agent.agent_id in self._walk_plans or agent.agent_id in self._detours
+
+    def _start_detour(self, agent: Agent, action: dict, observation: dict,
+                      travel_place: str) -> dict | None:
+        """Look round the thing that stopped the body, and walk round it (SR100_P).
+
+        Only after the body's last order moved it nowhere: the engine path
+        read clear, the body did not move, so something stands there that the
+        navmesh does not know. The body feels the ground round it with its own
+        capsule (``detour.plan``) and walks the measured hops with no model
+        call; at the end it walks on to the place it was going to. Returns the
+        first hop's result, or None when no way round measured clear (the
+        model's own step then goes ahead as before).
+        """
+        agent_id = agent.agent_id
+        xyz = _loc_xyz(observation.get("location"))
+        facing = _yaw_of(observation.get("rotation"))
+        radar = getattr(self.bridge, "radar", None)
+        if xyz is None or facing is None or not callable(radar):
+            return None
+        failed = self._detour_failed.get(agent_id)
+        if failed and math.hypot(xyz[0] - failed[0], xyz[1] - failed[1]) < _DETOUR_RETRY_CM:
+            return None
+
+        goal = travel_place or (action.get("target_location")
+                                if isinstance(action.get("target_location"), str) else "")
+        goal_xy = None
+        if goal:
+            end = self._resolve_place_endpoint(agent_id, goal)
+            if end is not None:
+                goal_xy = end["xy"]
+        if goal_xy is not None:
+            if math.hypot(goal_xy[0] - xyz[0], goal_xy[1] - xyz[1]) < _DETOUR_NEAR_GOAL_CM:
+                return None
+            heading = math.degrees(math.atan2(goal_xy[1] - xyz[1], goal_xy[0] - xyz[0]))
+        elif action.get("direction"):
+            heading = self._direction_yaw(observation, action["direction"])
+        else:
+            loc = _loc_xyz(action.get("location"))
+            heading = (math.degrees(math.atan2(loc[1] - xyz[1], loc[0] - xyz[0]))
+                       if loc else None)
+        if heading is None:
+            return None
+
+        z = xyz[2]
+
+        def probe(x: float, y: float) -> dict | None:
+            try:
+                r = radar(agent.bound_unreal_actor_name, distance_cm=_DETOUR_PROBE_CM,
+                          sectors=8, yaw_offset_deg=heading - facing,
+                          location=(x, y, z)) or {}
+            except Exception as e:
+                logger.warning("[%s] detour probe failed: %s", agent_id, e)
+                return None
+            if not r.get("success") or r.get("ground_under_feet") is False or not r.get("ring"):
+                return None
+            ring = {}
+            for s in r["ring"]:
+                rel = int(round((((float(s.get("world_yaw", 0.0)) - heading + 180.0)
+                                  % 360.0) - 180.0) / 45.0)) * 45
+                ring[180 if rel == -180 else rel] = (
+                    _DETOUR_PROBE_CM if s.get("fits") else float(s.get("clearance_cm") or 0.0))
+            return ring
+
+        what = (observation.get("blocker") or {}).get("actor_name") or "something"
+        plan = detour.plan((xyz[0], xyz[1]), heading, probe)
+        if plan is None:
+            self._detour_failed[agent_id] = (xyz[0], xyz[1])
+            logger.info("[%s] DETOUR: no measured way round '%s' toward %s from (%.0f, %.0f)",
+                        agent_id, what, goal or f"yaw {heading:.0f}", xyz[0], xyz[1])
+            return None
+        hops = [[x, y, z] for x, y in plan["hops"]]
+        self._detours[agent_id] = {
+            "hops": hops, "i": 0, "ticks": 0, "idle": 0, "resent": False,
+            "last_gap": math.hypot(hops[0][0] - xyz[0], hops[0][1] - xyz[1]),
+            "goal": goal if goal_xy is not None else "", "what": what,
+        }
+        self._walk_plans.pop(agent_id, None)
+        self._routes.pop(agent_id, None)
+        logger.info("[%s] DETOUR round '%s' toward %s: out %.1f m at %+d deg (%s), then "
+                    "%.1f m past at %+d deg (%d probes) hops %s", agent_id, what,
+                    goal or f"yaw {heading:.0f}", plan["out_cm"] / 100.0, plan["out_rel"],
+                    plan["side"], detour.PASS_CM / 100.0, plan["past_rel"], plan["probes"],
+                    [(round(h[0]), round(h[1])) for h in hops])
+        observation["_resolved_target"] = hops[0]
+        result = self.bridge.execute_action(agent.bound_unreal_actor_name,
+                                            {"type": "walk_to", "location": hops[0]})
+        if isinstance(result, dict):
+            result["note"] = (f"{what} blocks the way; walking round it on the "
+                              f"{plan['side']} ({len(hops)} short hops)")
+        return result
+
+    def _end_detour(self, agent: Agent, why: str, walk_on: bool) -> None:
+        """Drop the detour; walk on to the place it was going to, if it got round."""
+        agent_id = agent.agent_id
+        d = self._detours.pop(agent_id, None)
+        if d is None:
+            return
+        self._force_next_decide.add(agent_id)
+        logger.info("[%s] DETOUR ended: %s", agent_id, why)
+        if walk_on and d.get("goal"):
+            end = self._resolve_place_endpoint(agent_id, d["goal"])
+            if end is not None:
+                target = [end["xy"][0], end["xy"][1], d["hops"][-1][2]]
+                self.bridge.execute_action(agent.bound_unreal_actor_name,
+                                           {"type": "walk_to", "location": target})
+                logger.info("[%s] DETOUR: walking on to '%s'", agent_id, d["goal"])
+
+    def _pulse_detour(self, agent: Agent) -> dict:
+        """One pulse of a detour — bridge only, no model call."""
+        agent_id = agent.agent_id
+        d = self._detours.get(agent_id)
+        out = {"agent_id": agent_id, "action": "idle", "walk": True, "detour": True}
+        if d is None:
+            return out
+        d["ticks"] += 1
+        reader = getattr(self.bridge, "get_character_state", None)
+        state = reader(agent.bound_unreal_actor_name) if callable(reader) else {}
+        xyz = _loc_xyz((state or {}).get("location"))
+        if xyz is None or d["ticks"] > _DETOUR_MAX_TICKS:
+            self._end_detour(agent, "no position" if xyz is None else "took too long", False)
+            agent.mark_ticked(self._agents_dir)
+            return out
+        hop = d["hops"][d["i"]]
+        gap = math.hypot(hop[0] - xyz[0], hop[1] - xyz[1])
+        if gap <= _DETOUR_ARRIVE_CM:
+            d["i"] += 1
+            d["idle"], d["resent"] = 0, False
+            if d["i"] >= len(d["hops"]):
+                self._end_detour(agent, f"got round '{d['what']}'", True)
+                agent.mark_ticked(self._agents_dir)
+                return {**out, "action": "walk_to"}
+            hop = d["hops"][d["i"]]
+            d["last_gap"] = math.hypot(hop[0] - xyz[0], hop[1] - xyz[1])
+            result = self.bridge.execute_action(agent.bound_unreal_actor_name,
+                                                {"type": "walk_to", "location": hop})
+            logger.info("[%s] DETOUR hop %d/%d to (%.0f, %.0f)", agent_id, d["i"] + 1,
+                        len(d["hops"]), hop[0], hop[1])
+            agent.mark_ticked(self._agents_dir)
+            return {**out, "action": "walk_to", "result": result}
+        gained = d["last_gap"] - gap
+        d["last_gap"] = gap
+        d["idle"] = d["idle"] + 1 if gained < _STUCK_PROGRESS_CM else 0
+        if d["idle"] >= 2 and not d["resent"]:
+            d["resent"] = True
+            self.bridge.execute_action(agent.bound_unreal_actor_name,
+                                       {"type": "walk_to", "location": hop})
+            logger.info("[%s] DETOUR hop %d: no ground made, order sent again",
+                        agent_id, d["i"] + 1)
+        elif d["idle"] >= 4:
+            self._detour_failed[agent_id] = (xyz[0], xyz[1])
+            self._end_detour(agent, f"stopped making ground on hop {d['i'] + 1}", False)
+        agent.mark_ticked(self._agents_dir)
+        return {**out, "action": "walking"}
 
     def _end_walk_plan(self, agent_id: str, why: str) -> None:
         """Drop the plan and buy the APC a full cognition tick to react."""
@@ -6324,12 +6510,33 @@ class AgentManager:
         travel_route = self._routes.get(agent.agent_id) or {}
         travel_blocked = (travel_route.get("destination") == scheduled_place
                           and travel_route.get("path_status") in ("none", "partial"))
+        # SR100_P: Maren walked into two mannequins at the bank corner. The
+        # engine path read "full" (the navmesh does not know them), so her
+        # steps west, south and east were each replaced by the same walk to the
+        # Pawn Shop, into the mannequins, and logged as "ordered west, 0 cm".
+        # The body's own facts — it does not fit ahead, or its last order moved
+        # it nowhere — permit the recovery step too.
+        body_blocked = ((observation.get("blocker") or {}).get("fits") is False
+                        or bool((observation.get("last_move") or {}).get("stalled")))
         if (schedule.get("status") == "travel" and scheduled_place
                 and not travel_blocked and not observation.get("stuck")
+                and not body_blocked
                 and not isinstance(getattr(agent, "active_interrupt", None), dict)
                 and (t == "wander" or (t == "walk_to" and action.get("direction")))):
             action = {"type": "walk_to", "target_location": scheduled_place}
             t = "walk_to"
+
+        # SR100_P: the last order moved the body nowhere while the engine path
+        # read clear — a thing the navmesh does not know stands there. Look
+        # round it and walk round it before any new order goes to the engine.
+        if ((t == "wander" or t == "walk_to")
+                and bool((observation.get("last_move") or {}).get("stalled"))
+                and not action.get("target_actor")):
+            started = self._start_detour(
+                agent, action, observation,
+                scheduled_place if schedule.get("status") == "travel" else "")
+            if started is not None:
+                return started
 
         if t == "wander" or (t == "walk_to" and action.get("direction")):
             direction = action.get("direction") or "forward"
@@ -6946,6 +7153,8 @@ class AgentManager:
         self._breadcrumbs.clear()
         self._last_order.clear()
         self._walk_plans.clear()
+        self._detours.clear()
+        self._detour_failed.clear()
         self._close_ids.clear()
         self._tried_here.clear()
         self._stall_run.clear()

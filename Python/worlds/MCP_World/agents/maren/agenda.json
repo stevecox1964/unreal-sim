@@ -24,7 +24,7 @@
     {
       "id": "get_change",
       "start": "08:00",
-      "end": "08:40",
+      "end": "10:00",
       "place": "American Bank",
       "objective": "Go to the bank and get small change for your vegetable truck",
       "completion": {
@@ -36,8 +36,8 @@
     },
     {
       "id": "morning_coffee",
-      "start": "08:40",
-      "end": "09:30",
+      "start": "10:00",
+      "end": "12:00",
       "place": "Don's Donuts",
       "objective": "Go to Don's Donuts for a coffee before work",
       "completion": {
@@ -49,35 +49,24 @@
       }
     },
     {
-      "id": "morning_sales",
-      "start": "09:30",
-      "end": "12:00",
-      "place": "the vegetable truck",
-      "objective": "Go back to your vegetable truck and sell vegetables to your customers",
-      "completion": {
-        "type": "time_block_ends"
-      }
-    },
-    {
-      "id": "lunch_at_dons",
+      "id": "visit_pawn_shop",
       "start": "12:00",
-      "end": "13:00",
-      "place": "Don's Donuts",
-      "objective": "Go to Don's Donuts for lunch",
+      "end": "14:00",
+      "place": "Pawn Shop",
+      "objective": "Go to the pawn shop and look for a cheap scale for your vegetable truck",
       "completion": {
         "type": "time_or_llm_confirmed",
         "needs": [
-          "inside",
-          "spoke"
+          "inside"
         ]
       }
     },
     {
       "id": "afternoon_sales",
-      "start": "13:00",
+      "start": "14:00",
       "end": "18:00",
       "place": "the vegetable truck",
-      "objective": "Sell vegetables to your afternoon customers",
+      "objective": "Go back to your vegetable truck and sell vegetables to your customers",
       "completion": {
         "type": "time_block_ends"
       }

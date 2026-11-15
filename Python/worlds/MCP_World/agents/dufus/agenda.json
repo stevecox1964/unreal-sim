@@ -14,7 +14,7 @@
     {
       "id": "morning_donut",
       "start": "08:00",
-      "end": "08:40",
+      "end": "10:00",
       "place": "Don's Donuts",
       "objective": "Go to Don's Donuts for breakfast",
       "completion": {
@@ -27,8 +27,8 @@
     },
     {
       "id": "get_money",
-      "start": "08:40",
-      "end": "09:30",
+      "start": "10:00",
+      "end": "12:00",
       "place": "American Bank",
       "objective": "Go to the bank and get money to buy vegetables",
       "completion": {
@@ -39,9 +39,22 @@
       }
     },
     {
+      "id": "visit_pawn_shop",
+      "start": "12:00",
+      "end": "14:00",
+      "place": "Pawn Shop",
+      "objective": "Go to the pawn shop and see what is for sale",
+      "completion": {
+        "type": "time_or_llm_confirmed",
+        "needs": [
+          "inside"
+        ]
+      }
+    },
+    {
       "id": "buy_vegetables",
-      "start": "09:30",
-      "end": "10:30",
+      "start": "14:00",
+      "end": "15:00",
       "place": "the vegetable truck",
       "objective": "Meet Maren at her vegetable truck and buy vegetables from her",
       "completion": {
@@ -52,32 +65,8 @@
       }
     },
     {
-      "id": "square_morning",
-      "start": "10:30",
-      "end": "12:00",
-      "place": "village square",
-      "objective": "Hang around the village square and see who comes by",
-      "completion": {
-        "type": "time_block_ends"
-      }
-    },
-    {
-      "id": "lunch_at_dons",
-      "start": "12:00",
-      "end": "13:00",
-      "place": "Don's Donuts",
-      "objective": "Go to Don's Donuts for lunch",
-      "completion": {
-        "type": "time_or_llm_confirmed",
-        "needs": [
-          "inside",
-          "spoke"
-        ]
-      }
-    },
-    {
       "id": "sheriff_afternoon",
-      "start": "13:00",
+      "start": "15:00",
       "end": "17:00",
       "place": "sheriff station square",
       "objective": "Loiter at the sheriff station square and talk to whoever passes",
