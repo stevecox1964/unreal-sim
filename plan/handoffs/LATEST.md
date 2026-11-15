@@ -1,98 +1,88 @@
-# Handoff — a Places page; agenda = where and why, place = what you can do; the bank is not entered yet
+# Handoff — both APCs enter Don's and the bank every run; a detour walks round things the navmesh does not know
 
-**Date:** 2026-11-12 11:20
-**Branch:** main — committed locally, **not pushed** (the user ran out of credits)
-**Prior handoff:** [HANDOFF_2026-11-11_1050.md](HANDOFF_2026-11-11_1050.md)
+**Date:** 2026-11-15 11:15
+**Branch:** main
+**Prior handoff:** [HANDOFF_2026-11-12_1120.md](HANDOFF_2026-11-12_1120.md)
 
 ## TL;DR
 
-Two things were built. (1) A `/places` page in the web app that edits `places.json`. (2) The
-"no subgoals" model: an agenda task says where and why, the place's list says what an APC can do
-there. Four live runs (SR95_P–SR98_P). Dufus does Don's Donuts in 2 minutes, and Dufus and Maren
-met at the truck and traded vegetables talk. **Nobody has done the bank task for real yet.** The
-user deleted the mannequin that blocked the bank door; the run after that (SR98_P) was stopped at
-38 s, so the fix is not seen. Evidence and the score table: `plan/backlog.md` #125.
+Six live runs (SR99_P–SR104_P). Dufus and Maren get into Don's Donuts and the American Bank every
+run. Maren does bank → Don's → Pawn Shop. A new detour (#126) lets the body look round an object
+the navmesh does not know (mannequins, a counter) and walk round it with no model call. Dufus never
+finishes Don's because the clerk is a mannequin (#128). The user deleted the bank-corner mannequins
+after SR104_P. The next step is to build #128 so Dufus can end his Don's task and walk on.
 
 ## What was done this session
 
-- **Places page (#124 holds the rough points).** `Python/web_ui/templates/places.html` (new),
-  routes `places_page` and `POST /api/places/todo` in `Python/web_ui/main.py`, nav link in
-  `base.html`. One editor: choose a place or click a dot → name, owner, X, Y, size, and the
-  "what an APC can do here" list. Purple = `places.json` says something about it; grey = a name
-  from the world DB (hidden behind a checkbox). For an APC-made place only the list is written.
-- **Browser tests** (asked for once, then testing was turned off again):
-  `Python/scripts/agent_runtime/test_places_page.py`, dev dependency `playwright`
-  (`pyproject.toml`, `uv.lock`). 48 checks passed before the live work started.
-- **#125 model (user: "maybe the subgoal is irrelevant").**
-  - `llm_router`: a task with no `"inside"` in `needs` reads the place list as soon as the body is
-    at the place ("WHAT YOU CAN DO AT …"). New `spot_m` line for an authored place.
-  - `agent_manager`: list lookup by `_place_key`; `_owned_place_endpoint` carries `source`; an
-    authored place learns and uses no door, and a task that needs `inside` walks on to the
-    authored spot (`_AUTHORED_SPOT_CM`); a roof flip over more than `_SAME_DOOR_CM` is not saved
-    as a door; a task started early gets its block start clamped to now.
-  - `agenda.advance`: a task the APC finished early hands over to the next task at once
-    (`prior_task_completed_early`).
-  - Agendas rewritten (short "why" sentences): Dufus Don's → American Bank → truck (buy);
-    Maren American Bank → Don's → truck (sell).
-  - `places.json` (local, git-excluded): lists for "American Bank" and "the vegetable truck";
-    place "American Bank" at (-2350, -2600), `"owner": "dufus"` (stopgap, see Open questions).
-- **World DB edits by hand:** deleted `place_doors` rows for "vegetable truck" (58.8 m "exit")
-  and "american bank" (porch door).
+- **Prompt audit** of the Claude Code config (report only, no edits applied).
+- **Agendas** (`Python/worlds/MCP_World/agents/dufus|maren/agenda.json`): each task block is now 2 h
+  wide, and a Pawn Shop task is added for both. Early handover (#125) moves an APC to its next task
+  at once, so a 3-minute run covers the morning. Sim clock unchanged.
+- **`places.json`** (local, git-excluded): authored spots for Don's Donuts (-3500, -2400) and the
+  Pawn Shop (300, -2300) (owner `dufus`, the same stopgap as the bank, #124), plus a "what you can do
+  here" list for the Pawn Shop. Spots measured with the engine radar from a distance (roof, ground,
+  full path).
+- **#126 detour** (`Python/agent_runtime/detour.py`, new; `AgentManager._start_detour`,
+  `_end_detour`, `_pulse_detour`): when the last order moved the body nowhere, the body probes the
+  radar ring at points round it and picks two hops (out on the open side, then 4 m past toward the
+  goal), walks them in the walk phase with no model call, then walks on to the place. Log lines
+  start with `DETOUR`.
+- **`_execute_world_action`**: a direction step is no longer replaced by the scheduled walk when the
+  body does not fit ahead or its last order moved it nowhere.
+- **`_apply_cell_verdict`**: refusing the same patch twice gives the model the fact "this changes
+  nothing and does not move you" (SR103_P refuse loop).
+- **World DB**: deleted the no-go patches the stuck loops wrote today (bank corner, one in Don's).
+- **Backlog**: #126 (built), #127 turn first, #128 mannequin clerk, #129 day done → home and sleep,
+  #130 sense obstacles early; #125 score table filled for SR99_P–SR104_P.
 
 ## In flight
 
-- The bank task. Next run decides whether the mannequin was the only blocker.
-- Not seen live yet: early handover, the door-gap guard, the `spot_m` walk-on (Maren had the
-  `spot_m` line in her prompt in SR97_P and did not follow it).
+- Not proven: whether the detour start is fast enough without the corner mannequins (#130). The
+  pole and other mannequins (Don's counter, Don's door `pose_standing_25/26`) are still there.
+- Not tested offline: tests are off (user rule).
 
 ## Decisions locked in this session
 
-- **Two levels, no subgoals** (user). Agenda task = place + why. Place list = what you can do
-  there. A task ends by the clock or by body facts (`needs`); list lines are not tracked.
-- **APC-made names are hidden on the Places page, not deleted** (user chose "hide").
-- **Testing is off again** (user, 2026-11-12: "turn all testing off"). Memory updated.
-- **The user removed the mannequin `pose_standing_5` from the bank door** in the level.
+- **The navmesh is not the whole world** (user). Mannequins and people are not on it, so the body
+  must look and plan its own way round. The engine only walks short hops.
+- **Mannequins are not filtered in code** (#109). Dufus must learn from "no reply" and move on.
+- **Agenda blocks stay 2 h with early handover** for debug runs; the clock is not changed.
 
 ## Open questions
 
-- **`"owner": "dufus"` on the bank is a stopgap.** A community place (and a community landmark)
-  only names a 30 m cell; it has no exact spot. Authored places should be exact for everyone (#124).
-- **Roof fact vs eyes at a door.** 1.1 m inside the bank door the roof read 2 of 3 (not inside)
-  while the picture showed the lobby; the brain believed its eyes and claimed "done".
-- **Tiles still grow name-blind** (#113): the bank's tiles reach the pavement; the old runtime
-  row "American Bank building interior" covers Don's counter.
-- **`command_character_say` for Maren timed out 5 times** in SR95_P; never for Dufus.
-- **Qwen 429s are not retried**; blind, Maren did not know her own truck (SR95_P).
-- If the walk still stops short at the bank: spot (-1850, -2350) measured free (roof 5/5, full
-  path, 8 of 8 headings).
-- The Places page is first-pass; the user wants it cleaned up (#124).
+- #128: does a line spoken to a figure that never answers count as `spoke` for the task? My proposal:
+  yes — the task needs a spoken line, not an answer.
+- #130: start the detour on the first `fits=False` contact during travel, or plan the way round
+  before contact from a forward sweep? Both are possible; the second needs #127 (turn first).
+- The `"owner": "dufus"` stopgap now covers the bank, Don's and the Pawn Shop (#124).
 
 ## Next concrete step
 
-Unreal in PIE, then one live Play run (commands below). Pass = `scorecard.jsonl` shows
-`get_money` in Dufus's `tasks_completed` and `get_change` in Maren's, each with the log line
-`body reads INSIDE` near (-2350, -2600), and the log shows `prior_task_completed_early`.
-Write the result in the #125 score table.
+Build #128: in `Python/agent_runtime/agent_manager.py`, when a `speak_to` reaches a figure in reach
+and no reply comes, record "spoke, no reply" as a body fact and let it satisfy `spoke` for the active
+task. Then one live run: pass = Dufus finishes `morning_donut` and walks on to the bank.
 
 ## Files touched this session
 
-- `Python/web_ui/main.py`, `Python/web_ui/templates/base.html`, `Python/web_ui/templates/places.html` (new)
-- `Python/scripts/agent_runtime/test_places_page.py` (new), `Python/pyproject.toml`, `Python/uv.lock`
-- `Python/agent_runtime/agenda.py`, `agent_manager.py`, `llm_router.py`
-- `Python/worlds/MCP_World/agents/dufus/agenda.json`, `agents/maren/agenda.json`
-- `Python/worlds/MCP_World/places.json` (local only), `world_places.db` (two door rows deleted)
-- `plan/backlog.md` (#124, #125)
+- `Python/agent_runtime/detour.py` (new) — the two-hop planner over radar probes.
+- `Python/agent_runtime/agent_manager.py` — detour start/pulse/end, step-away when blocked, repeat
+  refusal fact, constants `_DETOUR_*`.
+- `Python/worlds/MCP_World/agents/dufus/agenda.json`, `.../maren/agenda.json` — 2 h blocks, Pawn Shop.
+- `Python/worlds/MCP_World/places.json` (local only) — Don's and Pawn Shop spots, Pawn Shop list.
+- `Python/worlds/MCP_World/world_places.db` (local) — today's no-go patches deleted.
+- `plan/backlog.md` — #126–#130, #125 score table.
 
 ## How to resume
 
 Paste this prompt at the start of the next session:
 
-> Resume the previous session. Read `plan/handoffs/LATEST.md` for full context. The work of 2026-11-12 is committed locally and not pushed. The next concrete step is one live Play run to see if Maren and Dufus now enter the American Bank (I deleted the mannequin in the doorway), then fill the #125 score table in `plan/backlog.md`. Tests are off until I say so.
+> Resume the previous session. Read `plan/handoffs/LATEST.md` for full context. The next concrete
+> step is: build #128 so a line spoken to a figure that never answers counts as `spoke`, then one live
+> Play run where Dufus finishes Don's and walks on to the bank. Tests are off until I say so.
 
 How to run live: Unreal in **PIE**. Then `cd Python; uv run python sim_runner.py --port 8777`, and
 `curl -X POST http://127.0.0.1:8777/start -H "Content-Type: application/json" -d '{"tick_seconds":1,"mode":"play"}'`;
 stop with `curl -X POST http://127.0.0.1:8777/stop`. Restart the runner after every code change.
-The Places page: `Python\start_sim.bat`, then `http://127.0.0.1:8765/places`.
 
 ## Git state at handoff
 
@@ -100,10 +90,10 @@ The Places page: `Python\start_sim.bat`, then `http://127.0.0.1:8765/places`.
  M MCPGameProject/Config/DefaultEditor.ini      (the user's change; not committed)
 ```
 
-Not pushed. Recent commits:
+Recent commits:
 
 ```
 (this handoff commit)
-bcf797c feat: Places page; agenda says where and why, the place says what you can do (#124, #125); SR95-98_P findings
-8594d1d handoff: 2026-11-11 — Dufus walks in by a remembered door, walks up to the clerk, turns and orders; next is Maren at Don's
+(the feat commit for #126)
+211031b handoff: 2026-11-12 — Places page and the no-subgoal agenda model; the bank is not entered yet, next is one live run
 ```
